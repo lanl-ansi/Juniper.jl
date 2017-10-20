@@ -12,4 +12,4 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver)
     return MINLPBnBSolverObj(nl_solver)
 end
 
-MathProgBase.LinearQuadraticModel(s::MINLPBnBSolverObj) = MathProgBase.NonlinearToLPQPBridge(MathProgBase.NonlinearModel(s))
+# MathProgBase.LinearQuadraticModel(s::MINLPBnBSolverObj) = MathProgBase.NonlinearToLPQPBridge(MathProgBase.NonlinearModel(s))

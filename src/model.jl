@@ -120,7 +120,7 @@ function gen_linear(m::MINLPBnBModel)
     m.isconstrlinear = isconstrlinear
 end
 
-function gen_model(m::MINLPBnBModel, model)
+function gen_linear_model(m::MINLPBnBModel, model)
     lb = [m.l_var; -1e6]
     ub = [m.u_var; 1e6]
     @variable(model, lb[i] <= x[i=1:m.num_var+1] <= ub[i])
@@ -176,8 +176,27 @@ function MathProgBase.loadproblem!(
     m.var_type = fill(:Cont,num_var)
 
     println("loadproblem!")
-    MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess])
-   
+    MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess,:ExprGraph])
+    println("typeof(m.d): ",typeof(m.d))
+
+end
+
+#=
+    Used from https://github.com/lanl-ansi/POD.jl
+=# 
+function expr_dereferencing(expr, m)
+    for i in 2:length(expr.args)
+        if isa(expr.args[i], Float64)
+            k = 0
+        elseif expr.args[i].head == :ref
+            @assert isa(expr.args[i].args[2], Int)
+            expr.args[i] = Variable(m, expr.args[i].args[2])
+        elseif expr.args[i].head == :call
+            expr_dereferencing(expr.args[i], m)
+        else
+            error("expr_dereferencing :: Unexpected term in expression tree.")
+        end
+    end
 end
 
 function MathProgBase.optimize!(m::MINLPBnBModel)
@@ -193,9 +212,18 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     m.model = Model(solver=m.nl_solver) 
     gen_linear(m)
-    gen_model(m, m.model)
+    gen_linear_model(m, m.model)
 
-    println(m.model)
+    for i=1:m.num_constr
+        if !m.isconstrlinear[i]
+            println("Constr #",i , " is non linear")
+            constr_expr = MathProgBase.constr_expr(m.d,i)
+            expr_dereferencing(constr_expr, m.model)
+            JuMP.addNLconstraint(m.model, constr_expr)
+            # @constraint(m.model, constr_expr)
+        end
+    end
+
 
     start = time()
     status = solve(m.model, relaxation=true)
