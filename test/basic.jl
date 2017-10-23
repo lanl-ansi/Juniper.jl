@@ -49,6 +49,7 @@ include("load_fl.jl")
 end
 =#
 
+#=
 @testset "PajaritoTest" begin
     m = Model(solver=minlpbnb)
 
@@ -72,6 +73,32 @@ end
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
     @test isapprox(getvalue(x), 3, atol=sol_atol)
     @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+end
+=# 
+
+@testset "Few branches" begin
+    m = Model(solver=minlpbnb)
+
+    @variable(m, x >= 0, Int)
+    @variable(m, y >= 0, Int)
+    @variable(m, 0 <= u <= 10, Int)
+    @variable(m, w == 1)
+
+    @objective(m, Min, -3x - y)
+
+    @constraint(m, 3x + 10 <= 20)
+    @NLconstraint(m, y^2 <= u*w)
+
+    status = solve(m)
+
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(y))
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
+    @test isapprox(getvalue(x), 3, atol=sol_atol)
+    @test isapprox(getvalue(y), 3, atol=sol_atol)
 end
 
 end
