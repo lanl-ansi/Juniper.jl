@@ -29,11 +29,21 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     MINLPBnBModel() = new()
 end
 
+"""
+    MathProgBase.NonlinearModel(s::MINLPBnBSolverObj)
+
+Generate NonLinearModel and specify nl solver
+"""
 function MathProgBase.NonlinearModel(s::MINLPBnBSolverObj)
     println("model.jl => MathProgBase.NonlinearModel")
     return MINLPBnBNonlinearModel(s.nl_solver)
 end
 
+"""
+    MINLPBnBNonlinearModel(lqps::MathProgBase.AbstractMathProgSolver)
+
+Initialize the NonLinearModel with the solver, set status, objval and solution
+"""
 function MINLPBnBNonlinearModel(lqps::MathProgBase.AbstractMathProgSolver)
     println("model.jl => MINLPBnBNonlinearModel")
     m = MINLPBnBModel() # don't initialise everything yet
@@ -46,6 +56,11 @@ function MINLPBnBNonlinearModel(lqps::MathProgBase.AbstractMathProgSolver)
     return m
 end
 
+"""
+    MathProgBase.loadproblem!(m,num_var,num_constr,l_var,u_var,l_constr,u_constr,sense,d)
+
+Initialize other fields MINLPBnBModel after all variables, constraints and the objective is set
+"""
 function MathProgBase.loadproblem!(
     m::MINLPBnBModel,
     num_var::Int, num_constr::Int,
@@ -87,8 +102,12 @@ function expr_dereferencing(expr, m)
     end
 end
 
+"""
+    divide_nl_l_constr(m::MINLPBnBModel)
+
+Get # of linear and non linear constraints and save for each index if linear or non linear    
+"""
 function divide_nl_l_constr(m::MINLPBnBModel)
-    # set up map of linear rows
     isconstrlinear = Array{Bool}(m.num_constr)
     m.num_l_constr = 0
     for i = 1:m.num_constr
@@ -101,6 +120,11 @@ function divide_nl_l_constr(m::MINLPBnBModel)
     m.isconstrlinear = isconstrlinear
 end
 
+"""
+    MathProgBase.optimize!(m::MINLPBnBModel)
+
+Optimize by creating a model based on the variables saved in MINLPBnBModel.
+"""
 function MathProgBase.optimize!(m::MINLPBnBModel)
     println("optimize!")
     println("Types")
@@ -110,14 +134,16 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     lb = [m.l_var; -1e6]
     ub = [m.u_var; 1e6]
     # all continuous 
-    @variable(m.model, lb[i] <= x[i=1:m.num_var+1] <= ub[i])
+    @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
 
+    # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
     expr_dereferencing(obj_expr, m.model)
     JuMP.setNLobjective(m.model, m.obj_sense,  obj_expr)
 
     divide_nl_l_constr(m)
 
+    # add all constraints
     for i=1:m.num_constr
         constr_expr = MathProgBase.constr_expr(m.d,i)
         expr_dereferencing(constr_expr, m.model)
@@ -128,6 +154,10 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     status = solve(m.model, relaxation=true)
     m.soltime = time()-start
 
+    m.solution = getvalue(x)
+
+    println("Solution: ", m.solution)
+
     m.status = status
     return m.status
 
@@ -135,6 +165,12 @@ end
 
 MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = fill(0.0, length(x))
 
+"""
+    MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol}) 
+
+Is called between loadproblem! and optimize! and has a vector v of types for each variable.
+The number of int/bin variables is saved in num_int_bin_var
+"""
 function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol}) 
     m.var_type = v
     c = count(i->(i==:Int || i==:Bin), v)
@@ -145,6 +181,6 @@ MathProgBase.status(m::MINLPBnBModel) = m.status
 MathProgBase.getobjval(m::MINLPBnBModel) = getobjectivevalue(m.model)
 
 # any auxiliary variables will need to be filtered from this at some point
-MathProgBase.getsolution(m::MINLPBnBModel) = MathProgBase.getsolution(internalmodel(m.model))
+MathProgBase.getsolution(m::MINLPBnBModel) = m.solution
 
 MathProgBase.getsolvetime(m::MINLPBnBModel) = m.soltime
