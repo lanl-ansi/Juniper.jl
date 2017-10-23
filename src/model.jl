@@ -5,6 +5,7 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     status          :: Symbol
     objval          :: Float64
 
+    x               
     num_constr      :: Int64
     num_nl_constr   :: Int64
     num_l_constr    :: Int64
@@ -120,6 +121,12 @@ function divide_nl_l_constr(m::MINLPBnBModel)
     m.isconstrlinear = isconstrlinear
 end
 
+function replace_solution!(old_m::MINLPBnBModel, new_m::MINLPBnBModel)
+    old_m.solution = new_m.solution
+    old_m.objval = new_m.objval
+    old_m.model = new_m.model    
+end
+
 """
     MathProgBase.optimize!(m::MINLPBnBModel)
 
@@ -150,15 +157,23 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
         JuMP.addNLconstraint(m.model, constr_expr)
     end
 
+    m.x = x
     start = time()
-    status = solve(m.model, relaxation=true)
+    status = solve(m.model)
     m.soltime = time()-start
 
+    m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
     println("Solution: ", m.solution)
 
     m.status = status
+
+    bnbtree = BnBTree.init(m)
+    bnbtree_m = BnBTree.solve(bnbtree)
+
+    replace_solution!(m, bnbtree_m)
+    
     return m.status
 
 end

@@ -1,4 +1,8 @@
 using Logging
+
+reload("MINLPBnB")
+reload("BnBTree")
+
 # suppress warnings during testing
 Logging.configure(level=ERROR)
 
@@ -18,6 +22,6 @@ sol_atol = 1e-3
 
 gurobi = GurobiSolver()
 
-minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver())
+minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0))
 
 include("basic.jl")

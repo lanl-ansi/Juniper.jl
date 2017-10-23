@@ -1,6 +1,6 @@
 using Distances
 
-f = open("./../test/data/" * file_name)
+f = open("./test/data/" * file_name)
 lines = readlines(f)
 n_str,m_str = split(lines[1])
 N, M = parse(Int, n_str), parse(Int, m_str)
