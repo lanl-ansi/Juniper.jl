@@ -51,6 +51,7 @@ include("load_fl.jl")
 end
 =#
 
+
 @testset "PajaritoTest" begin
     m = Model(solver=minlpbnb)
 
@@ -101,6 +102,7 @@ end
     @test isapprox(getvalue(y), 3, atol=sol_atol)
 end
 
+
 @testset "Knapsack Max" begin
     m = Model(solver=minlpbnb)
 
@@ -122,6 +124,8 @@ end
     @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
 end
 
+
+
 @testset "Facility" begin
     m = Model()
 
@@ -142,13 +146,8 @@ end
     @NLconstraint(m, dist_constr[i=1:N], sum((cf[c=j,f=i]*dist_mat[j,i])^2 for j=1:M) <= md)
         
 
-    println("Variables and constraints set")
-
-    println("Set solver to MINLPBnB")
     setsolver(m, minlpbnb)
-    println("Solve using MINLPBnB")
     status = solve(m)
-    println("Solved using MINLPBnB")
     @test status == :Optimal
 
     minlpbnb_val = getobjectivevalue(m)
@@ -163,10 +162,11 @@ end
     println("cf: ", minlpbnb_cf)
     println("md: ", minlpbnb_md)
 
-    @test isapprox(minlpbnb_val, 4.754525978680781, atol=opt_atol, rtol=opt_rtol)
+    @test isapprox(minlpbnb_val, 5.3548169043445215, atol=opt_atol, rtol=opt_rtol)
     @test isapprox(minlpbnb_sf, [1.0, 1.0, 1.0], atol=sol_atol, rtol=sol_rtol)
-    @test isapprox(minlpbnb_cf, [1.0 -0.0 -0.0; 1.0 -0.0 -0.0; -0.0 1.0 -0.0; -0.0 -0.0 1.0] , atol=sol_atol, rtol=sol_rtol)
-    @test isapprox(minlpbnb_md,  0.1754525978680781, atol=sol_atol, rtol=sol_rtol)
+    @test isapprox(minlpbnb_cf, [1 0 0; 1 0 0; 0 1 0; 0 0 1] , atol=sol_atol, rtol=sol_rtol)
+    @test isapprox(minlpbnb_md,  0.23548169043445205, atol=sol_atol, rtol=sol_rtol)
 end
+
 
 end

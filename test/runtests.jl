@@ -24,4 +24,6 @@ gurobi = GurobiSolver()
 
 minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);print_syms=[])
 
+start = time()
 include("basic.jl")
+println("Time for all tests: ", time()-start)
