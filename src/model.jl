@@ -1,5 +1,6 @@
 type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     nl_solver       :: MathProgBase.AbstractMathProgSolver
+    print_syms      :: Vector{Symbol}
     model           :: Union{Void,JuMP.Model}
         
     status          :: Symbol
@@ -37,7 +38,7 @@ Generate NonLinearModel and specify nl solver
 """
 function MathProgBase.NonlinearModel(s::MINLPBnBSolverObj)
     println("model.jl => MathProgBase.NonlinearModel")
-    return MINLPBnBNonlinearModel(s.nl_solver)
+    return MINLPBnBNonlinearModel(s.nl_solver,s.print_syms)
 end
 
 """
@@ -45,11 +46,12 @@ end
 
 Initialize the NonLinearModel with the solver, set status, objval and solution
 """
-function MINLPBnBNonlinearModel(lqps::MathProgBase.AbstractMathProgSolver)
+function MINLPBnBNonlinearModel(lqps::MathProgBase.AbstractMathProgSolver,print_syms)
     println("model.jl => MINLPBnBNonlinearModel")
     m = MINLPBnBModel() # don't initialise everything yet
 
     m.nl_solver = lqps
+    m.print_syms = print_syms
     m.status = :None
     m.objval = NaN
     m.solution = Float64[]
