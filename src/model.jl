@@ -163,6 +163,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     start = time()
     status = solve(m.model)
     m.soltime = time()-start
+    println("Time for relaxation: ", m.soltime)
 
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
@@ -175,7 +176,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     bnbtree_m = BnBTree.solve(bnbtree)
 
     replace_solution!(m, bnbtree_m)
-    
+    m.soltime = time()-start
     return m.status
 
 end

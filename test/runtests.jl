@@ -22,7 +22,7 @@ sol_atol = 1e-3
 
 gurobi = GurobiSolver()
 
-minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);print_syms=[])
+minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);print_syms=[:NewIncumbent])
 
 start = time()
 include("basic.jl")
