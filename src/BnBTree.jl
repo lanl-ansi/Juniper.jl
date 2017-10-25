@@ -97,10 +97,9 @@ function get_int_variable_idx(tree,node,branch_strat,num_var,var_type,x;counter=
             sort_idx = tree.int2var_idx[sortperm(obj_gain_average, rev=true)]
             for l_idx in sort_idx
                 if !is_type_correct(x[l_idx],var_type[l_idx])
-                    sol = node.m.solution[l_idx]
                     u_b = node.m.u_var[l_idx]
                     l_b = node.m.l_var[l_idx]
-                    if isapprox(u_b,floor(sol),atol=atol) || isapprox(l_b, ceil(sol),atol=atol)
+                    if isapprox(u_b,l_b,atol=atol)
                         continue
                     end
                     return l_idx
@@ -226,15 +225,19 @@ Update the objective gains for the branch variable used for node
 """
 function update_gains(tree::BnBTreeObj,node::BnBNode;counter=1)
     gain = 0
+    gc = 0
     frac_val = node.m.solution[node.var_idx]
     if node.left.state == :Branch
         int_val = floor(frac_val)
         gain += abs(node.best_bound-node.left.best_bound)/abs(frac_val-int_val)
+        gc += 1
     end
     if node.right.state == :Branch
         int_val = ceil(frac_val)
         gain += abs(node.best_bound-node.right.best_bound)/abs(frac_val-int_val)
+        gc += 1
     end
+    gain /= gc
 
     # update all (just average of the one branch we have)
     if counter == 1
@@ -346,7 +349,7 @@ end
     get_best_branch_node(tree::BnBTreeObj)
 
 Get the index of the breach node which should be used for the next branch.
-Currently get's the branch with the worst best bound
+Currently get's the branch with the best best bound
 """
 function get_best_branch_node(tree::BnBTreeObj)
     node = tree.root
@@ -365,8 +368,8 @@ function get_best_branch_node(tree::BnBTreeObj)
         r_nd = node.right
         if node.hasbranchild == true
             if l_nd.state == :Branch && r_nd.state == :Branch 
-                # use node with worse obj
-                if factor*l_nd.m.objval < factor*r_nd.m.objval
+                # use node with best obj
+                if factor*l_nd.m.objval > factor*r_nd.m.objval
                     return l_nd
                 else
                     return r_nd
@@ -376,9 +379,9 @@ function get_best_branch_node(tree::BnBTreeObj)
             elseif r_nd.state == :Branch
                 return r_nd
             else
-                # get into worse branch
+                # get into best branch
                 if l_nd.hasbranchild && r_nd.hasbranchild
-                    if factor*l_nd.best_bound < factor*r_nd.best_bound
+                    if factor*l_nd.best_bound > factor*r_nd.best_bound
                         node = l_nd
                     else
                         node = r_nd
@@ -445,8 +448,8 @@ function print(node::BnBNode)
     println(indent_str*"idx"*": "*string(node.idx))
     println(indent_str*"var_idx"*": "*string(node.var_idx))
     println(indent_str*"state"*": "*string(node.state))
-    # println(indent_str*"hasbranchild"*": "*string(node.hasbranchild))
-    # println(indent_str*"best_bound"*": "*string(node.best_bound))
+    println(indent_str*"hasbranchild"*": "*string(node.hasbranchild))
+    println(indent_str*"best_bound"*": "*string(node.best_bound))
 end
 
 function print_rec(node::BnBNode;remove=false)
@@ -528,7 +531,10 @@ function solve(tree::BnBTreeObj)
         # println("Best bound: ", tree.root.best_bound)
         # println("Node level: ", node.level)
 
-        # print(tree)
+        # if node.level == 3
+            # print(tree)
+            # error("t")
+        # end
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
 

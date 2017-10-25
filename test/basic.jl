@@ -76,7 +76,7 @@ end
     @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
 end
 
-@testset "Only one branch but several level" begin
+@testset "Pajarito II" begin
     m = Model(solver=minlpbnb)
 
     @variable(m, x >= 0, Int)
@@ -124,8 +124,10 @@ end
 end
 =#
 
-#=
-@testset "Facility" begin
+@testset "Facility Small" begin
+    println("==================================")
+    println("FACILITY SMALL")
+    println("==================================")
     m = Model()
 
     file_name = "fl_3_4"
@@ -165,10 +167,14 @@ end
     @test isapprox(minlpbnb_cf, [1 0 0; 1 0 0; 0 1 0; 0 0 1] , atol=sol_atol, rtol=sol_rtol)
     @test isapprox(minlpbnb_md,  0.23548169043445205, atol=sol_atol, rtol=sol_rtol)
 end
-=#
 
-@testset "OTS Bus 3" begin
-   
+
+
+@testset "Batch.mod" begin
+    println("==================================")
+    println("BATCH.MOD")
+    println("==================================")
+    
     m = Model()
     @variable(m, 0 <= x1 <= 1.38629436111989)
     @variable(m, 0 <= x2 <= 1.38629436111989)
