@@ -2,7 +2,7 @@ include("load_fl.jl")
 
 @testset "basic tests" begin
 
-#=
+
 @testset "Facility" begin
     m = Model()
     
@@ -48,7 +48,6 @@ include("load_fl.jl")
     @test isapprox(minlpbnb_cf, [1.0 0.0 0.0 0.0 0.0 -0.0 0.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0; 1.0 -0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 0.0 -0.0 1.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 1.0 -0.0 0.0 0.0; 0.0 1.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0; -0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 -0.0 0.0; 0.0 0.0 0.0 0.0 1.0 -0.0 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0; 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 0.0]  , atol=sol_atol, rtol=sol_rtol)
     @test isapprox(minlpbnb_md, 0.08392682926829272, atol=sol_atol, rtol=sol_rtol)
 end
-=#
 
 #=
 @testset "PajaritoTest" begin
@@ -75,6 +74,7 @@ end
     @test isapprox(getvalue(x), 3, atol=sol_atol)
     @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
 end
+
 
 @testset "Pajarito II" begin
     m = Model(solver=minlpbnb)
@@ -122,7 +122,7 @@ end
     @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
     @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
 end
-=#
+
 
 @testset "Facility Small" begin
     println("==================================")
@@ -167,8 +167,6 @@ end
     @test isapprox(minlpbnb_cf, [1 0 0; 1 0 0; 0 1 0; 0 0 1] , atol=sol_atol, rtol=sol_rtol)
     @test isapprox(minlpbnb_md,  0.23548169043445205, atol=sol_atol, rtol=sol_rtol)
 end
-
-
 
 @testset "Batch.mod" begin
     println("==================================")
@@ -327,6 +325,6 @@ end
 
     @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
-
+=#
 
 end

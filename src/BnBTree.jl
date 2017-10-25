@@ -31,7 +31,7 @@ end
 function init(m)
     node = BnBNode(nothing,1,1,m,0,nothing,nothing,:Branch,true,m.objval)
     obj_gain = zeros(m.num_int_bin_var)
-    obj_gain_c = ones(m.num_int_bin_var)
+    obj_gain_c = zeros(m.num_int_bin_var)
     int2var_idx = zeros(m.num_int_bin_var)
     var2int_idx = zeros(m.num_var)
     int_i = 1
@@ -61,8 +61,13 @@ function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
     return false
 end
 
+"""
+    branch_mostinfeasible(tree,node,num_var,var_type,x)
+
+Get the index of an integer variable which is currently continuous which is most unintegral.
+(nearest to *.5)
+"""
 function branch_mostinfeasible(tree,node,num_var,var_type,x)
-    # get variable which is the most unintegral (0.5 isn't integral at all 0.9 is quite a bit :D)
     idx = 0
     max_diff = 0
     for i=1:num_var
@@ -78,6 +83,62 @@ function branch_mostinfeasible(tree,node,num_var,var_type,x)
 end
 
 """
+    branch_strong((tree,node,num_var,var_type,x)
+
+Try to branch on a few different variables and choose the one with highest obj_gain.
+Update obj_gain for the variables tried and average the other ones.
+"""
+function branch_strong(tree,node,num_var,var_type,x;seed_add=0)
+    srand(1+seed_add)
+    num_strong_var = 10 # TODO: should be changeable 
+
+    int_vars = tree.root.m.num_int_bin_var
+    reasonable_int_vars = []
+    for i=1:int_vars
+        idx = tree.int2var_idx[i]
+        u_b = node.m.u_var[idx]
+        l_b = node.m.l_var[idx]
+        if isapprox(u_b,l_b,atol=atol) || BnBTree.is_type_correct(node.m.solution[idx],var_type[idx])
+            continue
+        end
+        push!(reasonable_int_vars,i)
+    end
+    shuffle!(reasonable_int_vars)
+    reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
+
+    max_gain = 0.0
+    max_gain_var = 0
+    av_gain = 0.0
+    strong_int_vars = []
+    left_node = nothing
+    right_node = nothing
+    
+    for int_var_idx in reasonable_int_vars
+        push!(strong_int_vars, int_var_idx)
+        var_idx = tree.int2var_idx[int_var_idx]
+        sol_time,l_nd,r_nd = BnBTree.branch!(node,var_idx,tree.print_syms;map_to_node=false)
+        gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd)
+        if gain > max_gain
+            max_gain = gain
+            max_gain_var = var_idx
+            left_node = l_nd
+            right_node = r_nd
+        end
+        av_gain += gain
+        tree.obj_gain[int_var_idx] = gain
+    end
+    node.left = left_node
+    node.right = right_node
+    node.var_idx = max_gain_var
+    av_gain /= int_vars
+    rest = filter(i->!(i in strong_int_vars),1:int_vars)
+    tree.obj_gain[rest] = av_gain
+    tree.obj_gain_c += 1
+    @assert max_gain_var != 0
+    return max_gain_var
+end
+
+"""
     get_int_variable_idx(tree,node,branch_strat,num_var,var_type,x;counter=1)
 
 Get the index of a variable to branch on.
@@ -88,9 +149,11 @@ function get_int_variable_idx(tree,node,branch_strat,num_var,var_type,x;counter=
     idx = 0
     if branch_strat == :MostInfeasible
         return BnBTree.branch_mostinfeasible(tree,node,num_var,var_type,x)
-    elseif branch_strat == :PseudoCost
-        if counter == 1
+    elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
+        if counter == 1 && branch_strat == :PseudoCost
             idx = BnBTree.branch_mostinfeasible(tree,node,num_var,var_type,x)
+        elseif counter <= 5 && branch_strat == :StrongPseudoCost
+            idx = BnBTree.branch_strong(tree,node,num_var,var_type,x;seed_add=counter)
         else
             # use the one with highest obj_gain which is currently continous
             obj_gain_average = tree.obj_gain./tree.obj_gain_c
@@ -99,6 +162,7 @@ function get_int_variable_idx(tree,node,branch_strat,num_var,var_type,x;counter=
                 if !is_type_correct(x[l_idx],var_type[l_idx])
                     u_b = node.m.u_var[l_idx]
                     l_b = node.m.l_var[l_idx]
+                    # if the upper bound is the lower bound => no reason to branch
                     if isapprox(u_b,l_b,atol=atol)
                         continue
                     end
@@ -176,7 +240,7 @@ end
 Branch a node by using x[idx] <= floor(x[idx]) and x[idx] >= ceil(x[idx])
 Solve both nodes and set current node state to done.
 """
-function branch!(node::BnBNode,idx,ps)
+function branch!(node::BnBNode,idx,ps;map_to_node=true)
     l_m = Base.deepcopy(node.m)
     r_m = Base.deepcopy(node.m)
 
@@ -189,7 +253,7 @@ function branch!(node::BnBNode,idx,ps)
     r_cx = r_m.solution[idx]
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("branch")
     
-    if isapprox(l_m.u_var[idx],floor(l_cx),atol=atol) || isapprox(r_m.l_var[idx], ceil(r_cx),atol=atol)
+    if isapprox(l_m.u_var[idx],r_m.l_var[idx],atol=atol)
         error("Shouldn't solve again")
     end
     @constraint(l_m.model, l_x[idx] <= floor(l_cx))    
@@ -197,47 +261,57 @@ function branch!(node::BnBNode,idx,ps)
     @constraint(r_m.model, r_x[idx] >= ceil(r_cx))
     r_m.l_var[idx] = ceil(r_cx)
 
-    l_tr = BnBTree.new_default_node(node,node.idx*2,node.level+1,l_m)
-    r_tr = BnBTree.new_default_node(node,node.idx*2+1,node.level+1,r_m)
+    l_nd = BnBTree.new_default_node(node,node.idx*2,node.level+1,l_m)
+    r_nd = BnBTree.new_default_node(node,node.idx*2+1,node.level+1,r_m)
 
-    node.left = l_tr
-    node.right = r_tr
+    if map_to_node
+        node.left = l_nd
+        node.right = r_nd
+    end
     node.state = :Done
 
     leaf_start = time()
-    l_state = solve_leaf(l_tr)
-    r_state = solve_leaf(r_tr)
+    l_state = solve_leaf(l_nd)
+    r_state = solve_leaf(r_nd)
     leaf_time = time()-leaf_start
 
     if BnBTree.check_print(ps,[:All])
         println("State of left leaf: ", l_state)
         println("State of right leaf: ", r_state)
-        println("l sol: ", l_tr.m.solution)
-        println("r sol: ", r_tr.m.solution)
+        println("l sol: ", l_nd.m.solution)
+        println("r sol: ", r_nd.m.solution)
     end
-    return leaf_time
+    if map_to_node
+        return leaf_time
+    end
+    return leaf_time, l_nd, r_nd
 end
 
+function compute_gain(node;l_nd=node.left,r_nd=node.right)
+    gain = 0
+    gc = 0
+    frac_val = node.m.solution[node.var_idx]
+    if l_nd.state == :Branch || l_nd.state == :Integral
+        int_val = floor(frac_val)
+        gain += abs(node.best_bound-l_nd.best_bound)/abs(frac_val-int_val)
+        gc += 1
+    end
+    if r_nd.state == :Branch || r_nd.state == :Integral
+        int_val = ceil(frac_val)
+        gain += abs(node.best_bound-r_nd.best_bound)/abs(frac_val-int_val)
+        gc += 1
+    end
+    gain == 0 && return 0
+    gain /= gc
+    return gain
+end
 """
     update_gains(tree::BnBTreeObj,node::BnBNode;counter=1)
 
 Update the objective gains for the branch variable used for node
 """
 function update_gains(tree::BnBTreeObj,node::BnBNode;counter=1)
-    gain = 0
-    gc = 0
-    frac_val = node.m.solution[node.var_idx]
-    if node.left.state == :Branch
-        int_val = floor(frac_val)
-        gain += abs(node.best_bound-node.left.best_bound)/abs(frac_val-int_val)
-        gc += 1
-    end
-    if node.right.state == :Branch
-        int_val = ceil(frac_val)
-        gain += abs(node.best_bound-node.right.best_bound)/abs(frac_val-int_val)
-        gc += 1
-    end
-    gain /= gc
+    gain = BnBTree.compute_gain(node)
 
     # update all (just average of the one branch we have)
     if counter == 1
@@ -304,44 +378,43 @@ function update_branch!(tree::BnBTreeObj,node::BnBNode)
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("update branch")
     BnBTree.check_print(ps,[:All]) && println(l_state, " ", r_state)
     if l_state != :Branch && r_state != :Branch
-        node.hasbranchild = false
-   
+        local_node = node
+        local_node.hasbranchild = false
+
         # both children aren't branch nodes
         # bubble up to check where to set node.hasbranchild = false
-        while node.parent != nothing
-            node = node.parent
-            BnBTree.check_print(ps,[:All]) && println("node.level: ", node.level)
-            if node.left.hasbranchild || node.right.hasbranchild
+        while local_node.parent != nothing
+            local_node = local_node.parent
+            BnBTree.check_print(ps,[:All]) && println("local_node.level: ", local_node.level)
+            if local_node.left.hasbranchild || local_node.right.hasbranchild
                 BnBTree.check_print(ps,[:All]) && println("break")
                 break
             else
-                node.hasbranchild = false
+                local_node.hasbranchild = false
             end
         end
-    else
-        # Bubble up the best bound of the children
-        # => The root has always the best bound of all of it's children
-        factor = 1
-        if tree.root.m.obj_sense == :Min
-            factor = -1
-        end
+    end
+    # Bubble up the best bound of the children
+    # => The root has always the best bound of all of it's children
+    factor = 1
+    if tree.root.m.obj_sense == :Min
+        factor = -1
+    end
 
-        while node != nothing
-            BnBTree.check_print(ps,[:All]) && println("Node idx: ", node.idx)
-            l_nd = node.left
-            r_nd = node.right
-            
-            if l_nd.best_bound == nothing
-                node.best_bound = r_nd.best_bound
-            elseif r_nd.best_bound == nothing
-                node.best_bound = l_nd.best_bound
-            elseif factor*l_nd.best_bound > factor*r_nd.best_bound
-                node.best_bound = l_nd.best_bound
-            else
-                node.best_bound = r_nd.best_bound
-            end
-            node = node.parent
+    while node != nothing
+        BnBTree.check_print(ps,[:All]) && println("Node idx: ", node.idx)
+        l_nd = node.left
+        r_nd = node.right
+        if l_nd.best_bound == nothing
+            node.best_bound = r_nd.best_bound
+        elseif r_nd.best_bound == nothing
+            node.best_bound = l_nd.best_bound
+        elseif factor*l_nd.best_bound > factor*r_nd.best_bound
+            node.best_bound = l_nd.best_bound
+        else
+            node.best_bound = r_nd.best_bound
         end
+        node = node.parent
     end
 end
 
@@ -363,39 +436,33 @@ function get_best_branch_node(tree::BnBTreeObj)
         return node
     end
 
+    last_best_bound = node.best_bound
     while true
         l_nd = node.left
         r_nd = node.right
+        if node.best_bound != last_best_bound
+            error("Best bound should be the same as the root bound")
+        end
         if node.hasbranchild == true
-            if l_nd.state == :Branch && r_nd.state == :Branch 
-                # use node with best obj
-                if factor*l_nd.m.objval > factor*r_nd.m.objval
-                    return l_nd
-                else
-                    return r_nd
-                end
-            elseif l_nd.state == :Branch
-                return l_nd
-            elseif r_nd.state == :Branch
-                return r_nd
-            else
-                # get into best branch
-                if l_nd.hasbranchild && r_nd.hasbranchild
-                    if factor*l_nd.best_bound > factor*r_nd.best_bound
-                        node = l_nd
-                    else
-                        node = r_nd
-                    end
-                elseif !l_nd.hasbranchild && !r_nd.hasbranchild
-                    println("node idx: ", node.idx)
-                    print(tree)
-                    error("Infeasible")
-                elseif l_nd.hasbranchild
+            # get into best branch
+            if l_nd.hasbranchild && r_nd.hasbranchild
+                if factor*l_nd.best_bound > factor*r_nd.best_bound
                     node = l_nd
                 else
                     node = r_nd
                 end
+            elseif !l_nd.hasbranchild && !r_nd.hasbranchild
+                println("node idx: ", node.idx)
+                print(tree)
+                error("Infeasible")
+            elseif l_nd.hasbranchild
+                node = l_nd
+            else
+                node = r_nd
             end
+        end
+        if node.state == :Branch
+            return node
         end
     end
 end
@@ -412,7 +479,7 @@ function prune!(node::BnBNode, value)
     if obj_sense == :Min
         factor = -1
     end
-    if node.hasbranchild && factor*value > factor*node.best_bound
+    if node.hasbranchild && factor*value >= factor*node.best_bound
         node.hasbranchild = false 
         node.left = nothing
         node.right = nothing
@@ -469,6 +536,63 @@ function print(tree::BnBTreeObj;remove=false)
     print_rec(node;remove=remove)
 end
 
+function print_table_header(fields, field_chars)
+    ln = ""
+    i = 1
+    for f in fields
+        padding = field_chars[i]-length(f)
+        ln *= repeat(" ",trunc(Int, floor(padding/2)))
+        ln *= f
+        ln *= repeat(" ",trunc(Int, ceil(padding/2)))
+        i += 1
+    end
+    println(ln)
+    println(repeat("=", sum(field_chars)))
+end
+
+function is_table_diff(last_arr,new_arr)
+    if length(last_arr) != length(new_arr)
+        return true
+    end    
+    for i=1:length(last_arr)
+        last_arr[i] != new_arr[i] && return true
+    end
+    return false
+end
+
+function print_table(tree,start_time,fields,field_chars;last_arr=[])
+    arr = []
+    
+    i = 1
+    ln = ""
+    for f in fields
+        val = ""
+        if f == "Incumbent"
+            val = tree.incumbent != nothing ? tree.incumbent.objval : "-"
+        elseif f == "Best Bound"
+            val = string(round(tree.root.best_bound,2))
+        elseif f == "Gap"
+            if tree.incumbent != nothing
+                b = tree.root.best_bound
+                f = tree.incumbent.objval
+                val = string(round(abs(b-f)/abs(f)*100,1))*"%"
+            else
+                val = "-"
+            end
+        elseif f == "Time"
+            val = string(round(time()-start_time,1))
+        end
+        padding = field_chars[i]-length(val)
+        ln *= repeat(" ",trunc(Int, floor(padding/2)))
+        ln *= val
+        ln *= repeat(" ",trunc(Int, ceil(padding/2)))
+        push!(arr,val)
+        i += 1
+    end
+    BnBTree.is_table_diff(last_arr[1:end-1],arr[1:end-1]) && println(ln)
+    return arr
+end
+
 """
     solve(tree::BnBTreeObj)
 
@@ -478,23 +602,27 @@ Solve the MIP part of a problem given by BnBTreeObj using branch and bound.
  - Solve subproblems
 """
 function solve(tree::BnBTreeObj)
+    fields = ["Incumbent","Best Bound","Gap","Time"]
+    field_chars = [28,28,7,8]
+    
     ps = tree.print_syms
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     # get variable where to split
     node = tree.root
     counter = 1    
 
-    branch_strat = :PseudoCost
+    branch_strat = :StrongPseudoCost
     time_upd_gains = 0
     time_get_idx = 0
     time_branch = 0
     time_solve_leafs = 0
     
+    print_table_header(fields,field_chars)
+
     time_bnb_solve_start = time()
+    last_table_arr = []
     while true
-        println("Best bound: ", tree.root.best_bound)
         m = node.m
-        println("Node level: ", node.level)
         get_idx_start = time()
         v_idx = BnBTree.get_int_variable_idx(tree,node,branch_strat, m.num_var,m.var_type,m.solution;counter=counter)
         time_get_idx += time()-get_idx_start
@@ -502,10 +630,12 @@ function solve(tree::BnBTreeObj)
         BnBTree.check_print(ps,[:All]) && println("v_idx: ", v_idx)
 
         branch_start = time()
-        time_solve_leafs += BnBTree.branch!(node,v_idx,tree.print_syms)
+        if node.left == nothing
+            time_solve_leafs += BnBTree.branch!(node,v_idx,tree.print_syms)
+        end
         time_branch += time()-branch_start
 
-        if branch_strat == :PseudoCost
+        if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter != 1)
             upd_start = time()
             BnBTree.update_gains(tree,node;counter=counter)    
             time_upd_gains += time()-upd_start
@@ -525,9 +655,13 @@ function solve(tree::BnBTreeObj)
             end
         end
         # check if best
+        if tree.incumbent != nothing && tree.incumbent.objval == tree.root.best_bound
+            break
+        end
         if !tree.root.hasbranchild
             break
         end
+    
         # println("Best bound: ", tree.root.best_bound)
         # println("Node level: ", node.level)
 
@@ -538,6 +672,7 @@ function solve(tree::BnBTreeObj)
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
 
+        last_table_arr = print_table(tree,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
         counter += 1
     end
 
