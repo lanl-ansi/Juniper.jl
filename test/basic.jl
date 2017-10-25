@@ -2,7 +2,6 @@ include("load_fl.jl")
 
 @testset "basic tests" begin
 
-
 @testset "Facility" begin
     m = Model()
     
@@ -324,6 +323,103 @@ end
     println("obj: ", minlpbnb_val)
 
     @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
+
+@testset "PowerModels case3 SOCWRPowerModel" begin
+    println("==================================")
+    println("case3.m")
+    println("==================================")
+    
+    pm = build_generic_model("../PowerModels.jl/test/data/case3.m", SOCWRPowerModel, post_ots)
+    m = pm.model
+    @variable(m, aeiou == 1)
+    @NLconstraint(m, aeiou^2 <= 1)
+
+    setsolver(m, minlpbnb)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("")
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 5746.72, atol=1e0)
+end
+
+
+@testset "PowerModels case6 SOCWRPowerModel" begin
+    println("==================================")
+    println("case6.m")
+    println("==================================")
+    
+    pm = build_generic_model("../PowerModels.jl/test/data/case6.m", SOCWRPowerModel, post_ots)
+    m = pm.model
+    @variable(m, aeiou == 1)
+    @NLconstraint(m, aeiou^2 <= 1)
+
+    setsolver(m, minlpbnb)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("")
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 11559.8, atol=1e0)
+end
+
+
+@testset "PowerModels case5 SOCWRPowerModel" begin
+    println("==================================")
+    println("case5.m")
+    println("==================================")
+    
+    pm = build_generic_model("../PowerModels.jl/test/data/case5.m", SOCWRPowerModel, post_ots)
+    m = pm.model
+    @variable(m, aeiou == 1)
+    @NLconstraint(m, aeiou^2 <= 1)
+
+    setsolver(m, minlpbnb)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("")
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+end
+=#
+
+#=
+@testset "PowerModels case14 SOCWRPowerModel" begin
+    println("==================================")
+    println("case14.m")
+    println("==================================")
+    
+    pm = build_generic_model("../PowerModels.jl/test/data/case14.m", SOCWRPowerModel, post_ots)
+    m = pm.model
+    @variable(m, aeiou == 1)
+    @NLconstraint(m, aeiou^2 <= 1)
+
+    setsolver(m, minlpbnb)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("")
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 8075.1, atol=1e0)
 end
 =#
 

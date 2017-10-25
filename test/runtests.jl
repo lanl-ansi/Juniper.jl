@@ -2,6 +2,7 @@ using Logging
 
 reload("MINLPBnB")
 reload("BnBTree")
+reload("PowerModels")
 
 # suppress warnings during testing
 Logging.configure(level=ERROR)
@@ -11,6 +12,7 @@ using JuMP
 
 using Ipopt
 using Gurobi
+using PowerModels
 
 import MINLPBnB
 

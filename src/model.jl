@@ -37,7 +37,6 @@ end
 Generate NonLinearModel and specify nl solver
 """
 function MathProgBase.NonlinearModel(s::MINLPBnBSolverObj)
-    println("model.jl => MathProgBase.NonlinearModel")
     return MINLPBnBNonlinearModel(s.nl_solver,s.print_syms)
 end
 
@@ -47,7 +46,6 @@ end
 Initialize the NonLinearModel with the solver, set status, objval and solution
 """
 function MINLPBnBNonlinearModel(lqps::MathProgBase.AbstractMathProgSolver,print_syms)
-    println("model.jl => MINLPBnBNonlinearModel")
     m = MINLPBnBModel() # don't initialise everything yet
 
     m.nl_solver = lqps
@@ -92,7 +90,7 @@ end
 =# 
 function expr_dereferencing(expr, m)
     for i in 2:length(expr.args)
-        if isa(expr.args[i], Float64)
+        if isa(expr.args[i], Union{Float64,Int64})
             k = 0
         elseif expr.args[i].head == :ref
             @assert isa(expr.args[i].args[2], Int)
@@ -129,20 +127,25 @@ function replace_solution!(old_m::MINLPBnBModel, new_m::MINLPBnBModel)
     old_m.model = new_m.model    
 end
 
+function print_info(m::MINLPBnBModel)
+    println("#Variables: ", m.num_var)
+    println("#IntBinVar: ", m.num_int_bin_var)
+    println("#Constraints: ", m.num_constr)
+    println("Obj Sense: ", m.obj_sense)
+end
+
 """
     MathProgBase.optimize!(m::MINLPBnBModel)
 
 Optimize by creating a model based on the variables saved in MINLPBnBModel.
 """
 function MathProgBase.optimize!(m::MINLPBnBModel)
-    println("optimize!")
-    println("Types")
-    println(m.var_type)
+    print_info(m)
 
     m.model = Model(solver=m.nl_solver) 
     lb = [m.l_var; -1e6]
     ub = [m.u_var; 1e6]
-    # all continuous 
+    # all continuous we solve relaxation first
     @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
 
     # define the objective function
@@ -168,7 +171,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
-    println("Solution: ", m.solution)
+    println("Relaxation Obj: ", m.objval)
 
     m.status = status
 

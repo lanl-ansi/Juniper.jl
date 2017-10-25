@@ -10,6 +10,5 @@ type MINLPBnBSolverObj <: MathProgBase.AbstractMathProgSolver
 end
 
 function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;print_syms=[])
-    println("solver.jl => MINLPBnB")
     return MINLPBnBSolverObj(nl_solver,print_syms)
 end
