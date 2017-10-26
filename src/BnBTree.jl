@@ -1,6 +1,7 @@
 module BnBTree
 import MINLPBnB
 using JuMP
+using Ipopt
 
 rtol = 1e-6
 atol = 1e-6
@@ -90,8 +91,10 @@ Try to branch on a few different variables and choose the one with highest obj_g
 Update obj_gain for the variables tried and average the other ones.
 """
 function branch_strong(tree,node,num_var,var_type,counter)
-    num_strong_var = trunc(Int, ceil(tree.root.m.num_int_bin_var/5)) # TODO: should be changeable 
+    # generate an of variables to branch on
+    num_strong_var = maximum([3,trunc(Int, ceil(tree.root.m.num_int_bin_var/8))]) # TODO: should be changeable 
 
+    # get reasonable candidates (not type correct and not already perfectly bounded)
     int_vars = tree.root.m.num_int_bin_var
     reasonable_int_vars = zeros(Int64,0)
     for i=1:int_vars
@@ -106,6 +109,7 @@ function branch_strong(tree,node,num_var,var_type,counter)
     shuffle!(reasonable_int_vars)
     reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
 
+    # compute the gain for each reasonable candidate and choose the highest
     max_gain = 0.0
     max_gain_var = 0
     av_gain = 0.0
@@ -221,7 +225,13 @@ function solve_leaf(leaf)
     leaf.m.objval   = getobjectivevalue(leaf.m.model)
     leaf.m.solution = getvalue(leaf.m.x)
     leaf.m.status = status
-    if status == :Optimal
+    if status == :Error
+        # println(leaf.m.model)
+        println(Ipopt.ApplicationReturnStatus[internalmodel(leaf.m.model).inner.status])
+        # error("...")
+        leaf.state = :Error
+        leaf.hasbranchild = false
+    elseif status == :Optimal
         # check if all int vars are int
         if BnBTree.are_type_correct(leaf.m.solution,leaf.m.var_type)
             leaf.state = :Integral
@@ -482,8 +492,8 @@ function prune!(node::BnBNode, value)
     end
     if node.hasbranchild && factor*value >= factor*node.best_bound
         node.hasbranchild = false 
-        node.left = nothing
-        node.right = nothing
+        #node.left = nothing
+        #node.right = nothing
     else
         if node.left != nothing
             prune!(node.left, value)
@@ -507,34 +517,40 @@ function prune!(tree::BnBTreeObj)
     prune!(tree.root, incumbent_val)
 end
 
-function print(node::BnBNode)
+function print(node::BnBNode,int2var_idx)
     indent = (node.level-1)*2
-    indent_str = ""
-    for i=1:indent
-        indent_str *= " "
-    end
+    indent_str = repeat(" ",indent)
     println(indent_str*"idx"*": "*string(node.idx))
     println(indent_str*"var_idx"*": "*string(node.var_idx))
     println(indent_str*"state"*": "*string(node.state))
     println(indent_str*"hasbranchild"*": "*string(node.hasbranchild))
     println(indent_str*"best_bound"*": "*string(node.best_bound))
+    int_idx = zeros(Int,0)
+    for i=1:node.m.num_int_bin_var
+        push!(int_idx,int2var_idx[i])
+    end
+    
+    println(indent_str*"u_var"*": "*string(node.m.u_var[int_idx]))
+    println(indent_str*"l_var"*": "*string(node.m.l_var[int_idx]))
+    return hcat(node.m.u_var[int_idx],node.m.l_var[int_idx])
 end
 
-function print_rec(node::BnBNode;remove=false)
+function print_rec(node::BnBNode,int2var_idx;remove=false,bounds=[])
     if remove != :hasnobranchild || node.hasbranchild
-        print(node)
+        a = print(node,int2var_idx)
+        push!(bounds,a)
         if node.left != nothing
-            print_rec(node.left;remove=remove)
+            print_rec(node.left,int2var_idx;remove=remove,bounds=bounds)
         end
         if node.right != nothing
-            print_rec(node.right;remove=remove)
+            print_rec(node.right,int2var_idx;remove=remove,bounds=bounds)
         end
     end
 end
 
 function print(tree::BnBTreeObj;remove=false)
     node = tree.root
-    print_rec(node;remove=remove)
+    print_rec(node,tree.int2var_idx;remove=remove)
 end
 
 function print_table_header(fields, field_chars)
@@ -606,6 +622,10 @@ function solve(tree::BnBTreeObj)
     fields = ["Incumbent","Best Bound","Gap","Time"]
     field_chars = [28,28,7,8]
     
+    if BnBTree.are_type_correct(tree.root.m.solution,tree.root.m.var_type)
+        return tree.root.m
+    end
+
     ps = tree.print_syms
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     # get variable where to split
@@ -613,7 +633,7 @@ function solve(tree::BnBTreeObj)
     counter = 1    
 
     branch_strat = :StrongPseudoCost
-    max_strong_counter = 2
+    max_strong_counter = 5
     time_upd_gains = 0
     time_get_idx = 0
     time_branch = 0
@@ -632,6 +652,7 @@ function solve(tree::BnBTreeObj)
         BnBTree.check_print(ps,[:All]) && println("v_idx: ", v_idx)
 
         branch_start = time()
+        
         if node.left == nothing
             time_leaf,l_nd,r_nd = BnBTree.branch!(node,v_idx,tree.print_syms)
             time_solve_leafs += time_leaf
@@ -658,6 +679,7 @@ function solve(tree::BnBTreeObj)
             break
         end
         if !tree.root.hasbranchild
+            error("no child to branch on")
             break
         end
     
@@ -677,7 +699,8 @@ function solve(tree::BnBTreeObj)
     end
 
     # print(tree)
-   
+    println("Incumbent status: ", tree.incumbent.status)
+
     time_bnb_solve = time()-time_bnb_solve_start
     println("#branches: ", counter)
     println("BnB time: ", round(time_bnb_solve,2))

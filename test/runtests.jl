@@ -2,7 +2,7 @@ using Logging
 
 reload("MINLPBnB")
 reload("BnBTree")
-reload("PowerModels")
+include("load_mod.jl")
 
 # suppress warnings during testing
 Logging.configure(level=ERROR)
@@ -23,6 +23,8 @@ sol_rtol = 1e-3
 sol_atol = 1e-3
 
 gurobi = GurobiSolver()
+
+# model_from_mod("data/batch0812_nc.mod")
 
 minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);print_syms=[:NewIncumbent])
 

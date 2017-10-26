@@ -125,6 +125,7 @@ function replace_solution!(old_m::MINLPBnBModel, new_m::MINLPBnBModel)
     old_m.solution = new_m.solution
     old_m.objval = new_m.objval
     old_m.model = new_m.model    
+    old_m.status = new_m.status
 end
 
 function print_info(m::MINLPBnBModel)
@@ -172,6 +173,8 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.solution = getvalue(x)
 
     println("Relaxation Obj: ", m.objval)
+    #println(m.solution)
+    #println(m.var_type)
 
     m.status = status
 
@@ -180,8 +183,8 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     replace_solution!(m, bnbtree_m)
     m.soltime = time()-start
+    
     return m.status
-
 end
 
 MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = fill(0.0, length(x))

@@ -1,5 +1,5 @@
 function model_from_mod(filename)
-    f = open(filename);
+    f = open("./test/"*filename);
     for ln in eachline(f)
         ln = lstrip(ln)
         ln = rstrip(ln)
@@ -15,8 +15,9 @@ function model_from_mod(filename)
             ln = replace(ln, r"^(\S*)\s*>=\s*(\S*),\s*<=\s*(\S*);$",s"\2 <= \1 <= \3")      
             ln = replace(ln, r"^(\S*) binary.*",s"\1, Bin")            
             ln = "@variable(m, "*ln*")"
-            # println(ln)
+            println(ln)
         elseif ln[1] == 'e'
+            ln = replace(ln, " = ", " == ")      
             ln = replace(ln, r"e\S*\s*","")  
             ln = ln[1:end-1] 
             ln = "@NLconstraint(m, "*ln*")"   
