@@ -11,7 +11,6 @@ using Base.Test
 using JuMP
 
 using Ipopt
-using Gurobi
 using PowerModels
 
 import MINLPBnB
@@ -21,8 +20,6 @@ opt_atol = 1e-6
 
 sol_rtol = 1e-3
 sol_atol = 1e-3
-
-gurobi = GurobiSolver()
 
 # model_from_mod("data/batch0812_nc.mod")
 
