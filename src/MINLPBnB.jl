@@ -3,7 +3,7 @@ module MINLPBnB
 using MathProgBase
 using JuMP
 
-mutable struct SolverOptions
+type SolverOptions
     log_levels                  :: Vector{Symbol}
     branch_strategy             :: Symbol
     strong_branching_nvars      :: Int64
