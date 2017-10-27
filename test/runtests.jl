@@ -12,7 +12,7 @@ using PowerModels
 using MINLPBnB
 using MINLPBnB.BnBTree
 
-include("load_mod.jl")
+# include("load_mod.jl")
 
 opt_rtol = 1e-6
 opt_atol = 1e-6
@@ -26,4 +26,6 @@ minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);print_syms=[:NewIn
 
 start = time()
 include("basic.jl")
+include("power_models_acp.jl")
+include("power_models_socwr.jl")
 println("Time for all tests: ", time()-start)
