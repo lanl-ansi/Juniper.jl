@@ -1,4 +1,4 @@
-include("basic/batch.jl")
+include("basic/gamsworld.jl")
 
 @testset "basic tests" begin
 
@@ -82,6 +82,25 @@ end
     println("obj: ", minlpbnb_val)
 
     @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
+@testset "cvxnonsep_nsig20r.mod" begin
+    println("==================================")
+    println("cvxnonsep_nsig20r.MOD")
+    println("==================================")
+
+    m = cvxnonsep_nsig20r_problem()
+
+    setsolver(m, minlpbnb)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
 end
 
 end
