@@ -1,9 +1,5 @@
 using Logging
 
-reload("MINLPBnB")
-reload("BnBTree")
-include("load_mod.jl")
-
 # suppress warnings during testing
 Logging.configure(level=ERROR)
 
@@ -13,7 +9,10 @@ using JuMP
 using Ipopt
 using PowerModels
 
-import MINLPBnB
+using MINLPBnB
+using MINLPBnB.BnBTree
+
+include("load_mod.jl")
 
 opt_rtol = 1e-6
 opt_atol = 1e-6

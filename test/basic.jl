@@ -221,7 +221,7 @@ end
     println("ACPPowerModel case5.m")
     println("==================================")
 
-    pm = build_generic_model("./test/data/pglib_opf_case5_pjm.m", ACPPowerModel, PowerModels.post_ots)
+    pm = build_generic_model("data/pglib_opf_case5_pjm.m", ACPPowerModel, PowerModels.post_ots)
     m = pm.model
     #@variable(m, aeiou == 1)
     #@NLconstraint(m, aeiou^2 <= 1)
@@ -245,7 +245,7 @@ end
     println("ACPPowerModel case5.m")
     println("==================================")
 
-    result = run_ots("./test/data/pglib_opf_case5_pjm.m", ACPPowerModel, minlpbnb)
+    result = run_ots("data/pglib_opf_case5_pjm.m", ACPPowerModel, minlpbnb)
     #m = pm.model
     #@variable(m, aeiou == 1)
     #@NLconstraint(m, aeiou^2 <= 1)
