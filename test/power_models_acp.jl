@@ -5,7 +5,7 @@
     println("ACPPowerModel case5.m")
     println("==================================")
 
-    result = run_ots("data/pglib_opf_case5_pjm.m", ACPPowerModel, minlpbnb)
+    result = run_ots("data/pglib_opf_case5_pjm.m", ACPPowerModel, minlpbnb_strong)
 
     status = result["status"]
     @test status == :Optimal
@@ -23,7 +23,7 @@ end
     println("ACPPowerModel case14.m")
     println("==================================")
 
-    result = run_ots("data/pglib_opf_case14_ieee.m", ACPPowerModel, minlpbnb)
+    result = run_ots("data/pglib_opf_case14_ieee.m", ACPPowerModel, minlpbnb_strong)
 
     status = result["status"]
     @test status == :Optimal

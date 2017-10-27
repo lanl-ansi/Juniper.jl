@@ -2,8 +2,8 @@ include("basic/gamsworld.jl")
 
 @testset "basic tests" begin
 
-@testset "One Integer small" begin
-    m = Model(solver=minlpbnb)
+@testset "One Integer small Strong" begin
+    m = Model(solver=minlpbnb_strong)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -23,9 +23,50 @@ include("basic/gamsworld.jl")
     @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
 end
 
+@testset "One Integer small MostInfeasible" begin
+    m = Model(solver=minlpbnb_mosti)
 
-@testset "Three Integers Small" begin
-    m = Model(solver=minlpbnb)
+    @variable(m, x >= 0, Int)
+    @variable(m, y >= 0)
+    @variable(m, 0 <= u <= 10, Int)
+    @variable(m, w == 1)
+
+    @objective(m, Min, -3x - y)
+
+    @constraint(m, 3x + 10 <= 20)
+    @NLconstraint(m, y^2 <= u*w)
+
+    status = solve(m)
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
+    @test isapprox(getvalue(x), 3, atol=sol_atol)
+    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+end
+
+@testset "One Integer small PseudoCost" begin
+    m = Model(solver=minlpbnb_pseudo)
+
+    @variable(m, x >= 0, Int)
+    @variable(m, y >= 0)
+    @variable(m, 0 <= u <= 10, Int)
+    @variable(m, w == 1)
+
+    @objective(m, Min, -3x - y)
+
+    @constraint(m, 3x + 10 <= 20)
+    @NLconstraint(m, y^2 <= u*w)
+
+    status = solve(m)
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
+    @test isapprox(getvalue(x), 3, atol=sol_atol)
+    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+end
+
+@testset "Three Integers Small Strong" begin
+    m = Model(solver=minlpbnb_strong)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -45,9 +86,50 @@ end
     @test isapprox(getvalue(y), 3, atol=sol_atol)
 end
 
+@testset "Three Integers Small MostInfeasible" begin
+    m = Model(solver=minlpbnb_mosti)
+
+    @variable(m, x >= 0, Int)
+    @variable(m, y >= 0, Int)
+    @variable(m, 0 <= u <= 10, Int)
+    @variable(m, w == 1)
+
+    @objective(m, Min, -3x - y)
+
+    @constraint(m, 3x + 10 <= 20)
+    @NLconstraint(m, y^2 <= u*w)
+
+    status = solve(m)
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
+    @test isapprox(getvalue(x), 3, atol=sol_atol)
+    @test isapprox(getvalue(y), 3, atol=sol_atol)
+end
+
+@testset "Three Integers Small PseudoCost" begin
+    m = Model(solver=minlpbnb_pseudo)
+
+    @variable(m, x >= 0, Int)
+    @variable(m, y >= 0, Int)
+    @variable(m, 0 <= u <= 10, Int)
+    @variable(m, w == 1)
+
+    @objective(m, Min, -3x - y)
+
+    @constraint(m, 3x + 10 <= 20)
+    @NLconstraint(m, y^2 <= u*w)
+
+    status = solve(m)
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
+    @test isapprox(getvalue(x), 3, atol=sol_atol)
+    @test isapprox(getvalue(y), 3, atol=sol_atol)
+end
 
 @testset "Knapsack Max" begin
-    m = Model(solver=minlpbnb)
+    m = Model(solver=minlpbnb_strong)
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -72,7 +154,7 @@ end
     
     m = batch_problem()
 
-    setsolver(m, minlpbnb)
+    setsolver(m, minlpbnb_strong)
     status = solve(m)
     @test status == :Optimal
 
@@ -91,7 +173,7 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    setsolver(m, minlpbnb)
+    setsolver(m, minlpbnb_strong)
     status = solve(m)
     @test status == :Optimal
 
