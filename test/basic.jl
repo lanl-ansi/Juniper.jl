@@ -215,13 +215,13 @@ end
 end
 =#
 
-#=
+
 @testset "PowerModels case5 ACPPowerModel" begin
     println("==================================")
     println("ACPPowerModel case5.m")
     println("==================================")
-    
-    pm = build_generic_model("./test/data/pglib_opf_case5_pjm.m", ACPPowerModel, post_ots)
+
+    pm = build_generic_model("./test/data/pglib_opf_case5_pjm.m", ACPPowerModel, PowerModels.post_ots)
     m = pm.model
     #@variable(m, aeiou == 1)
     #@NLconstraint(m, aeiou^2 <= 1)
@@ -238,7 +238,32 @@ end
 
     @test isapprox(minlpbnb_val, 15174.0, atol=1e0)
 end
-=#
+
+
+@testset "PowerModels case5 ACPPowerModel 2" begin
+    println("==================================")
+    println("ACPPowerModel case5.m")
+    println("==================================")
+
+    result = run_ots("./test/data/pglib_opf_case5_pjm.m", ACPPowerModel, minlpbnb)
+    #m = pm.model
+    #@variable(m, aeiou == 1)
+    #@NLconstraint(m, aeiou^2 <= 1)
+
+    #setsolver(m, minlpbnb)
+    status = result["status"]
+    @test status == :Optimal
+
+    minlpbnb_val = result["objective"]
+
+    println("")
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 15174.0, atol=1e0)
+end
+
+
 
 #=
 @testset "PowerModels case14 ACPPowerModel" begin
@@ -341,7 +366,7 @@ end
     println("case5.m")
     println("==================================")
     
-    pm = build_generic_model("../PowerModels.jl/test/data/case5.m", SOCWRPowerModel, post_ots)
+    pm = build_generic_model("$(Pkg.dir("PowerModels"))/test/data/case5.m", SOCWRPowerModel, PowerModels.post_ots)
     m = pm.model
     @variable(m, aeiou == 1)
     @NLconstraint(m, aeiou^2 <= 1)
