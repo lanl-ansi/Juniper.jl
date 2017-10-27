@@ -22,11 +22,20 @@ sol_atol = 1e-3
 
 # model_from_mod("data/batch0812_nc.mod")
 
-minlpbnb = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
-                                    log_levels=[:NewIncumbent],
+minlpbnb_strong = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
+                                    log_levels=[:Table],
                                     branch_strategy=:StrongPseudoCost,
                                     strong_branching_nvars = 3
                                 )
+minlpbnb_mosti = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
+                                log_levels=[:Table],
+                                branch_strategy=:MostInfeasible,
+                            )  
+
+minlpbnb_pseudo = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
+                            log_levels=[:Table],
+                            branch_strategy=:PseudoCost,
+                        )                               
 
 start = time()
 include("basic.jl")

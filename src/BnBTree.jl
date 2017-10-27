@@ -710,7 +710,7 @@ function solve(tree::BnBTreeObj)
         # end
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
-        if BnBTree.check_print(ps,[:NewIncumbent]) 
+        if BnBTree.check_print(ps,[:Table]) 
             last_table_arr = print_table(tree,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
         end
         counter += 1
