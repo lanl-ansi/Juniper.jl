@@ -6,6 +6,8 @@ using Ipopt
 rtol = 1e-6
 atol = 1e-6
 srand(1)
+time_solve_leafs_get_idx = 0.0
+time_solve_leafs_branch = 0.0
 
 type BnBNode
     parent      :: Union{Void,BnBNode}
@@ -92,7 +94,7 @@ Update obj_gain for the variables tried and average the other ones.
 """
 function branch_strong(tree,node,num_var,var_type,counter)
     # generate an of variables to branch on
-    num_strong_var = maximum([3,trunc(Int, ceil(tree.root.m.num_int_bin_var/8))]) # TODO: should be changeable 
+    num_strong_var = maximum([3,trunc(Int, tree.root.m.num_int_bin_var/5)]) # TODO: should be changeable 
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
     int_vars = tree.root.m.num_int_bin_var
@@ -120,13 +122,16 @@ function branch_strong(tree,node,num_var,var_type,counter)
     for int_var_idx in reasonable_int_vars
         push!(strong_int_vars, int_var_idx)
         var_idx = tree.int2var_idx[int_var_idx]
-        sol_time,l_nd,r_nd = BnBTree.branch!(node,var_idx,tree.print_syms;map_to_node=false)
+        l_nd,r_nd = BnBTree.branch!(node,var_idx,tree.print_syms;map_to_node=false)
         gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd)
         if gain > max_gain
             max_gain = gain
             max_gain_var = var_idx
             left_node = l_nd
             right_node = r_nd
+            if gain == Inf
+                break
+            end
         end
         av_gain += gain
         tree.obj_gain[int_var_idx] = gain
@@ -255,6 +260,7 @@ Branch a node by using x[idx] <= floor(x[idx]) and x[idx] >= ceil(x[idx])
 Solve both nodes and set current node state to done.
 """
 function branch!(node::BnBNode,idx,ps;map_to_node=true)
+    global time_solve_leafs_get_idx, time_solve_leafs_branch
     l_m = Base.deepcopy(node.m)
     r_m = Base.deepcopy(node.m)
 
@@ -288,6 +294,11 @@ function branch!(node::BnBNode,idx,ps;map_to_node=true)
     l_state = solve_leaf(l_nd)
     r_state = solve_leaf(r_nd)
     leaf_time = time()-leaf_start
+    if map_to_node
+        time_solve_leafs_branch += leaf_time
+    else
+        time_solve_leafs_get_idx += leaf_time
+    end
 
     if BnBTree.check_print(ps,[:All])
         println("State of left leaf: ", l_state)
@@ -295,13 +306,19 @@ function branch!(node::BnBNode,idx,ps;map_to_node=true)
         println("l sol: ", l_nd.m.solution)
         println("r sol: ", r_nd.m.solution)
     end
-    return leaf_time, l_nd, r_nd
+    return l_nd, r_nd
 end
 
 function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
     gain = 0.0
     gc = 0
     frac_val = node.m.solution[node.var_idx]
+    if l_nd.state == :Integral || r_nd.state == :Integral || l_nd.state == :Infeasible || r_nd.state == :Infeasible
+        return Inf
+    end
+    if l_nd.state == :Error && r_nd.state == :Error
+        return 0.0
+    end
     if l_nd.state == :Branch || l_nd.state == :Integral
         int_val = floor(frac_val)
         gain += abs(node.best_bound-l_nd.best_bound)/abs(frac_val-int_val)
@@ -312,7 +329,7 @@ function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
         gain += abs(node.best_bound-r_nd.best_bound)/abs(frac_val-int_val)
         gc += 1
     end
-    gc == 0 && return 0.0
+    gc == 0 && return Inf
     gain /= gc
     return gain
 end
@@ -492,8 +509,8 @@ function prune!(node::BnBNode, value)
     end
     if node.hasbranchild && factor*value >= factor*node.best_bound
         node.hasbranchild = false 
-        #node.left = nothing
-        #node.right = nothing
+        node.left = nothing
+        node.right = nothing
     else
         if node.left != nothing
             prune!(node.left, value)
@@ -619,6 +636,8 @@ Solve the MIP part of a problem given by BnBTreeObj using branch and bound.
  - Solve subproblems
 """
 function solve(tree::BnBTreeObj)
+    global time_solve_leafs_get_idx, time_solve_leafs_branch
+
     fields = ["Incumbent","Best Bound","Gap","Time"]
     field_chars = [28,28,7,8]
     
@@ -654,8 +673,7 @@ function solve(tree::BnBTreeObj)
         branch_start = time()
         
         if node.left == nothing
-            time_leaf,l_nd,r_nd = BnBTree.branch!(node,v_idx,tree.print_syms)
-            time_solve_leafs += time_leaf
+            l_nd,r_nd = BnBTree.branch!(node,v_idx,tree.print_syms)
         end
         time_branch += time()-branch_start
 
@@ -704,7 +722,8 @@ function solve(tree::BnBTreeObj)
     time_bnb_solve = time()-time_bnb_solve_start
     println("#branches: ", counter)
     println("BnB time: ", round(time_bnb_solve,2))
-    println("Solve leaf time: ", round(time_solve_leafs,2))
+    println("Solve leaf time get idx: ", round(time_solve_leafs_get_idx,2))
+    println("Solve leaf time branch: ", round(time_solve_leafs_branch,2))
     println("Branch time: ", round(time_branch,2))
     println("Get idx time: ", round(time_get_idx,2))
     println("Upd gains time: ", round(time_upd_gains,2))

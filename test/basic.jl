@@ -286,6 +286,7 @@ end
 end
 =#
 
+#=
 @testset "PowerModels case57 ACPPowerModel" begin
     println("==================================")
     println("ACPPowerModel case57.m")
@@ -307,6 +308,7 @@ end
 
     @test isapprox(minlpbnb_val, 3.9323e+04, atol=1e0)
 end
+=#
 
 #=
 @testset "PowerModels case6 SOCWRPowerModel" begin
@@ -333,7 +335,7 @@ end
 end
 =#
 
-#=
+
 @testset "PowerModels case5 SOCWRPowerModel" begin
     println("==================================")
     println("case5.m")
@@ -356,7 +358,7 @@ end
 
     @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
 end
-=#
+
 
 #=
 @testset "PowerModels case14 SOCWRPowerModel" begin
