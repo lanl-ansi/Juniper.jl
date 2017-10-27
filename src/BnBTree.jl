@@ -653,10 +653,10 @@ function solve(tree::BnBTreeObj)
     counter = 1    
 
     branch_strat = tree.options.branch_strategy
-    time_upd_gains = 0
-    time_get_idx = 0
-    time_branch = 0
-    time_solve_leafs = 0
+    time_upd_gains = 0.0
+    time_get_idx = 0.0
+    time_branch = 0.0
+    time_solve_leafs = 0.0
     
     print_table_header(fields,field_chars)
 
