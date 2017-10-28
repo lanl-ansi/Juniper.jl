@@ -142,7 +142,7 @@ end
 Optimize by creating a model based on the variables saved in MINLPBnBModel.
 """
 function MathProgBase.optimize!(m::MINLPBnBModel)
-    print_info(m)
+    (:All in m.options.log_levels || :Info in m.options.log_levels) && print_info(m)
 
     m.model = Model(solver=m.nl_solver) 
     lb = [m.l_var; -1e6]
