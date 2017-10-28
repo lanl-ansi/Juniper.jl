@@ -123,11 +123,10 @@ function divide_nl_l_constr(m::MINLPBnBModel)
     m.isconstrlinear = isconstrlinear
 end
 
-function replace_solution!(old_m::MINLPBnBModel, new_m::MINLPBnBModel)
-    old_m.solution = new_m.solution
-    old_m.objval = new_m.objval
-    old_m.model = new_m.model    
-    old_m.status = new_m.status
+function replace_solution!(m::MINLPBnBModel, incumbent)
+    m.solution = incumbent.solution
+    m.objval = incumbent.objval
+    m.status = incumbent.status
 end
 
 function print_info(m::MINLPBnBModel)
@@ -181,9 +180,9 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.status = status
 
     bnbtree = BnBTree.init(m)
-    bnbtree_m = BnBTree.solve(bnbtree)
+    incumbent = BnBTree.solve(bnbtree)
 
-    replace_solution!(m, bnbtree_m)
+    replace_solution!(m, incumbent)
     m.soltime = time()-start
     
     return m.status
@@ -204,7 +203,7 @@ function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol})
 end
 
 MathProgBase.status(m::MINLPBnBModel) = m.status
-MathProgBase.getobjval(m::MINLPBnBModel) = getobjectivevalue(m.model)
+MathProgBase.getobjval(m::MINLPBnBModel) = m.objval
 
 # any auxiliary variables will need to be filtered from this at some point
 MathProgBase.getsolution(m::MINLPBnBModel) = m.solution

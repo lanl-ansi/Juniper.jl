@@ -19,7 +19,7 @@ sol_atol = 1e-3
 
 minlpbnb_strong = MINLPBnBSolver(IpoptSolver(print_level=0);
                                     log_levels=[:Table],
-                                    branch_strategy=:StrongPseudoCost,
+                                    branch_strategy=:MostInfeasible,
                                     strong_branching_nvars = 3
                                 )
 minlpbnb_mosti = MINLPBnBSolver(IpoptSolver(print_level=0);
@@ -29,7 +29,7 @@ minlpbnb_mosti = MINLPBnBSolver(IpoptSolver(print_level=0);
 
 minlpbnb_pseudo = MINLPBnBSolver(IpoptSolver(print_level=0);
                             log_levels=[:Table],
-                            branch_strategy=:PseudoCost,
+                            branch_strategy=:MostInfeasible,
                         )                               
 
 start = time()

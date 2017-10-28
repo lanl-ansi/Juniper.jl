@@ -16,6 +16,9 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -37,6 +40,9 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -58,6 +64,9 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -79,6 +88,7 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
@@ -100,6 +110,7 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
@@ -121,12 +132,14 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
     @test isapprox(getvalue(x), 3, atol=sol_atol)
     @test isapprox(getvalue(y), 3, atol=sol_atol)
 end
+
 
 @testset "Knapsack Max" begin
     m = Model(solver=minlpbnb_strong)
@@ -140,6 +153,7 @@ end
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
