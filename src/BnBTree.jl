@@ -277,10 +277,8 @@ function branch!(tree::BnBTreeObj,node::BnBNode,idx;map_to_node=true)
     if isapprox(l_m.u_var[idx],r_m.l_var[idx],atol=atol)
         error("Shouldn't solve again")
     end
-    @constraint(l_m.model, l_x[idx] <= floor(l_cx))    
-    l_m.u_var[idx] = floor(l_cx)
-    @constraint(r_m.model, r_x[idx] >= ceil(r_cx))
-    r_m.l_var[idx] = ceil(r_cx)
+    JuMP.setupperbound(l_x[idx], floor(l_cx))
+    JuMP.setlowerbound(r_x[idx], ceil(r_cx))
 
     l_nd = BnBTree.new_default_node(node,node.idx*2,node.level+1,l_m)
     r_nd = BnBTree.new_default_node(node,node.idx*2+1,node.level+1,r_m)
@@ -638,6 +636,8 @@ Solve the MIP part of a problem given by BnBTreeObj using branch and bound.
 """
 function solve(tree::BnBTreeObj)
     global time_solve_leafs_get_idx, time_solve_leafs_branch
+    time_solve_leafs_get_idx = 0.0
+    time_solve_leafs_branch = 0.0
 
     fields = ["Incumbent","Best Bound","Gap","Time"]
     field_chars = [28,28,7,8]
