@@ -10,7 +10,7 @@
     @variable(m, 0 <= aeiou <= 1)
     @NLconstraint(m, aeiou^2== 1)
 
-    setsolver(m, minlpbnb_strong)
+    setsolver(m, minlpbnb_strong_no_restart)
     status = solve(m)
 
     @test status == :Optimal

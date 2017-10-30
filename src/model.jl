@@ -83,7 +83,6 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    println("loadproblem!")
     MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess,:ExprGraph])
 end
 
@@ -161,6 +160,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     for i=1:m.num_constr
         constr_expr = MathProgBase.constr_expr(m.d,i)
         expr_dereferencing(constr_expr, m.model)
+        # add NL constraint (even if linear because .addconstraint doesn't work with expression)
         JuMP.addNLconstraint(m.model, constr_expr)
     end
 
