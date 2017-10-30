@@ -17,6 +17,12 @@ Then adding it to your project by
 
 `using MINLPBnB`
 
+You also have to import your NLP solver i.e.
+
+`using Ipopt`
+
+as well as [JuMP](http://www.juliaopt.org/JuMP.jl)
+
 Define `MINLPBnBSolver` as your solver:
 
 ```
@@ -40,7 +46,7 @@ status = solve(m)
 
 ```
 
-As this solver is a NLP solver you should have at least one `NLconstraint` or `NLobjective`.
+This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.
 
 # Configuration
 
@@ -48,9 +54,13 @@ As this solver is a NLP solver you should have at least one `NLconstraint` or `N
 MINLPBnBSolver(IpoptSolver(print_level=0))
 ```
 
-This is the most basic (non existent) configuration of the solver.
+This is the most basic configuration of the solver.
 
-You can add options like doing the following:
+The first argument defines the solver for the relaxation here `IpoptSolver`. I use [Ipopt](https://projects.coin-or.org/Ipopt) for all the tests as well. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl) The solver itself can have parameters i.e `print_level=0`.
+
+A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
+
+You can add options doing the following:
 
 ```
 minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
@@ -58,7 +68,7 @@ minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
 )
 ```
 
-In that example the strategy used for branching is defined.
+In this example the strategy used for branching is defined.
 
 In the following the options are explained. The type for the option is given after `::` and the default value in `[]`.
 
