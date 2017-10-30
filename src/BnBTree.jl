@@ -98,7 +98,12 @@ function branch_mostinfeasible(tree,node)
     return idx
 end
 
-function init_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+"""
+    init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+
+Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
+"""
+function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
     restart = false
 
     # set the bounds directly for the node
@@ -142,6 +147,8 @@ function branch_strong(tree,node,counter)
         strong_int_vars = zeros(Int64,0)
         return max_gain, max_gain_var, strong_int_vars
     end
+    
+    strong_restarts = -1 
 
     # generate an of variables to branch on
     num_strong_var = tree.options.strong_branching_nvars
@@ -169,6 +176,7 @@ function branch_strong(tree,node,counter)
     restart = true
     infeasible_int_vars = zeros(Int64,0)
     while restart 
+        strong_restarts += 1
         restart = false
         for int_var_idx in reasonable_int_vars
             # don't rerun if the variable has already one infeasible node
@@ -189,7 +197,7 @@ function branch_strong(tree,node,counter)
             if tree.options.strong_restart == true
                 if l_nd.state == :Infeasible || r_nd.state == :Infeasible
                     max_gain = 0.0
-                    restart,infeasible_int_vars,max_gain_var,strong_int_vars = BnBTree.init_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+                    restart,infeasible_int_vars,max_gain_var,strong_int_vars = BnBTree.init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
             gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd)
@@ -211,18 +219,22 @@ function branch_strong(tree,node,counter)
         node.left = left_node
         node.right = right_node
     end
+    # set the variable to branch (best gain)
     node.var_idx = max_gain_var
-    med_gain = median(tree.obj_gain[strong_int_vars])
-    rest = filter(i->!(i in strong_int_vars),1:int_vars)
+
+    # assign values to untested variables only for the first strong branch
     if counter == 1
-        tree.obj_gain[rest] = med_gain
+        # all other variables that haven't been checked get the median value of the others
+        med_gain = median(tree.obj_gain[strong_int_vars])
+        rest = filter(i->!(i in strong_int_vars),1:int_vars)
+        tree.obj_gain[rest] += med_gain
         tree.obj_gain_c += 1
     else
         tree.obj_gain_c[strong_int_vars] += 1
     end
 
     @assert max_gain_var != 0
-    return max_gain_var
+    return max_gain_var, strong_restarts
 end
 
 """
@@ -232,14 +244,15 @@ Get the index of a variable to branch on.
 """
 function get_int_variable_idx(tree,node,counter::Int64=1)    
     idx = 0
+    strong_restarts = 0
     branch_strat = tree.options.branch_strategy
     if branch_strat == :MostInfeasible
-        return BnBTree.branch_mostinfeasible(tree,node)
+        idx = BnBTree.branch_mostinfeasible(tree,node)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
             idx = BnBTree.branch_mostinfeasible(tree,node)
         elseif counter <= tree.options.strong_branching_nlevels && branch_strat == :StrongPseudoCost
-            idx = BnBTree.branch_strong(tree,node,counter)
+            idx, strong_restarts = BnBTree.branch_strong(tree,node,counter)
         else
             # use the one with highest obj_gain which is currently continous
             obj_gain_average = tree.obj_gain./tree.obj_gain_c
@@ -259,7 +272,7 @@ function get_int_variable_idx(tree,node,counter::Int64=1)
         end
     end
     @assert idx != 0
-    return idx
+    return idx, strong_restarts
 end
 
 """
@@ -380,6 +393,15 @@ function branch!(tree::BnBTreeObj,node::BnBNode,idx;map_to_node=true)
     return l_nd, r_nd
 end
 
+"""
+    compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
+
+Compute the gain of the children to it's parent.
+gain = abs(ob-nb)/abs(frac_val-int_val) where ob = old best bound, nb = new best bound
+If the state of one child is Integral or Infeasible
+    return Inf
+else return the smaller gain of both children
+"""
 function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
     gain = 0.0
     gc = 0
@@ -653,17 +675,23 @@ function print_table_header(fields, field_chars)
     println(repeat("=", sum(field_chars)))
 end
 
-function is_table_diff(last_arr,new_arr)
+function is_table_diff(fields,last_arr,new_arr)
     if length(last_arr) != length(new_arr)
         return true
     end    
+
+    time_idx = findfirst(fields .== "Time")
+    if time_idx != 0
+        last_arr = vcat(last_arr[1:time_idx-1],last_arr[time_idx+1:end])
+        new_arr = vcat(new_arr[1:time_idx-1],new_arr[time_idx+1:end])
+    end
     for i=1:length(last_arr)
         last_arr[i] != new_arr[i] && return true
     end
     return false 
 end
 
-function print_table(tree,start_time,fields,field_chars;last_arr=[])
+function print_table(tree,start_time,fields,field_chars,restarts;last_arr=[])
     arr = []
     
     i = 1
@@ -684,6 +712,12 @@ function print_table(tree,start_time,fields,field_chars;last_arr=[])
             end
         elseif f == "Time"
             val = string(round(time()-start_time,1))
+        elseif f == "#Restarts"
+            if restarts == -1
+                val = "-"
+            else
+                val = string(restarts)
+            end
         end
         padding = field_chars[i]-length(val)
         ln *= repeat(" ",trunc(Int, floor(padding/2)))
@@ -692,7 +726,8 @@ function print_table(tree,start_time,fields,field_chars;last_arr=[])
         push!(arr,val)
         i += 1
     end
-    BnBTree.is_table_diff(last_arr[1:end-1],arr[1:end-1]) && println(ln)
+    
+    BnBTree.is_table_diff(fields, last_arr,arr) && println(ln)
     return arr
 end
 
@@ -711,8 +746,14 @@ function solve(tree::BnBTreeObj)
 
     srand(1)
 
-    fields = ["Incumbent","Best Bound","Gap","Time"]
-    field_chars = [28,28,7,8]
+    if tree.options.strong_restart
+        fields = ["Incumbent","Best Bound","Gap","Time","#Restarts"]
+        field_chars = [28,28,7,8,10]
+    else
+        fields = ["Incumbent","Best Bound","Gap","Time"]
+        field_chars = [28,28,7,8]
+    end
+    
     
     if BnBTree.are_type_correct(tree.m.solution,tree.m.var_type)
         return tree.m
@@ -735,8 +776,9 @@ function solve(tree::BnBTreeObj)
     time_bnb_solve_start = time()
     last_table_arr = []
     while true
+        strong_restarts = 0
         get_idx_start = time()
-        v_idx = BnBTree.get_int_variable_idx(tree,node,counter)
+        v_idx, strong_restarts = BnBTree.get_int_variable_idx(tree,node,counter)
         time_get_idx += time()-get_idx_start
     
         BnBTree.check_print(ps,[:All]) && println("v_idx: ", v_idx)
@@ -783,7 +825,10 @@ function solve(tree::BnBTreeObj)
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
         if BnBTree.check_print(ps,[:Table]) 
-            last_table_arr = print_table(tree,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
+            if counter > tree.options.strong_branching_nlevels
+                strong_restarts = -1 # will be displayed as -
+            end
+            last_table_arr = print_table(tree,time_bnb_solve_start,fields,field_chars,strong_restarts;last_arr=last_table_arr)
         end
         counter += 1
     end

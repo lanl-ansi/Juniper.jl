@@ -199,6 +199,26 @@ end
     @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
+@testset "Batch.mod Restart 2 Levels" begin
+    println("==================================")
+    println("BATCH.MOD RESTART 2 LEVELS")
+    println("==================================")
+
+    m = batch_problem()
+
+    setsolver(m, minlpbnb_strong_restart_2)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
+
 @testset "cvxnonsep_nsig20r.mod restart" begin
     println("==================================")
     println("cvxnonsep_nsig20r.MOD RESTART")

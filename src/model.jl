@@ -83,7 +83,6 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    println("loadproblem!")
     MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess,:ExprGraph])
 end
 

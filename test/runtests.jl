@@ -17,6 +17,13 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
+minlpbnb_strong_restart_2 = MINLPBnBSolver(IpoptSolver(print_level=0);
+            branch_strategy=:StrongPseudoCost,
+            strong_branching_nvars = 5,
+            strong_branching_nlevels = 2,
+            strong_restart = true
+            )
+
 minlpbnb_strong_restart = MINLPBnBSolver(IpoptSolver(print_level=0);
                 branch_strategy=:StrongPseudoCost,
                 strong_branching_nvars = 5,
