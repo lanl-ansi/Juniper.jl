@@ -3,7 +3,7 @@ include("basic/gamsworld.jl")
 @testset "basic tests" begin
 
 @testset "One Integer small Strong" begin
-    m = Model(solver=minlpbnb_strong)
+    m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -16,6 +16,9 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -37,6 +40,9 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -58,6 +64,9 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -66,7 +75,7 @@ end
 end
 
 @testset "Three Integers Small Strong" begin
-    m = Model(solver=minlpbnb_strong)
+    m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -79,6 +88,7 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
@@ -100,6 +110,7 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
@@ -121,6 +132,7 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
@@ -129,7 +141,7 @@ end
 end
 
 @testset "Knapsack Max" begin
-    m = Model(solver=minlpbnb_strong)
+    m = Model(solver=minlpbnb_strong_no_restart)
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -140,6 +152,7 @@ end
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
     status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
@@ -147,14 +160,14 @@ end
 end
 
 
-@testset "Batch.mod" begin
+@testset "Batch.mod no restart" begin
     println("==================================")
-    println("BATCH.MOD")
+    println("BATCH.MOD NO RESTART")
     println("==================================")
     
     m = batch_problem()
 
-    setsolver(m, minlpbnb_strong)
+    setsolver(m, minlpbnb_strong_no_restart)
     status = solve(m)
     @test status == :Optimal
 
@@ -166,14 +179,73 @@ end
     @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
-@testset "cvxnonsep_nsig20r.mod" begin
+
+@testset "Batch.mod Restart" begin
     println("==================================")
-    println("cvxnonsep_nsig20r.MOD")
+    println("BATCH.MOD RESTART")
+    println("==================================")
+
+    m = batch_problem()
+
+    setsolver(m, minlpbnb_strong_restart)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
+@testset "Batch.mod Restart 2 Levels" begin
+    println("==================================")
+    println("BATCH.MOD RESTART 2 LEVELS")
+    println("==================================")
+
+    m = batch_problem()
+
+    setsolver(m, minlpbnb_strong_restart_2)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
+
+@testset "cvxnonsep_nsig20r.mod restart" begin
+    println("==================================")
+    println("cvxnonsep_nsig20r.MOD RESTART")
     println("==================================")
 
     m = cvxnonsep_nsig20r_problem()
 
-    setsolver(m, minlpbnb_strong)
+    setsolver(m, minlpbnb_strong_restart)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+
+    @test isapprox(minlpbnb_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
+end
+
+@testset "cvxnonsep_nsig20r.mod no restart" begin
+    println("==================================")
+    println("cvxnonsep_nsig20r.MOD NO RESTART")
+    println("==================================")
+
+    m = cvxnonsep_nsig20r_problem()
+
+    setsolver(m, minlpbnb_strong_no_restart)
     status = solve(m)
     @test status == :Optimal
 

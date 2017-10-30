@@ -83,7 +83,6 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    println("loadproblem!")
     MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess,:ExprGraph])
 end
 
@@ -123,11 +122,10 @@ function divide_nl_l_constr(m::MINLPBnBModel)
     m.isconstrlinear = isconstrlinear
 end
 
-function replace_solution!(old_m::MINLPBnBModel, new_m::MINLPBnBModel)
-    old_m.solution = new_m.solution
-    old_m.objval = new_m.objval
-    old_m.model = new_m.model    
-    old_m.status = new_m.status
+function replace_solution!(m::MINLPBnBModel, incumbent)
+    m.solution = incumbent.solution
+    m.objval = incumbent.objval
+    m.status = incumbent.status
 end
 
 function print_info(m::MINLPBnBModel)
@@ -143,7 +141,7 @@ end
 Optimize by creating a model based on the variables saved in MINLPBnBModel.
 """
 function MathProgBase.optimize!(m::MINLPBnBModel)
-    print_info(m)
+    (:All in m.options.log_levels || :Info in m.options.log_levels) && print_info(m)
 
     m.model = Model(solver=m.nl_solver) 
     lb = [m.l_var; -1e6]
@@ -162,6 +160,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     for i=1:m.num_constr
         constr_expr = MathProgBase.constr_expr(m.d,i)
         expr_dereferencing(constr_expr, m.model)
+        # add NL constraint (even if linear because .addconstraint doesn't work with expression)
         JuMP.addNLconstraint(m.model, constr_expr)
     end
 
@@ -181,9 +180,9 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.status = status
 
     bnbtree = BnBTree.init(m)
-    bnbtree_m = BnBTree.solve(bnbtree)
+    incumbent = BnBTree.solve(bnbtree)
 
-    replace_solution!(m, bnbtree_m)
+    replace_solution!(m, incumbent)
     m.soltime = time()-start
     
     return m.status
@@ -204,7 +203,7 @@ function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol})
 end
 
 MathProgBase.status(m::MINLPBnBModel) = m.status
-MathProgBase.getobjval(m::MINLPBnBModel) = getobjectivevalue(m.model)
+MathProgBase.getobjval(m::MINLPBnBModel) = m.objval
 
 # any auxiliary variables will need to be filtered from this at some point
 MathProgBase.getsolution(m::MINLPBnBModel) = m.solution

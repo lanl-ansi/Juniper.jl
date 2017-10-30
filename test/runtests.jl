@@ -10,7 +10,6 @@ using Ipopt
 using PowerModels
 
 using MINLPBnB
-using MINLPBnB.BnBTree
 
 opt_rtol = 1e-6
 opt_atol = 1e-6
@@ -18,20 +17,31 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-minlpbnb_strong = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
-                                    log_levels=[:Table],
-                                    branch_strategy=:StrongPseudoCost,
-                                    strong_branching_nvars = 3
-                                )
-minlpbnb_mosti = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
-                                log_levels=[:Table],
-                                branch_strategy=:MostInfeasible,
-                            )  
+minlpbnb_strong_restart_2 = MINLPBnBSolver(IpoptSolver(print_level=0);
+            branch_strategy=:StrongPseudoCost,
+            strong_branching_nvars = 5,
+            strong_branching_nlevels = 2,
+            strong_restart = true
+            )
 
-minlpbnb_pseudo = MINLPBnB.MINLPBnBSolver(IpoptSolver(print_level=0);
-                            log_levels=[:Table],
-                            branch_strategy=:PseudoCost,
-                        )                               
+minlpbnb_strong_restart = MINLPBnBSolver(IpoptSolver(print_level=0);
+                branch_strategy=:StrongPseudoCost,
+                strong_branching_nvars = 5,
+                strong_restart = true
+            )
+minlpbnb_strong_no_restart = MINLPBnBSolver(IpoptSolver(print_level=0);
+                branch_strategy=:StrongPseudoCost,
+                strong_branching_nvars = 5,
+                strong_restart = false
+            )
+
+minlpbnb_mosti = MINLPBnBSolver(IpoptSolver(print_level=0);
+                branch_strategy=:MostInfeasible,
+            )  
+
+minlpbnb_pseudo = MINLPBnBSolver(IpoptSolver(print_level=0);
+                branch_strategy=:PseudoCost,
+            )                               
 
 start = time()
 include("basic.jl")

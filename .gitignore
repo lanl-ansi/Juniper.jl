@@ -1,1 +1,3 @@
 test/load_mod.jl
+test/current.jl
+test/data/ignore
