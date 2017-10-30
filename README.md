@@ -4,7 +4,7 @@ Dev: [![Build Status](https://travis-ci.org/Wikunia/MINLPBnB.svg?branch=master)]
 
 # Idea
 
-You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part. 
+You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
 The relaxation should be solveable by any solver you prefer. Some solvers might not be able to solve the mixed integer part by themselves.
 
 # Basic usage
@@ -41,4 +41,52 @@ status = solve(m)
 ```
 
 As this solver is a NLP solver you should have at least one `NLconstraint` or `NLobjective`.
+
+# Configuration
+
+```
+MINLPBnBSolver(IpoptSolver(print_level=0))
+```
+
+This is the most basic (non existent) configuration of the solver.
+
+You can add options like doing the following:
+
+```
+minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
+    branch_strategy=:StrongPseudoCost
+)
+```
+
+In that example the strategy used for branching is defined.
+
+In the following the options are explained. The type for the option is given after `::` and the default value in `[]`.
+
+**Attention:**
+The default values might change in the future after several tests were executed to determine the best overall options. 
+
+## branch_strategy::Symbol [:StrongPseudoCost]
+
+Possible values:
+
+* `:MostInfeasible`
+    * Branch on variables closest to 0.5
+* `:PseudoCost`
+    * Use `:MostInfeasible` first and then [Pseudo Cost Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies).
+* `:StrongPseudoCost`
+    * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`.
+
+## Options for strong branching
+
+### strong_branching_nvars::Int64 [5]
+
+Defines the number of variables to consider for strong branching. 
+
+### strong_branching_nsteps::Int64 [1]
+
+Defines the number of steps in which strong branching is used. `:PseudoCost` will be used for later steps.
+
+### strong_restart::Bool [true]
+
+If a child while running strong branching is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
 
