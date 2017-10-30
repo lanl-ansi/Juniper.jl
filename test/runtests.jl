@@ -17,17 +17,24 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-minlpbnb_strong = MINLPBnBSolver(IpoptSolver(print_level=0);
-                                    branch_strategy=:StrongPseudoCost,
-                                    strong_branching_nvars = 3
-                                )
+minlpbnb_strong_restart = MINLPBnBSolver(IpoptSolver(print_level=0);
+                branch_strategy=:StrongPseudoCost,
+                strong_branching_nvars = 5,
+                strong_restart = true
+            )
+minlpbnb_strong_no_restart = MINLPBnBSolver(IpoptSolver(print_level=0);
+                branch_strategy=:StrongPseudoCost,
+                strong_branching_nvars = 5,
+                strong_restart = false
+            )
+
 minlpbnb_mosti = MINLPBnBSolver(IpoptSolver(print_level=0);
-                                branch_strategy=:MostInfeasible,
-                            )  
+                branch_strategy=:MostInfeasible,
+            )  
 
 minlpbnb_pseudo = MINLPBnBSolver(IpoptSolver(print_level=0);
-                            branch_strategy=:PseudoCost,
-                        )                               
+                branch_strategy=:PseudoCost,
+            )                               
 
 start = time()
 include("basic.jl")

@@ -5,7 +5,6 @@ using Ipopt
 
 rtol = 1e-6
 atol = 1e-6
-srand(1)
 time_solve_leafs_get_idx = 0.0
 time_solve_leafs_branch = 0.0
 
@@ -99,13 +98,51 @@ function branch_mostinfeasible(tree,node)
     return idx
 end
 
+function init_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+    restart = false
+
+    # set the bounds directly for the node
+    # also update the best bound and the solution
+    if l_nd.state == :Infeasible
+        node.l_var[var_idx] = ceil(node.solution[var_idx])
+        node.best_bound = r_nd.best_bound
+        node.solution = r_nd.solution
+    else
+        node.u_var[var_idx] = floor(node.solution[var_idx])
+        node.best_bound = l_nd.best_bound
+        node.solution = l_nd.solution
+    end
+    
+    push!(infeasible_int_vars,int_var_idx)
+
+    if length(reasonable_int_vars) == length(infeasible_int_vars)
+        # basically branching on the last infeasible variable 
+        max_gain_var = infeasible_int_vars[end]
+        strong_int_vars = [infeasible_int_vars[end]] # don't divide by 0 later
+        node.left = l_nd
+        node.right = r_nd
+    else
+        max_gain_var = 0
+        strong_int_vars = zeros(Int64,0)
+        restart = true
+    end
+    return restart, infeasible_int_vars, max_gain_var, strong_int_vars
+end
+
 """
-    branch_strong((tree,node,counter)
+    branch_strong(tree,node,counter)
 
 Try to branch on a few different variables and choose the one with highest obj_gain.
 Update obj_gain for the variables tried and average the other ones.
 """
 function branch_strong(tree,node,counter)
+    function init_variables()
+        max_gain = 0.0
+        max_gain_var = 0
+        strong_int_vars = zeros(Int64,0)
+        return max_gain, max_gain_var, strong_int_vars
+    end
+
     # generate an of variables to branch on
     num_strong_var = tree.options.strong_branching_nvars
 
@@ -125,37 +162,60 @@ function branch_strong(tree,node,counter)
     reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
 
     # compute the gain for each reasonable candidate and choose the highest
-    max_gain = 0.0
-    max_gain_var = 0
-    av_gain = 0.0
-    strong_int_vars = zeros(Int64,0)
+    max_gain, max_gain_var, strong_int_vars = init_variables()
     left_node = nothing
     right_node = nothing
-    
-    for int_var_idx in reasonable_int_vars
-        push!(strong_int_vars, int_var_idx)
-        var_idx = tree.int2var_idx[int_var_idx]
-        l_nd,r_nd = BnBTree.branch!(tree,node,var_idx;map_to_node=false)
-        gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd)
-        if gain > max_gain
-            max_gain = gain
-            max_gain_var = var_idx
-            left_node = l_nd
-            right_node = r_nd
-            if gain == Inf
-                break
+
+    restart = true
+    infeasible_int_vars = zeros(Int64,0)
+    while restart 
+        restart = false
+        for int_var_idx in reasonable_int_vars
+            # don't rerun if the variable has already one infeasible node
+            if int_var_idx in infeasible_int_vars
+                continue
             end
+            push!(strong_int_vars, int_var_idx)
+            var_idx = tree.int2var_idx[int_var_idx]
+            u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
+            # don't rerun if bounds are exact or is type correct
+            if isapprox(u_b,l_b,atol=atol) || BnBTree.is_type_correct(node.solution[var_idx],tree.m.var_type[var_idx])
+                continue
+            end
+            # branch on the current variable and get the corresponding children
+            l_nd,r_nd = BnBTree.branch!(tree,node,var_idx;map_to_node=false)
+
+            # if restart is true => check if one part is infeasible => update bounds & restart
+            if tree.options.strong_restart == true
+                if l_nd.state == :Infeasible || r_nd.state == :Infeasible
+                    max_gain = 0.0
+                    restart,infeasible_int_vars,max_gain_var,strong_int_vars = BnBTree.init_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+                end
+            end
+            gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd)
+            if gain > max_gain
+                max_gain = gain
+                max_gain_var = var_idx
+                left_node = l_nd
+                right_node = r_nd
+                # gain is set to inf if Integral or Infeasible
+                # TODO: Might be reasonable to use something different
+                if gain == Inf
+                    break
+                end
+            end
+            tree.obj_gain[int_var_idx] = gain
         end
-        av_gain += gain
-        tree.obj_gain[int_var_idx] = gain
     end
-    node.left = left_node
-    node.right = right_node
+    if node.left == nothing
+        node.left = left_node
+        node.right = right_node
+    end
     node.var_idx = max_gain_var
-    av_gain /= int_vars
+    med_gain = median(tree.obj_gain[strong_int_vars])
     rest = filter(i->!(i in strong_int_vars),1:int_vars)
     if counter == 1
-        tree.obj_gain[rest] = av_gain
+        tree.obj_gain[rest] = med_gain
         tree.obj_gain_c += 1
     else
         tree.obj_gain_c[strong_int_vars] += 1
@@ -192,7 +252,8 @@ function get_int_variable_idx(tree,node,counter::Int64=1)
                     if isapprox(u_b,l_b,atol=atol)
                         continue
                     end
-                    return l_idx
+                    idx = l_idx
+                    break
                 end
             end
         end
@@ -322,6 +383,8 @@ end
 function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
     gain = 0.0
     gc = 0
+    gain_l = 0.0
+    gain_r = 0.0
     frac_val = node.solution[node.var_idx]
     if l_nd.state == :Integral || r_nd.state == :Integral || l_nd.state == :Infeasible || r_nd.state == :Infeasible
         return Inf
@@ -331,17 +394,20 @@ function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
     end
     if l_nd.state == :Branch || l_nd.state == :Integral
         int_val = floor(frac_val)
-        gain += abs(node.best_bound-l_nd.best_bound)/abs(frac_val-int_val)
+        gain_l = abs(node.best_bound-l_nd.best_bound)/abs(frac_val-int_val) 
+        gain += gain_l
         gc += 1
     end
     if r_nd.state == :Branch || r_nd.state == :Integral
         int_val = ceil(frac_val)
-        gain += abs(node.best_bound-r_nd.best_bound)/abs(frac_val-int_val)
+        gain_r = abs(node.best_bound-r_nd.best_bound)/abs(frac_val-int_val)
+        gain += gain_r
         gc += 1
     end
-    gc == 0 && return Inf
+    gc == 0 && return 0.0
     gain /= gc
-    return gain
+    # use always minimum of both
+    return gain_r > gain_l ? gain_l : gain_r
 end
 """
     update_gains(tree::BnBTreeObj,node::BnBNode,counter)
@@ -643,6 +709,8 @@ function solve(tree::BnBTreeObj)
     time_solve_leafs_get_idx = 0.0
     time_solve_leafs_branch = 0.0
 
+    srand(1)
+
     fields = ["Incumbent","Best Bound","Gap","Time"]
     field_chars = [28,28,7,8]
     
@@ -675,6 +743,7 @@ function solve(tree::BnBTreeObj)
 
         branch_start = time()
         
+        # only branch if not already branched (strong branch might have branched already)
         if node.left == nothing
             l_nd,r_nd = BnBTree.branch!(tree,node,v_idx)
         end

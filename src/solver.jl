@@ -13,11 +13,13 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         log_levels                  = [:Table,:Info],
         branch_strategy             = :MostInfeasible,
         strong_branching_nvars      = 5,
-        strong_branching_nlevels    = 1
+        strong_branching_nlevels    = 1,
+        strong_restart              = true
     )
     options_obj = MINLPBnB.SolverOptions(log_levels,
                                         branch_strategy,
                                         strong_branching_nvars,
-                                        strong_branching_nlevels)
+                                        strong_branching_nlevels,
+                                        strong_restart)
     return MINLPBnBSolverObj(nl_solver,options_obj)
 end
