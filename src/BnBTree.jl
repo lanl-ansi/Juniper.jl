@@ -757,21 +757,25 @@ function solve(tree::BnBTreeObj)
     time_solve_leafs_get_idx = 0.0
     time_solve_leafs_branch = 0.0
 
-    srand(1)
-
-    if tree.options.strong_restart
-        fields = ["Incumbent","Best Bound","Gap","Time","#Restarts","CLevel","GainGap"]
-        field_chars = [28,28,7,8,10,8,10]
-    else
-        fields = ["Incumbent","Best Bound","Gap","Time"]
-        field_chars = [28,28,7,8]
-    end
-    
-    
     if BnBTree.are_type_correct(tree.m.solution,tree.m.var_type)
         return tree.m
     end
 
+    srand(1)
+    
+    if tree.options.strong_restart
+        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
+        field_chars = [8,28,28,7,8,10]
+    else
+        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
+        field_chars = [8,28,28,7,8]
+    end
+    
+    if tree.options.branch_strategy == :StrongPseudoCost || tree.options.branch_strategy == :PseudoCost
+        push!(fields, "GainGap")
+        push!(field_chars, 10)
+    end
+    
     ps = tree.options.log_levels
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     # get variable where to split
@@ -824,7 +828,7 @@ function solve(tree::BnBTreeObj)
                 else
                     obj_constr = Expr(:call, :>=, obj_expr, tree.incumbent.objval)
                 end
-                MINLPBnB.expr_dereferencing(obj_constr, tree.m.model)            
+                MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
                 # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
                 JuMP.addNLconstraint(tree.m.model, obj_constr)
             end
