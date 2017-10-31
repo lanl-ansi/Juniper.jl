@@ -2,6 +2,39 @@ include("basic/gamsworld.jl")
 
 @testset "basic tests" begin
 
+@testset "infeasible relaxation" begin
+    m = Model(solver=minlpbnb_strong_no_restart)
+
+    @variable(m, 0 <= x[1:10] <= 2, Int)
+
+    @objective(m, Min, sum(x))
+
+    @constraint(m, sum(x[1:5]) <= 20)
+    @NLconstraint(m, x[1]*x[2]*x[3] >= 10)
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+end
+
+@testset "infeasible integer" begin
+    m = Model(solver=minlpbnb_strong_no_restart)
+
+    @variable(m, 0 <= x[1:10] <= 2, Int)
+
+    @objective(m, Min, sum(x))
+
+    @constraint(m, sum(x[1:5]) <= 20)
+    @NLconstraint(m, x[1]*x[2]*x[3] >= 7)
+    @NLconstraint(m, x[1]*x[2]*x[3] <= 7.5)
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+end
+
 @testset "One Integer small Strong" begin
     m = Model(solver=minlpbnb_strong_no_restart)
 
