@@ -2,6 +2,7 @@ module BnBTree
 import MINLPBnB
 using JuMP
 using Ipopt
+using MathProgBase
 
 rtol = 1e-6
 atol = 1e-6
@@ -38,6 +39,7 @@ type BnBTreeObj
     int2var_idx :: Vector{Int64}
     var2int_idx :: Vector{Int64}
     options     :: MINLPBnB.SolverOptions
+    obj_fac     :: Int64 # factor for objective 1 if max -1 if min
 end
 
 function init(m)
@@ -54,7 +56,11 @@ function init(m)
             int_i += 1
         end
     end
-    return BnBTreeObj(node,m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options)
+    factor = 1
+    if m.obj_sense == :Min
+        factor = -1
+    end
+    return BnBTreeObj(node,m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,factor)
 end
 
 function new_default_node(parent,idx,level,l_var,u_var,solution;
@@ -200,7 +206,7 @@ function branch_strong(tree,node,counter)
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = BnBTree.init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd)
+            gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd,inf=true)
             if gain > max_gain
                 max_gain = gain
                 max_gain_var = var_idx
@@ -402,13 +408,12 @@ If the state of one child is Integral or Infeasible
     return Inf
 else return the smaller gain of both children
 """
-function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
-    gain = 0.0
+function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right,inf=false)
     gc = 0
     gain_l = 0.0
     gain_r = 0.0
     frac_val = node.solution[node.var_idx]
-    if l_nd.state == :Integral || r_nd.state == :Integral || l_nd.state == :Infeasible || r_nd.state == :Infeasible
+    if inf && (l_nd.state == :Integral || r_nd.state == :Integral || l_nd.state == :Infeasible || r_nd.state == :Infeasible)
         return Inf
     end
     if l_nd.state == :Error && r_nd.state == :Error
@@ -417,17 +422,14 @@ function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right)
     if l_nd.state == :Branch || l_nd.state == :Integral
         int_val = floor(frac_val)
         gain_l = abs(node.best_bound-l_nd.best_bound)/abs(frac_val-int_val) 
-        gain += gain_l
         gc += 1
     end
     if r_nd.state == :Branch || r_nd.state == :Integral
         int_val = ceil(frac_val)
         gain_r = abs(node.best_bound-r_nd.best_bound)/abs(frac_val-int_val)
-        gain += gain_r
         gc += 1
     end
     gc == 0 && return 0.0
-    gain /= gc
     # use always minimum of both
     return gain_r > gain_l ? gain_l : gain_r
 end
@@ -439,14 +441,24 @@ Update the objective gains for the branch variable used for node
 function update_gains(tree::BnBTreeObj,node::BnBNode,counter)
     gain = BnBTree.compute_gain(node)
 
+    idx = tree.var2int_idx[node.var_idx]
+    guess = tree.obj_gain[idx]/tree.obj_gain_c[idx]
+    if gain == 0 && guess == 0
+        gap = 0.0
+    elseif gain == 0
+        gap = Inf
+    else
+        gap = abs(guess-gain)/gain*100    
+    end
+
     # update all (just average of the one branch we have)
     if counter == 1
         tree.obj_gain += gain
     else
-        idx = tree.var2int_idx[node.var_idx]
         tree.obj_gain[idx] += gain
         tree.obj_gain_c[idx] += 1
     end
+    return gap
 end
 
 """
@@ -462,10 +474,7 @@ function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
     l_nd = node.left
     r_nd = node.right
     l_state, r_state = l_nd.state, r_nd.state
-    factor = 1
-    if tree.m.obj_sense == :Min
-        factor = -1
-    end
+    factor = tree.obj_fac
 
     if l_state == :Integral || r_state == :Integral
         # both integral => get better
@@ -525,10 +534,7 @@ function update_branch!(tree::BnBTreeObj,node::BnBNode)
     end
     # Bubble up the best bound of the children
     # => The root has always the best bound of all of it's children
-    factor = 1
-    if tree.m.obj_sense == :Min
-        factor = -1
-    end
+    factor = tree.obj_fac
 
     while node != nothing
         BnBTree.check_print(ps,[:All]) && println("Node idx: ", node.idx)
@@ -556,10 +562,7 @@ Currently get's the branch with the best best bound
 function get_best_branch_node(tree::BnBTreeObj)
     node = tree.root
     obj_sense = tree.m.obj_sense
-    factor = 1
-    if obj_sense == :Min
-        factor = -1
-    end
+    factor = tree.obj_fac
 
     if node.state == :Branch
         return node
@@ -627,11 +630,7 @@ function prune!(tree::BnBTreeObj)
     ps = tree.options.log_levels
     BnBTree.check_print(ps,[:All,:Incumbent]) && println("incumbent_val: ", incumbent_val)
     obj_sense = tree.m.obj_sense
-    factor = 1
-    if obj_sense == :Min
-        factor = -1
-    end
-    prune!(tree.root, incumbent_val, factor)
+    prune!(tree.root, incumbent_val, tree.obj_fac)
 end
 
 function print(node::BnBNode,int2var_idx)
@@ -691,7 +690,7 @@ function is_table_diff(fields,last_arr,new_arr)
     return false 
 end
 
-function print_table(tree,start_time,fields,field_chars,restarts;last_arr=[])
+function print_table(tree,node,start_time,fields,field_chars,restarts,gain_gap;last_arr=[])
     arr = []
     
     i = 1
@@ -718,6 +717,19 @@ function print_table(tree,start_time,fields,field_chars,restarts;last_arr=[])
             else
                 val = string(restarts)
             end
+        elseif f == "CLevel"
+            val = string(node.level)
+        elseif f == "GainGap"
+            if gain_gap == Inf
+                val = "∞"
+            elseif gain_gap == -1.0
+                val = "-"
+            else
+                val = string(round(gain_gap))*"%"
+            end
+            if length(val) > field_chars[i]
+                val = ">>"
+            end
         end
         padding = field_chars[i]-length(val)
         ln *= repeat(" ",trunc(Int, floor(padding/2)))
@@ -730,6 +742,7 @@ function print_table(tree,start_time,fields,field_chars,restarts;last_arr=[])
     BnBTree.is_table_diff(fields, last_arr,arr) && println(ln)
     return arr
 end
+
 
 """
     solve(tree::BnBTreeObj)
@@ -747,8 +760,8 @@ function solve(tree::BnBTreeObj)
     srand(1)
 
     if tree.options.strong_restart
-        fields = ["Incumbent","Best Bound","Gap","Time","#Restarts"]
-        field_chars = [28,28,7,8,10]
+        fields = ["Incumbent","Best Bound","Gap","Time","#Restarts","CLevel","GainGap"]
+        field_chars = [28,28,7,8,10,8,10]
     else
         fields = ["Incumbent","Best Bound","Gap","Time"]
         field_chars = [28,28,7,8]
@@ -775,6 +788,8 @@ function solve(tree::BnBTreeObj)
 
     time_bnb_solve_start = time()
     last_table_arr = []
+    first_incumbent = true
+    gain_gap = 0
     while true
         strong_restarts = 0
         get_idx_start = time()
@@ -793,14 +808,27 @@ function solve(tree::BnBTreeObj)
 
         if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > tree.options.strong_branching_nsteps)
             upd_start = time()
-            BnBTree.update_gains(tree,node,counter)    
+            gain_gap = BnBTree.update_gains(tree,node,counter)    
             time_upd_gains += time()-upd_start
         end
 
         BnBTree.update_branch!(tree,node)
 
-        # update incumbent
+        # update incumbent if new integral exist and is better
         if BnBTree.update_incumbent!(tree,node)
+            # add constr for objval
+            if tree.options.incumbent_constr
+                obj_expr = MathProgBase.obj_expr(tree.m.d)
+                if tree.m.obj_sense == :Min
+                    obj_constr = Expr(:call, :<=, obj_expr, tree.incumbent.objval)
+                else
+                    obj_constr = Expr(:call, :>=, obj_expr, tree.incumbent.objval)
+                end
+                MINLPBnB.expr_dereferencing(obj_constr, tree.m.model)            
+                # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
+                JuMP.addNLconstraint(tree.m.model, obj_constr)
+            end
+
             BnBTree.check_print(ps,[:All]) && println("Prune")
             BnBTree.prune!(tree)
             BnBTree.check_print(ps,[:All]) && println("pruned")            
@@ -828,7 +856,10 @@ function solve(tree::BnBTreeObj)
             if counter > tree.options.strong_branching_nsteps
                 strong_restarts = -1 # will be displayed as -
             end
-            last_table_arr = print_table(tree,time_bnb_solve_start,fields,field_chars,strong_restarts;last_arr=last_table_arr)
+            if counter <= tree.options.strong_branching_nsteps
+                gain_gap = -1.0 # will be displayed as -
+            end
+            last_table_arr = print_table(tree,node,time_bnb_solve_start,fields,field_chars,strong_restarts,gain_gap;last_arr=last_table_arr)
         end
         counter += 1
     end

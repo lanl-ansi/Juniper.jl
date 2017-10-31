@@ -152,7 +152,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
     expr_dereferencing(obj_expr, m.model)
-    JuMP.setNLobjective(m.model, m.obj_sense,  obj_expr)
+    JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
 
     divide_nl_l_constr(m)
 
