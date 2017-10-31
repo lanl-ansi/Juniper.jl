@@ -251,7 +251,7 @@ function get_int_variable_idx(tree,node,counter::Int64=1)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
             idx = BnBTree.branch_mostinfeasible(tree,node)
-        elseif counter <= tree.options.strong_branching_nlevels && branch_strat == :StrongPseudoCost
+        elseif counter <= tree.options.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             idx, strong_restarts = BnBTree.branch_strong(tree,node,counter)
         else
             # use the one with highest obj_gain which is currently continous
@@ -791,7 +791,7 @@ function solve(tree::BnBTreeObj)
         end
         time_branch += time()-branch_start
 
-        if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > tree.options.strong_branching_nlevels)
+        if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > tree.options.strong_branching_nsteps)
             upd_start = time()
             BnBTree.update_gains(tree,node,counter)    
             time_upd_gains += time()-upd_start
@@ -825,7 +825,7 @@ function solve(tree::BnBTreeObj)
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
         if BnBTree.check_print(ps,[:Table]) 
-            if counter > tree.options.strong_branching_nlevels
+            if counter > tree.options.strong_branching_nsteps
                 strong_restarts = -1 # will be displayed as -
             end
             last_table_arr = print_table(tree,time_bnb_solve_start,fields,field_chars,strong_restarts;last_arr=last_table_arr)
