@@ -86,6 +86,10 @@ Possible values:
 * `:StrongPseudoCost`
     * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`.
 
+## incumbent_constr::Bool [true]
+
+Add a constraint `objval >=/<= incumbent`. 
+
 ## Options for strong branching
 
 ### strong_branching_nvars::Int64 [5]
