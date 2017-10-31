@@ -89,7 +89,7 @@ end
 #=
     Used from https://github.com/lanl-ansi/POD.jl
 =# 
-function expr_dereferencing(expr, m)
+function expr_dereferencing!(expr, m)
     for i in 2:length(expr.args)
         if isa(expr.args[i], Union{Float64,Int64})
             k = 0
@@ -97,7 +97,7 @@ function expr_dereferencing(expr, m)
             @assert isa(expr.args[i].args[2], Int)
             expr.args[i] = Variable(m, expr.args[i].args[2])
         elseif expr.args[i].head == :call
-            expr_dereferencing(expr.args[i], m)
+            expr_dereferencing!(expr.args[i], m)
         else
             error("expr_dereferencing :: Unexpected term in expression tree.")
         end
@@ -151,33 +151,29 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
-    expr_dereferencing(obj_expr, m.model)
-    JuMP.setNLobjective(m.model, m.obj_sense,  obj_expr)
+    expr_dereferencing!(obj_expr, m.model)
+    JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
 
     divide_nl_l_constr(m)
 
     # add all constraints
     for i=1:m.num_constr
         constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing(constr_expr, m.model)
+        expr_dereferencing!(constr_expr, m.model)
         # add NL constraint (even if linear because .addconstraint doesn't work with expression)
         JuMP.addNLconstraint(m.model, constr_expr)
     end
 
     m.x = x
     start = time()
-    status = solve(m.model)
+    m.status = solve(m.model)
+    println("Status: ", m.status)
     m.soltime = time()-start
     println("Time for relaxation: ", m.soltime)
-
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
     println("Relaxation Obj: ", m.objval)
-    #println(m.solution)
-    #println(m.var_type)
-
-    m.status = status
 
     bnbtree = BnBTree.init(m)
     incumbent = BnBTree.solve(bnbtree)
