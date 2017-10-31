@@ -181,6 +181,7 @@ function branch_strong(tree,node,counter)
 
     restart = true
     infeasible_int_vars = zeros(Int64,0)
+    status = :Normal
     while restart 
         strong_restarts += 1
         restart = false
@@ -199,10 +200,19 @@ function branch_strong(tree,node,counter)
             # branch on the current variable and get the corresponding children
             l_nd,r_nd = BnBTree.branch!(tree,node,var_idx;map_to_node=false)
 
+            if l_nd.state == :Infeasible && r_nd.state == :Infeasible && counter == 1
+                status = :Infeasible
+                break
+            end
+
             # if restart is true => check if one part is infeasible => update bounds & restart
             if tree.options.strong_restart == true
                 if l_nd.state == :Infeasible || r_nd.state == :Infeasible
                     max_gain = 0.0
+                    if l_nd.state == :Infeasible && r_nd.state == :Infeasible
+                        node.state = :Infeasible
+                        break
+                    end
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = BnBTree.init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
@@ -239,8 +249,8 @@ function branch_strong(tree,node,counter)
         tree.obj_gain_c[strong_int_vars] += 1
     end
 
-    @assert max_gain_var != 0
-    return max_gain_var, strong_restarts
+    @assert max_gain_var != 0 || status == :Infeasible || node.state == :Infeasible
+    return status, max_gain_var, strong_restarts
 end
 
 """
@@ -252,13 +262,14 @@ function get_int_variable_idx(tree,node,counter::Int64=1)
     idx = 0
     strong_restarts = 0
     branch_strat = tree.options.branch_strategy
+    status = :Normal
     if branch_strat == :MostInfeasible
         idx = BnBTree.branch_mostinfeasible(tree,node)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
             idx = BnBTree.branch_mostinfeasible(tree,node)
         elseif counter <= tree.options.strong_branching_nsteps && branch_strat == :StrongPseudoCost
-            idx, strong_restarts = BnBTree.branch_strong(tree,node,counter)
+            status, idx, strong_restarts = BnBTree.branch_strong(tree,node,counter)
         else
             # use the one with highest obj_gain which is currently continous
             obj_gain_average = tree.obj_gain./tree.obj_gain_c
@@ -277,8 +288,8 @@ function get_int_variable_idx(tree,node,counter::Int64=1)
             end
         end
     end
-    @assert idx != 0
-    return idx, strong_restarts
+    @assert idx != 0 || status == :Infeasible || node.state == :Infeasible
+    return status, idx, strong_restarts
 end
 
 """
@@ -795,9 +806,19 @@ function solve(tree::BnBTreeObj)
     while true
         strong_restarts = 0
         get_idx_start = time()
-        v_idx, strong_restarts = BnBTree.get_int_variable_idx(tree,node,counter)
+        idx_status, v_idx, strong_restarts = BnBTree.get_int_variable_idx(tree,node,counter)
         time_get_idx += time()-get_idx_start
-    
+
+        if idx_status == :Infeasible
+            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible)
+        end
+
+        # if the node is infeasible => check a different one
+        if node.state == :Infeasible
+            node = BnBTree.get_best_branch_node(tree)
+            continue
+        end
+
         BnBTree.check_print(ps,[:All]) && println("v_idx: ", v_idx)
 
         branch_start = time()

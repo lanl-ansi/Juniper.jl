@@ -35,6 +35,22 @@ end
     @test status == :Infeasible
 end
 
+@testset "infeasible in strong" begin
+    m = Model(solver=minlpbnb_strong_no_restart)
+
+    @variable(m, 0 <= x[1:5] <= 2, Int)
+
+    @objective(m, Min, sum(x))
+
+    @NLconstraint(m, x[3]^2 <= 2)
+    @NLconstraint(m, x[3]^2 >= 1.2)
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+end
+
 @testset "One Integer small Strong" begin
     m = Model(solver=minlpbnb_strong_no_restart)
 
