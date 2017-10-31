@@ -569,9 +569,7 @@ function get_best_branch_node(tree::BnBTreeObj)
     while true
         l_nd = node.left
         r_nd = node.right
-        if node.best_bound != last_best_bound
-            error("Best bound should be the same as the root bound")
-        end
+        @assert node.best_bound == last_best_bound
         if node.hasbranchild == true
             # get into best branch
             if l_nd.hasbranchild && r_nd.hasbranchild
@@ -811,7 +809,7 @@ function solve(tree::BnBTreeObj)
             break
         end
         if !tree.root.hasbranchild
-            error("no child to branch on")
+            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible)
             break
         end
     
