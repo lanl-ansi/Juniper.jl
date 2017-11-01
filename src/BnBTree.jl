@@ -42,6 +42,7 @@ type BnBTreeObj
     options     :: MINLPBnB.SolverOptions
     obj_fac     :: Int64 # factor for objective 1 if max -1 if min
     start_time  :: Float64 
+    nsolutions  :: Int64
 end
 
 function init(start_time,m)
@@ -62,7 +63,7 @@ function init(start_time,m)
     if m.obj_sense == :Min
         factor = -1
     end
-    return BnBTreeObj(node,m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,factor,start_time)
+    return BnBTreeObj(node,m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,factor,start_time,0)
 end
 
 function new_default_node(parent,idx,level,l_var,u_var,solution;
@@ -491,7 +492,9 @@ function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
 
     if l_state == :Integral || r_state == :Integral
         # both integral => get better
+        tree.nsolutions += 1 # definitely one integral
         if l_state == :Integral && r_state == :Integral
+            tree.nsolutions += 1 # both integral
             if factor*l_nd.best_bound > factor*r_nd.best_bound
                 possible_incumbent = l_nd
             else
@@ -769,6 +772,7 @@ function solve(tree::BnBTreeObj)
     time_solve_leafs_branch = 0.0
 
     if BnBTree.are_type_correct(tree.m.solution,tree.m.var_type)
+        tree.nsolutions = 1
         return tree.m
     end
 
@@ -841,6 +845,17 @@ function solve(tree::BnBTreeObj)
 
         # update incumbent if new integral exist and is better
         if BnBTree.update_incumbent!(tree,node)
+            # check if incumbent is as good or better than best_obj_stop
+            if tree.options.best_obj_stop != NaN
+                inc_val = tree.incumbent.objval
+                bos = tree.options.best_obj_stop
+                sense = tree.m.obj_sense
+                if (sense == :Min && inc_val <= bos) || (sense == :Max && inc_val >= bos) 
+                    incu = tree.incumbent
+                    return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
+                end
+            end
+
             # check if break based on mip_gap
             if tree.options.mip_gap != 0
                 b = tree.root.best_bound
@@ -877,6 +892,12 @@ function solve(tree::BnBTreeObj)
         if !tree.root.hasbranchild
             return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible,NaN)
             break
+        end
+
+        # maybe break on solution_limit (can be higher if two solutions found in last step)
+        if tree.nsolutions >= tree.options.solution_limit
+            incu = tree.incumbent
+            return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
         end
     
         # get best branch node

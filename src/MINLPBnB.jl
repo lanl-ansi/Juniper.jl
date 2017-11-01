@@ -3,6 +3,7 @@ module MINLPBnB
 using MathProgBase
 using JuMP
 
+# Options for the solver (more details like defaults in solver.jl)
 type SolverOptions
     log_levels                  :: Vector{Symbol}
     branch_strategy             :: Symbol
@@ -12,6 +13,8 @@ type SolverOptions
     incumbent_constr            :: Bool
     time_limit                  :: Float64
     mip_gap                     :: Float64
+    best_obj_stop               :: Float64
+    solution_limit              :: Float64
 end
 
 include("solver.jl")
