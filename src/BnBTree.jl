@@ -841,6 +841,17 @@ function solve(tree::BnBTreeObj)
 
         # update incumbent if new integral exist and is better
         if BnBTree.update_incumbent!(tree,node)
+            # check if break based on mip_gap
+            if tree.options.mip_gap != 0
+                b = tree.root.best_bound
+                f = tree.incumbent.objval
+                gap_perc = abs(b-f)/abs(f)*100
+                if gap_perc <= tree.options.mip_gap
+                    incu = tree.incumbent
+                    return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
+                end
+            end
+
             # add constr for objval
             if tree.options.incumbent_constr
                 obj_expr = MathProgBase.obj_expr(tree.m.d)
