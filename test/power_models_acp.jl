@@ -5,12 +5,23 @@
     println("ACPPowerModel case5.m")
     println("==================================")
 
-    result = run_ots("data/pglib_opf_case5_pjm.m", ACPPowerModel, minlpbnb_strong_no_restart)
+    pm = build_generic_model("data/pglib_opf_case5_pjm.m", ACPPowerModel, PowerModels.post_ots)
+    m = pm.model
 
-    status = result["status"]
+    solver = MINLPBnBSolver(IpoptSolver();
+        branch_strategy=:StrongPseudoCost,
+        strong_branching_nvars = 5,
+        strong_restart = false,
+        incumbent_constr = false
+    )
+    print(m.dictList)
+    setsolver(m, solver)
+    
+    status = solve(m)
+    
     @test status == :Optimal
 
-    minlpbnb_val = result["objective"]
+    minlpbnb_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
     println("obj: ", minlpbnb_val)
