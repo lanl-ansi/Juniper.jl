@@ -28,6 +28,7 @@ type IncumbentSolution
     objval      :: Float64
     solution    :: Vector{Float64}
     status      :: Symbol
+    best_bound  :: Float64
 end
 
 type BnBTreeObj
@@ -504,7 +505,7 @@ function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
             objval = possible_incumbent.best_bound
             solution = copy(possible_incumbent.solution)
             status = :Optimal
-            tree.incumbent = IncumbentSolution(objval,solution,status)
+            tree.incumbent = IncumbentSolution(objval,solution,status,tree.root.best_bound)
             return true
         end
     end
@@ -810,7 +811,7 @@ function solve(tree::BnBTreeObj)
         time_get_idx += time()-get_idx_start
 
         if idx_status == :Infeasible
-            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible)
+            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, tree.root.best_bound)
         end
 
         # if the node is infeasible => check a different one
@@ -862,17 +863,10 @@ function solve(tree::BnBTreeObj)
             break
         end
         if !tree.root.hasbranchild
-            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible)
+            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible,tree.root.best_bound)
             break
         end
     
-        # println("Best bound: ", tree.root.best_bound)
-        # println("Node level: ", node.level)
-
-        #=if node.level == 4
-            print(tree)
-            error("t")
-        end=#
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
         if BnBTree.check_print(ps,[:Table]) 

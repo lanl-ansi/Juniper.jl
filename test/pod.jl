@@ -20,11 +20,17 @@ include("POD_experiment/blend029.jl")
     @test status == :Optimal
 
     minlpbnb_val = getobjectivevalue(m)
+    best_bound_val = getobjbound(m)
+    gap_val = getobjgap(m)
 
     println("Solution by MINLPBnb")
     println("obj: ", minlpbnb_val)
+    println("best_bound_val: ", best_bound_val)
+    println("gap_val: ", gap_val)
 
     @test isapprox(minlpbnb_val, objval, atol=1e0)
+    @test isapprox(best_bound_val, objval, atol=1e0)
+    @test isapprox(gap_val, 0, atol=1e-2)
 end
 
 end
