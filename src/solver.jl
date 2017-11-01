@@ -15,13 +15,17 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         strong_branching_nvars      = 5,
         strong_branching_nsteps     = 1,
         strong_restart              = true,
-        incumbent_constr            = true
+        incumbent_constr            = true,
+        time_limit                  = Inf,
+        mip_gap                     = 0
     )
     options_obj = MINLPBnB.SolverOptions(log_levels,
                                         branch_strategy,
                                         strong_branching_nvars,
                                         strong_branching_nsteps,
                                         strong_restart,
-                                        incumbent_constr)
+                                        incumbent_constr,
+                                        time_limit,
+                                        mip_gap)
     return MINLPBnBSolverObj(nl_solver,options_obj)
 end

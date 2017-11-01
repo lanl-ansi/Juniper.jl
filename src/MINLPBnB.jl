@@ -10,6 +10,8 @@ type SolverOptions
     strong_branching_nsteps     :: Int64
     strong_restart              :: Bool
     incumbent_constr            :: Bool
+    time_limit                  :: Float64
+    mip_gap                     :: Float64
 end
 
 include("solver.jl")

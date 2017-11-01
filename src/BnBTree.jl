@@ -41,9 +41,10 @@ type BnBTreeObj
     var2int_idx :: Vector{Int64}
     options     :: MINLPBnB.SolverOptions
     obj_fac     :: Int64 # factor for objective 1 if max -1 if min
+    start_time  :: Float64 
 end
 
-function init(m)
+function init(start_time,m)
     node = BnBNode(nothing,1,1,m.l_var,m.u_var,m.solution,0,nothing,nothing,:Branch,true,m.objval)
     obj_gain = zeros(m.num_int_bin_var)
     obj_gain_c = zeros(m.num_int_bin_var)
@@ -61,7 +62,7 @@ function init(m)
     if m.obj_sense == :Min
         factor = -1
     end
-    return BnBTreeObj(node,m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,factor)
+    return BnBTreeObj(node,m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,factor,start_time)
 end
 
 function new_default_node(parent,idx,level,l_var,u_var,solution;
@@ -877,6 +878,14 @@ function solve(tree::BnBTreeObj)
                 gain_gap = -1.0 # will be displayed as -
             end
             last_table_arr = print_table(tree,node,time_bnb_solve_start,fields,field_chars,strong_restarts,gain_gap;last_arr=last_table_arr)
+        end
+
+        if tree.options.time_limit != NaN && time()-tree.start_time >= tree.options.time_limit
+            if tree.incumbent == nothing
+                return IncumbentSolution(NaN,zeros(tree.m.num_var),:UserLimit,tree.root.best_bound)
+            else
+                return IncumbentSolution(tree.incumbent.objval,tree.incumbent.solution,:UserLimit,tree.root.best_bound)
+            end
         end
         counter += 1
     end
