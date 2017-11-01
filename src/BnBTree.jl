@@ -812,7 +812,7 @@ function solve(tree::BnBTreeObj)
         time_get_idx += time()-get_idx_start
 
         if idx_status == :Infeasible
-            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, tree.root.best_bound)
+            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
         end
 
         # if the node is infeasible => check a different one
@@ -875,7 +875,7 @@ function solve(tree::BnBTreeObj)
             break
         end
         if !tree.root.hasbranchild
-            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible,tree.root.best_bound)
+            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible,NaN)
             break
         end
     

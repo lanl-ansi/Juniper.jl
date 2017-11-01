@@ -170,6 +170,10 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.x = x
     start = time()
     m.status = solve(m.model)
+    if m.status != :Optimal && m.status != :LocalOptimal
+        return m.status
+    end
+
     println("Status: ", m.status)
     m.soltime = time()-start
     println("Time for relaxation: ", m.soltime)
