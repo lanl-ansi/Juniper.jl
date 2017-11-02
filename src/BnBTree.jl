@@ -922,6 +922,15 @@ function solve(tree::BnBTreeObj)
         counter += 1
     end
 
+    if tree.options.best_obj_stop != NaN
+        inc_val = tree.incumbent.objval
+        bos = tree.options.best_obj_stop
+        sense = tree.m.obj_sense
+        if (sense == :Min && inc_val > bos) || (sense == :Max && inc_val < bos)
+            warn("best_obj_gap couldn't be reached.")
+        end
+    end
+
     # print(tree)
     println("Incumbent status: ", tree.incumbent.status)
 
