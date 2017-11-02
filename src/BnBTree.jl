@@ -907,7 +907,7 @@ function solve(tree::BnBTreeObj)
         end
 
         # maybe break on solution_limit (can be higher if two solutions found in last step)
-        if tree.nsolutions >= tree.options.solution_limit
+        if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
             incu = tree.incumbent
             return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
         end
@@ -932,6 +932,15 @@ function solve(tree::BnBTreeObj)
             end
         end
         counter += 1
+    end
+
+    if tree.options.best_obj_stop != NaN
+        inc_val = tree.incumbent.objval
+        bos = tree.options.best_obj_stop
+        sense = tree.m.obj_sense
+        if (sense == :Min && inc_val > bos) || (sense == :Max && inc_val < bos)
+            warn("best_obj_gap couldn't be reached.")
+        end
     end
 
     # print(tree)
