@@ -10,7 +10,7 @@ include("POD_experiment/blend029.jl")
     m,objval = get_blend029()
 
     setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
-            branch_strategy=:StrongPseudoCost,
+            branch_strategy=:StrongPseudoCost, 
             strong_branching_nvars = 15,
             strong_branching_nsteps = 5,
             strong_restart = true,
@@ -40,7 +40,7 @@ end
     m,objval = get_blend029()
 
     setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
-            branch_strategy=:StrongPseudoCost,
+            branch_strategy=:StrongPseudoCost, 
             strong_branching_nvars = 15,
             strong_branching_nsteps = 5,
             strong_restart = true,
@@ -60,7 +60,7 @@ end
     println("gap_val: ", gap_val)
 
     @test best_bound_val >= objval
-    @test gap_val <= 0.05
+    @test 0.01 <= gap_val <= 0.05
 end
 
 @testset "case 5 socwr solution limit" begin
@@ -74,7 +74,7 @@ end
     @NLconstraint(m, aeiou^2== 1)
 
     solver = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:StrongPseudoCost,
+        branch_strategy=:StrongPseudoCost, #
         strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,
@@ -106,7 +106,7 @@ end
 
     best_obj_stop = 15000
     solver = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:StrongPseudoCost,
+        branch_strategy=:StrongPseudoCost, #
         strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,
