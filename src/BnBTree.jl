@@ -43,6 +43,7 @@ type BnBTreeObj
 end
 
 function init(m)
+    srand(1)
     node = BnBNode(nothing,1,1,m.l_var,m.u_var,m.solution,0,nothing,nothing,:Branch,true,m.objval)
     obj_gain = zeros(m.num_int_bin_var)
     obj_gain_c = zeros(m.num_int_bin_var)
@@ -753,6 +754,23 @@ function print_table(tree,node,start_time,fields,field_chars,restarts,gain_gap;l
 end
 
 
+function get_table_config(opts)
+    if opts.strong_restart
+        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
+        field_chars = [8,28,28,7,8,10]
+    else
+        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
+        field_chars = [8,28,28,7,8]
+    end
+    
+    if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
+        push!(fields, "GainGap")
+        push!(field_chars, 10)
+    end
+    return fields, field_chars
+end
+
+
 """
     solve(tree::BnBTreeObj)
 
@@ -765,42 +783,36 @@ function solve(tree::BnBTreeObj)
     global time_solve_leafs_get_idx, time_solve_leafs_branch
     time_solve_leafs_get_idx = 0.0
     time_solve_leafs_branch = 0.0
+    time_upd_gains = 0.0
+    time_get_idx = 0.0
+    time_branch = 0.0
+    time_solve_leafs = 0.0
+    time_bnb_solve_start = time()
+
+    ps = tree.options.log_levels
 
     if BnBTree.are_type_correct(tree.m.solution,tree.m.var_type)
         return tree.m
     end
 
-    srand(1)
     
-    if tree.options.strong_restart
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
-        field_chars = [8,28,28,7,8,10]
-    else
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
-        field_chars = [8,28,28,7,8]
+
+    # Print table init
+    if BnBTree.check_print(ps,[:Table]) 
+        fields, field_chars = get_table_config(tree.options)
+        print_table_header(fields,field_chars)
+        last_table_arr = []
     end
     
-    if tree.options.branch_strategy == :StrongPseudoCost || tree.options.branch_strategy == :PseudoCost
-        push!(fields, "GainGap")
-        push!(field_chars, 10)
-    end
     
-    ps = tree.options.log_levels
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
+    
     # get variable where to split
     node = tree.root
     counter = 1    
-
     branch_strat = tree.options.branch_strategy
-    time_upd_gains = 0.0
-    time_get_idx = 0.0
-    time_branch = 0.0
-    time_solve_leafs = 0.0
-    
-    print_table_header(fields,field_chars)
 
-    time_bnb_solve_start = time()
-    last_table_arr = []
+        
     first_incumbent = true
     gain_gap = 0
     while true
