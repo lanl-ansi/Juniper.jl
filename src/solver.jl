@@ -22,9 +22,8 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         time_limit                  = Inf,  
         mip_gap                     = 0,
         best_obj_stop               = NaN,
-        solution_limit              = Inf,
+        solution_limit              = 0,
         all_solutions               = false
-        solution_limit              = 0
     )
     options_obj = MINLPBnB.SolverOptions(log_levels,
                                         branch_strategy,
