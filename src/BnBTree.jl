@@ -45,7 +45,8 @@ type BnBTreeObj
     nsolutions  :: Int64
 end
 
-function init(start_time,m)
+function init(start_time, m)
+    srand(1)
     node = BnBNode(nothing,1,1,m.l_var,m.u_var,m.solution,0,nothing,nothing,:Branch,true,m.objval)
     obj_gain = zeros(m.num_int_bin_var)
     obj_gain_c = zeros(m.num_int_bin_var)
@@ -355,6 +356,9 @@ function solve_leaf(tree,leaf)
             leaf.state = :Integral
             leaf.hasbranchild = false
             leaf.best_bound = objval
+            if tree.options.list_of_solutions
+                push!(tree.m.solutions, MINLPBnB.SolutionObj(leaf.solution,objval))
+            end
         else
             leaf.state = :Branch
             leaf.best_bound = objval
@@ -588,7 +592,7 @@ function get_best_branch_node(tree::BnBTreeObj)
     while true
         l_nd = node.left
         r_nd = node.right
-        @assert node.best_bound == last_best_bound
+        # @assert node.best_bound == last_best_bound
         if node.hasbranchild == true
             # get into best branch
             if l_nd.hasbranchild && r_nd.hasbranchild
@@ -655,6 +659,8 @@ function print(node::BnBNode,int2var_idx)
     println(indent_str*"state"*": "*string(node.state))
     println(indent_str*"hasbranchild"*": "*string(node.hasbranchild))
     println(indent_str*"best_bound"*": "*string(node.best_bound))
+    println(indent_str*"l_b"*": "*string(node.l_var))
+    println(indent_str*"u_b"*": "*string(node.u_var))
 end
 
 function print_rec(node::BnBNode,int2var_idx;remove=false,bounds=[])
@@ -758,6 +764,75 @@ function print_table(tree,node,start_time,fields,field_chars,restarts,gain_gap;l
 end
 
 
+function get_table_config(opts)
+    if opts.strong_restart
+        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
+        field_chars = [8,28,28,7,8,10]
+    else
+        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
+        field_chars = [8,28,28,7,8]
+    end
+    
+    if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
+        push!(fields, "GainGap")
+        push!(field_chars, 10)
+    end
+    return fields, field_chars
+end
+
+function break_new_incumbent_limits(tree)
+    if tree.options.best_obj_stop != NaN
+        inc_val = tree.incumbent.objval
+        bos = tree.options.best_obj_stop
+        sense = tree.m.obj_sense
+        if (sense == :Min && inc_val <= bos) || (sense == :Max && inc_val >= bos) 
+            incu = tree.incumbent
+            tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
+            return true
+        end
+    end
+
+    if tree.options.mip_gap != 0
+        b = tree.root.best_bound
+        f = tree.incumbent.objval
+        gap_perc = abs(b-f)/abs(f)*100
+        if gap_perc <= tree.options.mip_gap
+            incu = tree.incumbent
+            tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
+            return true
+        end
+    end
+    return false
+end
+
+function break_time_limit(tree)
+    if tree.options.time_limit != NaN && time()-tree.start_time >= tree.options.time_limit
+        if tree.incumbent == nothing
+            tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:UserLimit,tree.root.best_bound)
+            return true
+        else
+            tree.incumbent = IncumbentSolution(tree.incumbent.objval,tree.incumbent.solution,:UserLimit,tree.root.best_bound)
+            return true
+        end
+    end
+    return false
+end
+
+function add_obj_constr(tree)
+    # add constr for objval
+    if tree.options.incumbent_constr
+        obj_expr = MathProgBase.obj_expr(tree.m.d)
+        if tree.m.obj_sense == :Min
+            obj_constr = Expr(:call, :<=, obj_expr, tree.incumbent.objval)
+        else
+            obj_constr = Expr(:call, :>=, obj_expr, tree.incumbent.objval)
+        end
+        MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
+        # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
+        JuMP.addNLconstraint(tree.m.model, obj_constr)
+    end
+end
+
 """
     solve(tree::BnBTreeObj)
 
@@ -770,43 +845,35 @@ function solve(tree::BnBTreeObj)
     global time_solve_leafs_get_idx, time_solve_leafs_branch
     time_solve_leafs_get_idx = 0.0
     time_solve_leafs_branch = 0.0
+    time_upd_gains = 0.0
+    time_get_idx = 0.0
+    time_branch = 0.0
+    time_solve_leafs = 0.0
+    time_bnb_solve_start = time()
+
+    ps = tree.options.log_levels
 
     if BnBTree.are_type_correct(tree.m.solution,tree.m.var_type)
         tree.nsolutions = 1
         return tree.m
     end
 
-    srand(1)
-    
-    if tree.options.strong_restart
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
-        field_chars = [8,28,28,7,8,10]
-    else
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
-        field_chars = [8,28,28,7,8]
+    # Print table init
+    if BnBTree.check_print(ps,[:Table]) 
+        fields, field_chars = get_table_config(tree.options)
+        print_table_header(fields,field_chars)
+        last_table_arr = []
     end
     
-    if tree.options.branch_strategy == :StrongPseudoCost || tree.options.branch_strategy == :PseudoCost
-        push!(fields, "GainGap")
-        push!(field_chars, 10)
-    end
     
-    ps = tree.options.log_levels
     BnBTree.check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
+    
     # get variable where to split
     node = tree.root
     counter = 1    
-
     branch_strat = tree.options.branch_strategy
-    time_upd_gains = 0.0
-    time_get_idx = 0.0
-    time_branch = 0.0
-    time_solve_leafs = 0.0
-    
-    print_table_header(fields,field_chars)
 
-    time_bnb_solve_start = time()
-    last_table_arr = []
+        
     first_incumbent = true
     gain_gap = 0
     while true
@@ -816,7 +883,8 @@ function solve(tree::BnBTreeObj)
         time_get_idx += time()-get_idx_start
 
         if idx_status == :Infeasible
-            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
+            tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
+            break
         end
 
         # if the node is infeasible => check a different one
@@ -827,13 +895,12 @@ function solve(tree::BnBTreeObj)
 
         BnBTree.check_print(ps,[:All]) && println("v_idx: ", v_idx)
 
-        branch_start = time()
-        
         # only branch if not already branched (strong branch might have branched already)
         if node.left == nothing
+            branch_start = time()
             l_nd,r_nd = BnBTree.branch!(tree,node,v_idx)
+            time_branch += time()-branch_start
         end
-        time_branch += time()-branch_start
 
         if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > tree.options.strong_branching_nsteps)
             upd_start = time()
@@ -846,64 +913,45 @@ function solve(tree::BnBTreeObj)
         # update incumbent if new integral exist and is better
         if BnBTree.update_incumbent!(tree,node)
             # check if incumbent is as good or better than best_obj_stop
-            if tree.options.best_obj_stop != NaN
-                inc_val = tree.incumbent.objval
-                bos = tree.options.best_obj_stop
-                sense = tree.m.obj_sense
-                if (sense == :Min && inc_val <= bos) || (sense == :Max && inc_val >= bos) 
-                    incu = tree.incumbent
-                    return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
-                end
-            end
-
             # check if break based on mip_gap
-            if tree.options.mip_gap != 0
-                b = tree.root.best_bound
-                f = tree.incumbent.objval
-                gap_perc = abs(b-f)/abs(f)*100
-                if gap_perc <= tree.options.mip_gap
-                    incu = tree.incumbent
-                    return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
-                end
+            
+            if BnBTree.break_new_incumbent_limits(tree)
+                break 
             end
 
-            # add constr for objval
-            if tree.options.incumbent_constr
-                obj_expr = MathProgBase.obj_expr(tree.m.d)
-                if tree.m.obj_sense == :Min
-                    obj_constr = Expr(:call, :<=, obj_expr, tree.incumbent.objval)
-                else
-                    obj_constr = Expr(:call, :>=, obj_expr, tree.incumbent.objval)
-                end
-                MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
-                # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
-                JuMP.addNLconstraint(tree.m.model, obj_constr)
+            # add obj cut if the option is selected
+            BnBTree.add_obj_constr(tree)
+        
+            if !tree.options.all_solutions
+                BnBTree.prune!(tree)
             end
-
-            BnBTree.check_print(ps,[:All]) && println("Prune")
-            BnBTree.prune!(tree)
-            BnBTree.check_print(ps,[:All]) && println("pruned")            
-            BnBTree.check_print(ps,[:All]) && print(tree)
+            
         end
+        # print(tree)
+
         # check if best
-        if tree.incumbent != nothing && tree.incumbent.objval == tree.root.best_bound
+        if !tree.options.all_solutions && tree.incumbent != nothing && tree.incumbent.objval == tree.root.best_bound
             break
         end
         if !tree.root.hasbranchild
-            return IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible,NaN)
+            # maybe we have an incumbent (if we switch on all_solutions)
+            if tree.incumbent == nothing
+                tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible,NaN)
+            end
             break
         end
 
         # maybe break on solution_limit (can be higher if two solutions found in last step)
         if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
             incu = tree.incumbent
-            return IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
+            tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.root.best_bound)
+            break
         end
     
         # get best branch node
         node = BnBTree.get_best_branch_node(tree)
         if BnBTree.check_print(ps,[:Table]) 
-            if counter > tree.options.strong_branching_nsteps
+            if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
                 strong_restarts = -1 # will be displayed as -
             end
             if counter <= tree.options.strong_branching_nsteps
@@ -912,12 +960,8 @@ function solve(tree::BnBTreeObj)
             last_table_arr = print_table(tree,node,time_bnb_solve_start,fields,field_chars,strong_restarts,gain_gap;last_arr=last_table_arr)
         end
 
-        if tree.options.time_limit != NaN && time()-tree.start_time >= tree.options.time_limit
-            if tree.incumbent == nothing
-                return IncumbentSolution(NaN,zeros(tree.m.num_var),:UserLimit,tree.root.best_bound)
-            else
-                return IncumbentSolution(tree.incumbent.objval,tree.incumbent.solution,:UserLimit,tree.root.best_bound)
-            end
+        if BnBTree.break_time_limit(tree)
+            break
         end
         counter += 1
     end
@@ -930,8 +974,7 @@ function solve(tree::BnBTreeObj)
             warn("best_obj_gap couldn't be reached.")
         end
     end
-
-    # print(tree)
+    
     println("Incumbent status: ", tree.incumbent.status)
 
     time_bnb_solve = time()-time_bnb_solve_start
