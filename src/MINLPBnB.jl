@@ -14,7 +14,12 @@ type SolverOptions
     time_limit                  :: Float64
     mip_gap                     :: Float64
     best_obj_stop               :: Float64
+<<<<<<< HEAD
     solution_limit              :: Float64
+    all_solutions               :: Bool
+=======
+    solution_limit              :: Int64
+>>>>>>> refactor
 end
 
 include("solver.jl")

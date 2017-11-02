@@ -2,6 +2,32 @@ include("basic/gamsworld.jl")
 
 @testset "basic tests" begin
 
+@testset "bruteforce" begin
+    minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
+        branch_strategy=:MostInfeasible,
+        all_solutions = true
+    )
+
+    m = Model(solver=minlpbnb_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    @objective(m, Min, x[1])
+
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Optimal
+    @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
+end
+
 @testset "infeasible relaxation" begin
     m = Model(solver=minlpbnb_strong_no_restart)
 
