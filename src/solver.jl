@@ -34,7 +34,11 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
                                         time_limit,
                                         mip_gap,
                                         best_obj_stop,
+<<<<<<< HEAD
                                         solution_limit,
                                         all_solutions)
+=======
+                                        solution_limit)
+>>>>>>> master
     return MINLPBnBSolverObj(nl_solver,options_obj)
 end
