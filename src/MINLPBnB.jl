@@ -16,6 +16,7 @@ type SolverOptions
     best_obj_stop               :: Float64
     solution_limit              :: Int64
     all_solutions               :: Bool
+    list_of_solutions           :: Bool
 end
 
 include("solver.jl")

@@ -5,7 +5,8 @@ include("basic/gamsworld.jl")
 @testset "bruteforce" begin
     minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
         branch_strategy=:MostInfeasible,
-        all_solutions = true
+        all_solutions = true,
+        list_of_solutions = true
     )
 
     m = Model(solver=minlpbnb_all_solutions)
@@ -23,6 +24,8 @@ include("basic/gamsworld.jl")
 
     status = solve(m)
     println("Status: ", status)
+    list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
 
     @test status == :Optimal
     @test MINLPBnB.getnsolutions(internalmodel(m)) == 24

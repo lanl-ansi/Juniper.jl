@@ -1,3 +1,8 @@
+type SolutionObj
+    solution    :: Vector{Float64}
+    objval      :: Float64
+end
+
 type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     nl_solver       :: MathProgBase.AbstractMathProgSolver
    
@@ -30,6 +35,7 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
 
     soltime         :: Float64
     options         :: SolverOptions
+    solutions       :: Vector{SolutionObj}
 
     MINLPBnBModel() = new()
 end
@@ -59,6 +65,7 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.best_bound = NaN
     m.solution = Float64[]
     m.nsolutions = 0
+    m.solutions = []
 
     return m
 end
@@ -191,6 +198,10 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.nsolutions = bnbtree.nsolutions
     m.soltime = time()-start
     
+    if length(m.solutions) == 0
+        push!(m.solutions, SolutionObj(m.solution, m.objval))
+    end
+
     return m.status
 end
 
@@ -227,3 +238,4 @@ function MathProgBase.getobjgap(m::MINLPBnBModel)
 end
 
 getnsolutions(m::MINLPBnBModel) = m.nsolutions
+getsolutions(m::MINLPBnBModel) = m.solutions

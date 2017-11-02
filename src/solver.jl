@@ -23,7 +23,8 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         mip_gap                     = 0,
         best_obj_stop               = NaN,
         solution_limit              = 0,
-        all_solutions               = false
+        all_solutions               = false,
+        list_of_solutions           = false
     )
     options_obj = MINLPBnB.SolverOptions(log_levels,
                                         branch_strategy,
@@ -35,6 +36,7 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
                                         mip_gap,
                                         best_obj_stop,
                                         solution_limit,
-                                        all_solutions)
+                                        all_solutions,
+                                        list_of_solutions)
     return MINLPBnBSolverObj(nl_solver,options_obj)
 end

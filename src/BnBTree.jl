@@ -356,6 +356,9 @@ function solve_leaf(tree,leaf)
             leaf.state = :Integral
             leaf.hasbranchild = false
             leaf.best_bound = objval
+            if tree.options.list_of_solutions
+                push!(tree.m.solutions, MINLPBnB.SolutionObj(leaf.solution,objval))
+            end
         else
             leaf.state = :Branch
             leaf.best_bound = objval
