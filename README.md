@@ -104,3 +104,6 @@ Defines the number of steps in which strong branching is used. `:PseudoCost` wil
 
 If a child while running strong branching is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
 
+## Other options:
+
+[UserLimits](options/user_limits.md)
