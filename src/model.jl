@@ -5,6 +5,7 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
         
     status          :: Symbol
     objval          :: Float64
+    best_bound      :: Float64
 
     x               
     num_constr      :: Int64
@@ -25,6 +26,7 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     num_int_bin_var :: Int64
 
     solution        :: Vector{Float64}
+    nsolutions      :: Int64
 
     soltime         :: Float64
     options         :: SolverOptions
@@ -54,7 +56,9 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.options = s.options
     m.status = :None
     m.objval = NaN
+    m.best_bound = NaN
     m.solution = Float64[]
+    m.nsolutions = 0
 
     return m
 end
@@ -122,10 +126,11 @@ function divide_nl_l_constr(m::MINLPBnBModel)
     m.isconstrlinear = isconstrlinear
 end
 
-function replace_solution!(m::MINLPBnBModel, incumbent)
-    m.solution = incumbent.solution
-    m.objval = incumbent.objval
-    m.status = incumbent.status
+function replace_solution!(m::MINLPBnBModel, best_known)
+    m.solution = best_known.solution
+    m.objval = best_known.objval
+    m.status = best_known.status
+    m.best_bound = best_known.best_bound # is reasonable for gap or time limit
 end
 
 function print_info(m::MINLPBnBModel)
@@ -167,7 +172,11 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.x = x
     start = time()
     m.status = solve(m.model)
-    println("Status: ", m.status)
+    println("Status of relaxation: ", m.status)
+
+    if m.status != :Optimal && m.status != :LocalOptimal
+        return m.status
+    end
     m.soltime = time()-start
     println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
@@ -175,10 +184,11 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     println("Relaxation Obj: ", m.objval)
 
-    bnbtree = BnBTree.init(m)
-    incumbent = BnBTree.solve(bnbtree)
+    bnbtree = BnBTree.init(start,m)
+    best_known = BnBTree.solve(bnbtree)
 
-    replace_solution!(m, incumbent)
+    replace_solution!(m, best_known)
+    m.nsolutions = bnbtree.nsolutions
     m.soltime = time()-start
     
     return m.status
@@ -204,4 +214,16 @@ MathProgBase.getobjval(m::MINLPBnBModel) = m.objval
 # any auxiliary variables will need to be filtered from this at some point
 MathProgBase.getsolution(m::MINLPBnBModel) = m.solution
 
-MathProgBase.getsolvetime(m::MINLPBnBModel) = m.soltime
+MathProgBase.getobjbound(m::MINLPBnBModel) = m.best_bound
+
+function MathProgBase.getobjgap(m::MINLPBnBModel)
+    b = m.best_bound
+    if m.objval == NaN
+        return NaN
+    else
+        f = m.objval
+        return abs(b-f)/abs(f)
+    end
+end
+
+getnsolutions(m::MINLPBnBModel) = m.nsolutions
