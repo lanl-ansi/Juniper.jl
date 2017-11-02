@@ -45,12 +45,8 @@ type BnBTreeObj
     nsolutions  :: Int64
 end
 
-<<<<<<< HEAD
 function init(start_time, m)
     srand(1)
-=======
-function init(start_time,m)
->>>>>>> master
     node = BnBNode(nothing,1,1,m.l_var,m.u_var,m.solution,0,nothing,nothing,:Branch,true,m.objval)
     obj_gain = zeros(m.num_int_bin_var)
     obj_gain_c = zeros(m.num_int_bin_var)
