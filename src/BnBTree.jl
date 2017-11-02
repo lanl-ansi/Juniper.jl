@@ -963,8 +963,6 @@ function solve(tree::BnBTreeObj)
         counter += 1
     end
 
-<<<<<<< HEAD
-=======
     if tree.options.best_obj_stop != NaN
         inc_val = tree.incumbent.objval
         bos = tree.options.best_obj_stop
@@ -973,9 +971,7 @@ function solve(tree::BnBTreeObj)
             warn("best_obj_gap couldn't be reached.")
         end
     end
-
-    # print(tree)
->>>>>>> refactor
+    
     println("Incumbent status: ", tree.incumbent.status)
 
     time_bnb_solve = time()-time_bnb_solve_start
