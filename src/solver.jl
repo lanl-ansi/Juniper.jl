@@ -10,7 +10,7 @@ type MINLPBnBSolverObj <: MathProgBase.AbstractMathProgSolver
 end
 
 function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
-        log_levels                  = [:Table,:Info],
+        log_levels                  = [:Table,:Info,:Timing],
         branch_strategy             = :MostInfeasible,
         # Strong branching
         strong_branching_nvars      = 5,

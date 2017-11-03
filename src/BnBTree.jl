@@ -4,10 +4,10 @@ using JuMP
 using Ipopt
 using MathProgBase
 
+include("table_log.jl")
+
 rtol = 1e-6
 atol = 1e-6
-time_solve_leaves_get_idx = 0.0
-time_solve_leaves_branch = 0.0
 
 type BnBNode
     idx         :: Int64
@@ -48,6 +48,7 @@ type StepObj
     var_idx     :: Int64   # variable to branch on
     state       :: Symbol  # if infeasible => break (might be set by strong branching)
     nrestarts   :: Int64 
+    gain_gap    :: Float64
     idx_time    :: Float64
     leaf_idx_time :: Float64
     upd_gains_time :: Float64
@@ -93,7 +94,7 @@ function new_default_step_obj(node)
     upd_gains_time = 0.0
     leaf_branch_time = 0.0
     branch_time = 0.0
-    return StepObj(node,0,:None,0,idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time)
+    return StepObj(node,0,:None,0,0.0,idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time)
 end
 
 function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
@@ -190,7 +191,7 @@ function branch_strong(tree,step_obj,counter)
         idx = tree.int2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
-        if isapprox(u_b,l_b,atol=atol) || BnBTree.is_type_correct(node.solution[idx],tree.m.var_type[idx])
+        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],tree.m.var_type[idx])
             continue
         end
         push!(reasonable_int_vars,i)
@@ -219,11 +220,11 @@ function branch_strong(tree,step_obj,counter)
             step_obj.var_idx = var_idx
             u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
             # don't rerun if bounds are exact or is type correct
-            if isapprox(u_b,l_b,atol=atol) || BnBTree.is_type_correct(node.solution[var_idx],tree.m.var_type[var_idx])
+            if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[var_idx],tree.m.var_type[var_idx])
                 continue
             end
             # branch on the current variable and get the corresponding children
-            l_nd,r_nd = BnBTree.branch!(tree,step_obj,counter;temp=true)
+            l_nd,r_nd = branch!(tree,step_obj,counter;temp=true)
 
             if l_nd.state == :Infeasible && r_nd.state == :Infeasible && counter == 1
                 status = :Infeasible
@@ -238,10 +239,10 @@ function branch_strong(tree,step_obj,counter)
                         node.state = :Infeasible
                         break
                     end
-                    restart,infeasible_int_vars,max_gain_var,strong_int_vars = BnBTree.init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+                    restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            gain = BnBTree.compute_gain(node;l_nd=l_nd,r_nd=r_nd,inf=true)
+            gain = compute_gain(node;l_nd=l_nd,r_nd=r_nd,inf=true)
             if gain > max_gain
                 max_gain = gain
                 max_gain_var = var_idx
@@ -260,9 +261,9 @@ function branch_strong(tree,step_obj,counter)
     if status != :Infeasible
             for leaf in [left_node,right_node]
                 if leaf.state == :Branch
-                    BnBTree.push_to_branch_list!(tree,leaf)
+                    push_to_branch_list!(tree,leaf)
                 elseif leaf.state == :Integral
-                    BnBTree.new_integral!(tree,leaf)
+                    new_integral!(tree,leaf)
                 end
             end   
 
@@ -299,12 +300,12 @@ function upd_int_variable_idx!(step_obj,tree,counter::Int64=1)
     branch_strat = tree.options.branch_strategy
     status = :Normal
     if branch_strat == :MostInfeasible
-        idx = BnBTree.branch_mostinfeasible(tree,node)
+        idx = branch_mostinfeasible(tree,node)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
-            idx = BnBTree.branch_mostinfeasible(tree,node)
+            idx = branch_mostinfeasible(tree,node)
         elseif counter <= tree.options.strong_branching_nsteps && branch_strat == :StrongPseudoCost
-            status, idx, strong_restarts = BnBTree.branch_strong(tree,step_obj,counter)
+            status, idx, strong_restarts = branch_strong(tree,step_obj,counter)
         else
             # use the one with highest obj_gain which is currently continous
             obj_gain_average = tree.obj_gain./tree.obj_gain_c
@@ -386,11 +387,11 @@ function solve_leaf!(tree,leaf,temp)
         leaf.state = :Error
     elseif status == :Optimal
         # check if all int vars are int
-        if BnBTree.are_type_correct(leaf.solution,tree.m.var_type)
+        if are_type_correct(leaf.solution,tree.m.var_type)
             leaf.state = :Integral
             leaf.best_bound = objval
             if !temp
-                if BnBTree.new_integral!(tree,leaf) == :Break
+                if new_integral!(tree,leaf) == :Break
                     leaf.state = :Break
                 end
             end
@@ -414,7 +415,7 @@ function new_integral!(tree,node)
         push!(tree.m.solutions, MINLPBnB.SolutionObj(node.solution,node.best_bound))
     end
     if update_incumbent!(tree,node) # returns if new 
-        BnBTree.add_obj_constr(tree)
+        add_obj_constr(tree)
     end
     if break_new_incumbent_limits(tree)
         return :Break
@@ -436,7 +437,6 @@ Branch a node by using x[idx] <= floor(x[idx]) and x[idx] >= ceil(x[idx])
 Solve both nodes and set current node state to done.
 """
 function branch!(tree,step_obj,counter;temp=false)
-    global time_solve_leaves_get_idx, time_solve_leaves_branch
     ps = tree.options.log_levels
     node = step_obj.node
     vidx = step_obj.var_idx
@@ -448,8 +448,8 @@ function branch!(tree,step_obj,counter;temp=false)
         return nothing,nothing
     end
     
-    l_nd = BnBTree.new_default_node(node.idx*2,node.level+1,node.l_var,node.u_var,node.solution)
-    r_nd = BnBTree.new_default_node(node.idx*2+1,node.level+1,node.l_var,node.u_var,node.solution)
+    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,node.u_var,node.solution)
+    r_nd = new_default_node(node.idx*2+1,node.level+1,node.l_var,node.u_var,node.solution)
 
     l_nd.u_var[vidx] = floor(node.solution[vidx])
     r_nd.l_var[vidx] = ceil(node.solution[vidx])
@@ -457,7 +457,7 @@ function branch!(tree,step_obj,counter;temp=false)
     # save that this node branches on this particular variable
     node.var_idx = vidx
 
-    BnBTree.check_print(ps,[:All,:FuncCall]) && println("branch")
+    check_print(ps,[:All,:FuncCall]) && println("branch")
     
     if !temp
         node.state = :Done
@@ -481,11 +481,11 @@ function branch!(tree,step_obj,counter;temp=false)
     branch_strat = tree.options.branch_strategy
     if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > tree.options.strong_branching_nsteps)
         upd_start = time()
-        gain_gap = BnBTree.update_gains!(tree,node,l_nd,r_nd,counter)    
+        step_obj.gain_gap = update_gains!(tree,node,l_nd,r_nd,counter)    
         step_obj.upd_gains_time = time()-upd_start
     end
 
-    if BnBTree.check_print(ps,[:All])
+    if check_print(ps,[:All])
         println("State of left leaf: ", l_state)
         println("State of right leaf: ", r_state)
         println("l sol: ", l_nd.solution)
@@ -540,7 +540,7 @@ end
 Update the objective gains for the branch variable used for node
 """
 function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd,counter)
-    gain = BnBTree.compute_gain(parent;l_nd=l_nd,r_nd=r_nd)
+    gain = compute_gain(parent;l_nd=l_nd,r_nd=r_nd)
 
     idx = tree.var2int_idx[parent.var_idx]
     guess = tree.obj_gain[idx]/tree.obj_gain_c[idx]
@@ -570,7 +570,7 @@ Check whether it's a new incumbent and update if necessary
 """
 function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
     ps = tree.options.log_levels
-    BnBTree.check_print(ps,[:All,:FuncCall]) && println("update_incumbent")
+    check_print(ps,[:All,:FuncCall]) && println("update_incumbent")
 
     factor = tree.obj_fac
     if tree.incumbent == nothing || factor*node.best_bound > factor*tree.incumbent.objval
@@ -600,106 +600,6 @@ function bound!(tree::BnBTreeObj)
     filter!(isbetter,tree.branch_nodes)
 end
 
-function print_table_header(fields, field_chars)
-    ln = ""
-    i = 1
-    for f in fields
-        padding = field_chars[i]-length(f)
-        ln *= repeat(" ",trunc(Int, floor(padding/2)))
-        ln *= f
-        ln *= repeat(" ",trunc(Int, ceil(padding/2)))
-        i += 1
-    end
-    println(ln)
-    println(repeat("=", sum(field_chars)))
-end
-
-function is_table_diff(fields,last_arr,new_arr)
-    if length(last_arr) != length(new_arr)
-        return true
-    end    
-
-    time_idx = findfirst(fields .== "Time")
-    if time_idx != 0
-        last_arr = vcat(last_arr[1:time_idx-1],last_arr[time_idx+1:end])
-        new_arr = vcat(new_arr[1:time_idx-1],new_arr[time_idx+1:end])
-    end
-    for i=1:length(last_arr)
-        last_arr[i] != new_arr[i] && return true
-    end
-    return false 
-end
-
-function print_table(tree,node,step_obj,start_time,fields,field_chars,gain_gap;last_arr=[])
-    arr = []
-    nrestarts = step_obj.nrestarts
-    i = 1
-    ln = ""
-    for f in fields
-        val = ""
-        if f == "Incumbent"
-            val = tree.incumbent != nothing ? string(round(tree.incumbent.objval,2)) : "-"
-        elseif f == "Best Bound"
-            val = string(round(tree.best_bound,2))
-        elseif f == "Gap"
-            if tree.incumbent != nothing
-                b = tree.best_bound
-                f = tree.incumbent.objval
-                val = string(round(abs(b-f)/abs(f)*100,1))*"%"
-            else
-                val = "-"
-            end
-        elseif f == "Time"
-            val = string(round(time()-start_time,1))
-        elseif f == "#Restarts"
-            if nrestarts == -1
-                val = "-"
-            else
-                val = string(nrestarts)
-            end
-        elseif f == "CLevel"
-            val = string(node.level+1)
-        elseif f == "GainGap"
-            if gain_gap == Inf
-                val = "∞"
-            elseif gain_gap == -1.0
-                val = "-"
-            else
-                val = string(round(gain_gap))*"%"
-            end
-            if length(val) > field_chars[i]
-                val = ">>"
-            end
-        end
-        padding = field_chars[i]-length(val)
-        ln *= repeat(" ",trunc(Int, floor(padding/2)))
-        ln *= val
-        ln *= repeat(" ",trunc(Int, ceil(padding/2)))
-        push!(arr,val)
-        i += 1
-    end
-    
-    BnBTree.is_table_diff(fields, last_arr,arr) && println(ln)
-    return arr
-end
-
-
-function get_table_config(opts)
-    if opts.branch_strategy == :StrongPseudoCost && opts.strong_restart
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
-        field_chars = [8,28,28,7,8,10]
-    else
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
-        field_chars = [8,28,28,7,8]
-    end
-    
-    if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
-        push!(fields, "GainGap")
-        push!(field_chars, 10)
-    end
-    return fields, field_chars
-end
-
 function break_new_incumbent_limits(tree)
     if !isnan(tree.options.best_obj_stop)
         inc_val = tree.incumbent.objval
@@ -725,7 +625,7 @@ function break_new_incumbent_limits(tree)
     return false
 end
 
-function break_time_limit(tree)
+function break_time_limit!(tree)
     if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
         if tree.incumbent == nothing
             tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:UserLimit,tree.best_bound)
@@ -763,7 +663,32 @@ function print_branch_nodes(nodes)
     end
 end
 
+function get_next_branch_node!(tree)
+    value, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+    node = tree.branch_nodes[nidx]
+    deleteat!(tree.branch_nodes,nidx)
 
+    tree.best_bound = tree.obj_fac*value
+    return new_default_step_obj(node)
+end
+
+function isbreak_after_step!(tree)
+    if !tree.options.all_solutions && tree.incumbent != nothing && tree.incumbent.objval == tree.best_bound
+        return true
+    end
+    
+    # maybe break on solution_limit (can be higher if two solutions found in last step)
+    if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
+        incu = tree.incumbent
+        tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
+        return true
+    end
+    if break_time_limit!(tree)
+        return true
+    end
+
+    return false
+end
 
 """
     solve(tree::BnBTreeObj,temp)
@@ -785,20 +710,20 @@ function solve(tree::BnBTreeObj)
     ps = tree.options.log_levels
 
     # check if already integral
-    if BnBTree.are_type_correct(tree.m.solution,tree.m.var_type)
+    if are_type_correct(tree.m.solution,tree.m.var_type)
         tree.nsolutions = 1
         return tree.m
     end
 
     # Print table init
-    if BnBTree.check_print(ps,[:Table]) 
+    if check_print(ps,[:Table]) 
         fields, field_chars = get_table_config(tree.options)
         print_table_header(fields,field_chars)
         last_table_arr = []
     end
     
     
-    BnBTree.check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
+    check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     
     # get variable where to split
     counter = 1    
@@ -806,54 +731,38 @@ function solve(tree::BnBTreeObj)
 
         
     first_incumbent = true
-    gain_gap = 0
     btime_updated = true
-    step_obj = BnBTree.new_default_step_obj(tree.branch_nodes[1])
-    while length(tree.branch_nodes) > 0
+    node = shift!(tree.branch_nodes)
+    next_step_obj = new_default_step_obj(node)
+    step_obj = next_step_obj # to make step_obj accesible after the loop for timing
+    # = 0 is last because it will be shifted at the end of the loop
+    while length(tree.branch_nodes) >= 0 
         btime_updated = false
-        value, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-        node = tree.branch_nodes[nidx]
-        deleteat!(tree.branch_nodes,nidx)
+        step_obj = next_step_obj
+        node = step_obj.node
 
-        step_obj = BnBTree.new_default_step_obj(node)
-        
-        BnBTree.upd_int_variable_idx!(step_obj,tree,counter)
+    # get branch variable    
+        upd_int_variable_idx!(step_obj,tree,counter)
         if step_obj.state == :Infeasible
             tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
             break
         end
 
-        BnBTree.branch!(tree,step_obj,counter)
+    # branch
+        branch!(tree,step_obj,counter)
         step_obj.state == :Break && break
         length(tree.branch_nodes) == 0 && break
 
-        tree.best_bound = tree.obj_fac*maximum([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-
-        # check if best
-        if !tree.options.all_solutions && tree.incumbent != nothing && tree.incumbent.objval == tree.best_bound
-            break
-        end
-        
-        # maybe break on solution_limit (can be higher if two solutions found in last step)
-        if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
-            incu = tree.incumbent
-            tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
-            break
-        end
+    # get next node also computes best bound
+        next_step_obj = get_next_branch_node!(tree)
     
-        if BnBTree.check_print(ps,[:Table]) 
-            if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
-                step_obj.nrestarts = -1 # will be displayed as -
-            end
-            if counter <= tree.options.strong_branching_nsteps
-                gain_gap = -1.0 # will be displayed as -
-            end
-            last_table_arr = print_table(tree,node,step_obj,time_bnb_solve_start,fields,field_chars,gain_gap;last_arr=last_table_arr)
+        if check_print(ps,[:Table]) 
+            last_table_arr = print_table(tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
         end
 
-        if BnBTree.break_time_limit(tree)
-            break
-        end
+    # check if best & maybe break on solution limit
+        isbreak_after_step!(tree) && break
+
         counter += 1
         time_solve_leaves_get_idx += step_obj.leaf_idx_time
         time_solve_leaves_branch += step_obj.leaf_branch_time
@@ -888,17 +797,17 @@ function solve(tree::BnBTreeObj)
         end
     end
     
-    println("Incumbent status: ", tree.incumbent.status)
-
     time_bnb_solve = time()-time_bnb_solve_start
     println("#branches: ", counter)
-    println("BnB time: ", round(time_bnb_solve,2))
-    println("% leaf time: ", round((time_solve_leaves_get_idx+time_solve_leaves_branch)/time_bnb_solve*100,1))
-    println("Solve leaf time get idx: ", round(time_solve_leaves_get_idx,2))
-    println("Solve leaf time branch: ", round(time_solve_leaves_branch,2))
-    println("Branch time: ", round(time_branch,2))
-    println("Get idx time: ", round(time_get_idx,2))
-    println("Upd gains time: ", round(time_upd_gains,2))
+    if [:Timing] in tree.options.log_levels
+        println("BnB time: ", round(time_bnb_solve,2))
+        println("% leaf time: ", round((time_solve_leaves_get_idx+time_solve_leaves_branch)/time_bnb_solve*100,1))
+        println("Solve leaf time get idx: ", round(time_solve_leaves_get_idx,2))
+        println("Solve leaf time branch: ", round(time_solve_leaves_branch,2))
+        println("Branch time: ", round(time_branch,2))
+        println("Get idx time: ", round(time_get_idx,2))
+        println("Upd gains time: ", round(time_upd_gains,2))
+    end
     return tree.incumbent
 end
 
