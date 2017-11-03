@@ -220,10 +220,13 @@ function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol})
 end
 
 MathProgBase.status(m::MINLPBnBModel) = m.status
-MathProgBase.getobjval(m::MINLPBnBModel) = m.objval
 
 # any auxiliary variables will need to be filtered from this at some point
 MathProgBase.getsolution(m::MINLPBnBModel) = m.solution
+
+MathProgBase.getsolvetime(m::MINLPBnBModel) = m.soltime
+
+MathProgBase.getobjval(m::MINLPBnBModel) = m.objval
 
 MathProgBase.getobjbound(m::MINLPBnBModel) = m.best_bound
 
