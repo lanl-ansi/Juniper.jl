@@ -1,10 +1,10 @@
 function get_table_config(opts)
     if opts.branch_strategy == :StrongPseudoCost && opts.strong_restart
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
-        field_chars = [8,28,28,7,8,10]
+        fields = ["p","CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
+        field_chars = [3,8,28,28,7,8,10]
     else
-        fields = ["CLevel","Incumbent","Best Bound","Gap","Time"]
-        field_chars = [8,28,28,7,8]
+        fields = ["p","CLevel","Incumbent","Best Bound","Gap","Time"]
+        field_chars = [3,8,28,28,7,8]
     end
     
     if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
@@ -45,7 +45,7 @@ function is_table_diff(fields,last_arr,new_arr)
     return false 
 end
 
-function print_table(tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
+function print_table(p,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
     gain_gap = step_obj.gain_gap
     if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
         step_obj.nrestarts = -1 # will be displayed as -
@@ -60,7 +60,9 @@ function print_table(tree,node,step_obj,start_time,fields,field_chars,counter;la
     ln = ""
     for f in fields
         val = ""
-        if f == "Incumbent"
+        if f == "p"
+            val = string(p)
+        elseif f == "Incumbent"
             val = tree.incumbent != nothing ? string(round(tree.incumbent.objval,2)) : "-"
         elseif f == "Best Bound"
             val = string(round(tree.best_bound,2))

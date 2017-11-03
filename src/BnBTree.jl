@@ -48,6 +48,8 @@ type StepObj
     upd_gains_time :: Float64
     leaf_branch_time :: Float64
     branch_time     :: Float64
+    integral       :: Vector{BnBNode}
+    branch       :: Vector{BnBNode}
 end
 
 type TimeObj
@@ -97,7 +99,7 @@ function new_default_step_obj(node)
     upd_gains_time = 0.0
     leaf_branch_time = 0.0
     branch_time = 0.0
-    return StepObj(node,0,:None,0,0.0,idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time)
+    return StepObj(node,0,:None,0,0.0,idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time,[],[])
 end
 
 function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
@@ -370,7 +372,7 @@ Set the state and best_bound property
 Update incumbent if new and add node to branch list if :Branch
 Return state
 """
-function solve_leaf!(tree,leaf,temp)
+function solve_leaf!(tree,step_obj,leaf,temp)
      # set bounds
     for i=1:tree.m.num_var
         JuMP.setlowerbound(tree.m.x[i], leaf.l_var[i])    
@@ -392,15 +394,13 @@ function solve_leaf!(tree,leaf,temp)
             leaf.state = :Integral
             leaf.best_bound = objval
             if !temp
-                if new_integral!(tree,leaf) == :Break
-                    leaf.state = :Break
-                end
+                push!(step_obj.integral, leaf)
             end
         else
             leaf.state = :Branch
             leaf.best_bound = objval
             if !temp
-                push_to_branch_list!(tree,leaf)
+                push!(step_obj.branch, leaf)
             end
         end
     else
@@ -465,8 +465,8 @@ function branch!(tree,step_obj,counter;temp=false)
     end
     
     start_leaf = time()
-    l_state = solve_leaf!(tree,l_nd,temp)
-    r_state = solve_leaf!(tree,r_nd,temp)
+    l_state = solve_leaf!(tree,step_obj,l_nd,temp)
+    r_state = solve_leaf!(tree,step_obj,r_nd,temp)
     leaf_time = time() - start_leaf
 
     if temp
@@ -720,10 +720,6 @@ function run_step(tree,step_obj,counter,last_table_arr,
 
     step_obj.state == :Break && return true,counter,btime_updated, last_table_arr
     
-    if check_print(ps,[:Table]) 
-        last_table_arr = print_table(tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
-    end
-
     counter += 1
     upd_time_obj!(time_obj,step_obj)
     btime_updated = true
@@ -742,34 +738,45 @@ function init_time_obj()
     return TimeObj(0.0,0.0,0.0,0.0,0.0)
 end
 
-
 function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
-    fields, field_chars, time_obj,lst)
+    fields, field_chars, time_obj)
     np = nprocs()  # determine the number of processes available
-    n = length(lst)
-    results = Vector{Any}(n)
-    i = 1
     # function to produce the next work item from the queue.
     # in this case it's just an index.
-    nextidx() = (idx=i; i+=1; idx)
+    ps = tree.options.log_levels
     @sync begin
         for p=1:np
             if p != myid() || np == 1
                 @async begin
                     while true
-                        idx = nextidx()
-                        if idx > n
-                            break
+                        exists,step_obj = get_next_branch_node!(tree)
+                        println("p: ", p)
+                        println("length: ", length(tree.branch_nodes))
+                        while !exists
+                            sleep(0.1)
+                            exists,step_obj = get_next_branch_node!(tree)
+                            exists && break
                         end
-                        step_obj = new_default_step_obj(lst[idx])
-                        results[idx] = remotecall_fetch(f, p, tree, step_obj, counter, last_table_arr, time_bnb_solve_start,
+                        println("p finished waiting: ", p)
+                        node = step_obj.node
+                        result = remotecall_fetch(f, p, tree, step_obj, counter, last_table_arr, time_bnb_solve_start,
                         fields, field_chars, time_obj)
+                        step_obj = result[end-1]
+                        for integral_node in step_obj.integral
+                            new_integral!(tree,integral_node)
+                        end
+                        for branch_node in step_obj.branch
+                            push_to_branch_list!(tree,branch_node)
+                        end
+                        
+                        if check_print(ps,[:Table]) 
+                            last_table_arr = print_table(p,tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
+                        end
                     end
                 end
             end
         end
     end
-    return results
 end
 
 """
@@ -809,22 +816,14 @@ function solvemip(tree::BnBTreeObj)
     first_incumbent = true
     btime_updated = true
     # this is only needed for btime_updated so that step_obj is defined after the loop
-    step_obj = new_default_step_obj(tree.branch_nodes[1]) 
-
     println("-p ", nprocs())
-    while length(tree.branch_nodes) > 0 
-        t = Vector(nprocs()-1)
-        result = pmap(MINLPBnB.run_step,tree,
-                            counter,
-                            last_table_arr,
-                            time_bnb_solve_start,
-                            fields,
-                            field_chars,
-                            time_obj,tree.branch_nodes)
-        println(result)
-        break
-        # isbreak && break
-    end
+    pmap(MINLPBnB.run_step,tree,
+        counter,
+        last_table_arr,
+        time_bnb_solve_start,
+        fields,
+        field_chars,
+        time_obj)
 
     if !btime_updated 
         upd_time_obj!(time_obj,step_obj)
