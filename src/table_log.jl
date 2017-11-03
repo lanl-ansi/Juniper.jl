@@ -102,6 +102,6 @@ function print_table(tree,node,step_obj,start_time,fields,field_chars,counter;la
         i += 1
     end
     
-    BnBTree.is_table_diff(fields, last_arr,arr) && println(ln)
+    is_table_diff(fields, last_arr,arr) && println(ln)
     return arr
 end

@@ -1,3 +1,4 @@
+addprocs(2)
 using Logging
 
 # suppress warnings during testing
@@ -45,9 +46,9 @@ minlpbnb_pseudo = MINLPBnBSolver(IpoptSolver(print_level=0);
 
 start = time()
 
-include("basic.jl")
-include("user_limits.jl")
+# include("basic.jl")
+# include("user_limits.jl")
 include("pod.jl")
-include("power_models_acp.jl")
-include("power_models_socwr.jl")
+# include("power_models_acp.jl")
+# include("power_models_socwr.jl")
 println("Time for all tests: ", time()-start)

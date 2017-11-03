@@ -1,9 +1,3 @@
-module BnBTree
-import MINLPBnB
-using JuMP
-using Ipopt
-using MathProgBase
-
 include("table_log.jl")
 
 rtol = 1e-6
@@ -38,7 +32,7 @@ type BnBTreeObj
     obj_fac     :: Int64 # factor for objective 1 if max -1 if min
     start_time  :: Float64 
     nsolutions  :: Int64
-    branch_nodes:: Vector{Union{Void,BnBNode}}
+    branch_nodes:: Vector{BnBNode}
     best_bound  :: Float64
 end
 
@@ -83,7 +77,8 @@ function init(start_time, m)
     if m.obj_sense == :Min
         factor = -1
     end
-    return BnBTreeObj(m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,factor,start_time,0,[node],NaN)
+    return BnBTreeObj(m,nothing,obj_gain,obj_gain_c,int2var_idx,var2int_idx,m.options,
+                    factor,start_time,0,[node],NaN)
 end
 
 function new_default_node(idx,level,l_var,u_var,solution;
@@ -383,7 +378,7 @@ function solve_leaf!(tree,leaf,temp)
     end
 
     status = JuMP.solve(tree.m.model)
-    objval   = getobjectivevalue(tree.m.model)
+    objval = getobjectivevalue(tree.m.model)
     leaf.solution = getvalue(tree.m.x)
     status = status
     if status == :Error
@@ -670,12 +665,15 @@ function print_branch_nodes(nodes)
 end
 
 function get_next_branch_node!(tree)
+    if length(tree.branch_nodes) == 0
+        return false,nothing
+    end
     value, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
     node = tree.branch_nodes[nidx]
     deleteat!(tree.branch_nodes,nidx)
 
     tree.best_bound = tree.obj_fac*value
-    return new_default_step_obj(node)
+    return true,new_default_step_obj(node)
 end
 
 function isbreak_after_step!(tree)
@@ -696,12 +694,14 @@ function isbreak_after_step!(tree)
     return false
 end
 
-function run_step(tree,counter,last_table_arr,time_bnb_solve_start,fields,field_chars,time_obj)
+function run_step(tree,step_obj,counter,last_table_arr,
+    time_bnb_solve_start,fields,field_chars,time_obj)
     ps = tree.options.log_levels
 
+    println("Worker: ", myid())
+
     btime_updated = false
-    # get next node also computes best bound
-    step_obj = get_next_branch_node!(tree)   
+
 
 # check if best & maybe break on solution limit
     isbreak_after_step!(tree) && return true,counter,btime_updated, last_table_arr
@@ -727,7 +727,7 @@ function run_step(tree,counter,last_table_arr,time_bnb_solve_start,fields,field_
     counter += 1
     upd_time_obj!(time_obj,step_obj)
     btime_updated = true
-    return false,counter,btime_updated, last_table_arr
+    return false,counter,btime_updated, step_obj, last_table_arr
 end
 
 function upd_time_obj!(time_obj, step_obj)
@@ -742,15 +742,45 @@ function init_time_obj()
     return TimeObj(0.0,0.0,0.0,0.0,0.0)
 end
 
+
+function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
+    fields, field_chars, time_obj,lst)
+    np = nprocs()  # determine the number of processes available
+    n = length(lst)
+    results = Vector{Any}(n)
+    i = 1
+    # function to produce the next work item from the queue.
+    # in this case it's just an index.
+    nextidx() = (idx=i; i+=1; idx)
+    @sync begin
+        for p=1:np
+            if p != myid() || np == 1
+                @async begin
+                    while true
+                        idx = nextidx()
+                        if idx > n
+                            break
+                        end
+                        step_obj = new_default_step_obj(lst[idx])
+                        results[idx] = remotecall_fetch(f, p, tree, step_obj, counter, last_table_arr, time_bnb_solve_start,
+                        fields, field_chars, time_obj)
+                    end
+                end
+            end
+        end
+    end
+    return results
+end
+
 """
-    solve(tree::BnBTreeObj)
+    solvemip(tree::BnBTreeObj)
 
 Solve the MIP part of a problem given by BnBTreeObj using branch and bound.
  - Identify the node to branch on
  - Get variable to branch on
  - Solve subproblems
 """
-function solve(tree::BnBTreeObj)
+function solvemip(tree::BnBTreeObj)
     time_obj = init_time_obj()
     time_bnb_solve_start = time()
 
@@ -780,9 +810,20 @@ function solve(tree::BnBTreeObj)
     btime_updated = true
     # this is only needed for btime_updated so that step_obj is defined after the loop
     step_obj = new_default_step_obj(tree.branch_nodes[1]) 
+
+    println("-p ", nprocs())
     while length(tree.branch_nodes) > 0 
-        isbreak, counter, btime_updated, last_table_arr = run_step(tree,counter,last_table_arr,time_bnb_solve_start,fields,field_chars,time_obj)
-        isbreak && break
+        t = Vector(nprocs()-1)
+        result = pmap(MINLPBnB.run_step,tree,
+                            counter,
+                            last_table_arr,
+                            time_bnb_solve_start,
+                            fields,
+                            field_chars,
+                            time_obj,tree.branch_nodes)
+        println(result)
+        break
+        # isbreak && break
     end
 
     if !btime_updated 
@@ -818,6 +859,4 @@ function solve(tree::BnBTreeObj)
         println("Upd gains time: ", round(time_obj.upd_gains,2))
     end
     return tree.incumbent
-end
-
 end

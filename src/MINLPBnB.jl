@@ -1,4 +1,4 @@
-module MINLPBnB
+@everywhere module MINLPBnB
 
 using MathProgBase
 using JuMP
@@ -19,8 +19,8 @@ type SolverOptions
     list_of_solutions           :: Bool
 end
 
-include("solver.jl")
-include("model.jl")
-include("BnBTree.jl")
+include(Pkg.dir("MINLPBnB")*"/src/solver.jl")
+include(Pkg.dir("MINLPBnB")*"/src/model.jl")
+include(Pkg.dir("MINLPBnB")*"/src/BnBTree.jl")
 
 end
