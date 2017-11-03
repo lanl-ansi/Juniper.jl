@@ -3,6 +3,9 @@ include("basic/gamsworld.jl")
 @testset "basic tests" begin
 
 @testset "bruteforce" begin
+    println("==================================")
+    println("Bruteforce")
+    println("==================================")
     minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
         branch_strategy=:MostInfeasible,
         all_solutions = true,
@@ -33,7 +36,29 @@ include("basic/gamsworld.jl")
     @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "infeasible cos" begin
+    println("==================================")
+    println("Infeasible cos")
+    println("==================================")
+    m = Model(solver=minlpbnb_strong_no_restart)
+
+    @variable(m, 1 <= x <= 5, Int)
+    @variable(m, -2 <= y <= 2, Int)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==2*cos(2*x))
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+end
+
 @testset "infeasible relaxation" begin
+    println("==================================")
+    println("Infeasible relaxation")
+    println("==================================")
     m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -50,6 +75,9 @@ end
 end
 
 @testset "infeasible integer" begin
+    println("==================================")
+    println("Infeasible integer")
+    println("==================================")
     m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -67,6 +95,9 @@ end
 end
 
 @testset "infeasible in strong" begin
+    println("==================================")
+    println("Infeasible in strong")
+    println("==================================")
     m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, 0 <= x[1:5] <= 2, Int)
@@ -83,6 +114,9 @@ end
 end
 
 @testset "One Integer small Strong" begin
+    println("==================================")
+    println("One Integer small Strong")
+    println("==================================")
     m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, x >= 0, Int)
@@ -107,6 +141,9 @@ end
 end
 
 @testset "One Integer small MostInfeasible" begin
+    println("==================================")
+    println("One Integer small MostInfeasible")
+    println("==================================")
     m = Model(solver=minlpbnb_mosti)
 
     @variable(m, x >= 0, Int)
@@ -131,6 +168,9 @@ end
 end
 
 @testset "One Integer small PseudoCost" begin
+    println("==================================")
+    println("One Integer small PseudoCost")
+    println("==================================")
     m = Model(solver=minlpbnb_pseudo)
 
     @variable(m, x >= 0, Int)
@@ -155,6 +195,9 @@ end
 end
 
 @testset "Three Integers Small Strong" begin
+    println("==================================")
+    println("Three Integers Small Strong")
+    println("==================================")
     m = Model(solver=minlpbnb_strong_no_restart)
 
     @variable(m, x >= 0, Int)
@@ -177,6 +220,10 @@ end
 end
 
 @testset "Three Integers Small MostInfeasible" begin
+    println("==================================")
+    println("Three Integers Small MostInfeasible")
+    println("==================================")
+
     m = Model(solver=minlpbnb_mosti)
 
     @variable(m, x >= 0, Int)
@@ -199,6 +246,10 @@ end
 end
 
 @testset "Three Integers Small PseudoCost" begin
+    println("==================================")
+    println("Three Integers Small PseudoCost")
+    println("==================================")
+
     m = Model(solver=minlpbnb_pseudo)
 
     @variable(m, x >= 0, Int)
@@ -221,6 +272,10 @@ end
 end
 
 @testset "Knapsack Max" begin
+    println("==================================")
+    println("KNAPSACK")
+    println("==================================")
+
     m = Model(solver=minlpbnb_strong_no_restart)
 
     v = [10,20,12,23,42]
