@@ -154,8 +154,6 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
         # basically branching on the last infeasible variable 
         max_gain_var = infeasible_int_vars[end]
         strong_int_vars = [infeasible_int_vars[end]] # don't divide by 0 later
-        node.left = l_nd
-        node.right = r_nd
     else
         max_gain_var = 0
         strong_int_vars = zeros(Int64,0)
@@ -172,7 +170,7 @@ Update obj_gain for the variables tried and average the other ones.
 """
 function branch_strong(tree,step_obj,counter)
     function init_variables()
-        max_gain = 0.0
+        max_gain = -Inf # then one is definitely better
         max_gain_var = 0
         strong_int_vars = zeros(Int64,0)
         return max_gain, max_gain_var, strong_int_vars
@@ -208,7 +206,7 @@ function branch_strong(tree,step_obj,counter)
     infeasible_int_vars = zeros(Int64,0)
     status = :Normal
     while restart 
-        strong_restarts += 1
+        strong_restarts += 1 # is init with -1
         restart = false
         for int_var_idx in reasonable_int_vars
             # don't rerun if the variable has already one infeasible node
@@ -236,7 +234,7 @@ function branch_strong(tree,step_obj,counter)
                 if l_nd.state == :Infeasible || r_nd.state == :Infeasible
                     max_gain = 0.0
                     if l_nd.state == :Infeasible && r_nd.state == :Infeasible
-                        node.state = :Infeasible
+                        status = :Infeasible
                         break
                     end
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
@@ -259,13 +257,13 @@ function branch_strong(tree,step_obj,counter)
     end
     
     if status != :Infeasible
-            for leaf in [left_node,right_node]
-                if leaf.state == :Branch
-                    push_to_branch_list!(tree,leaf)
-                elseif leaf.state == :Integral
-                    new_integral!(tree,leaf)
-                end
-            end   
+        for leaf in [left_node,right_node]
+            if leaf.state == :Branch
+                push_to_branch_list!(tree,leaf)
+            elseif leaf.state == :Integral
+                new_integral!(tree,leaf)
+            end
+        end   
 
         # set the variable to branch (best gain)
         node.state = :Done
@@ -690,6 +688,10 @@ function isbreak_after_step!(tree)
     return false
 end
 
+function run_step(tree)
+
+end
+
 """
     solve(tree::BnBTreeObj,temp)
 
@@ -729,16 +731,18 @@ function solve(tree::BnBTreeObj)
     counter = 1    
     branch_strat = tree.options.branch_strategy
 
-        
     first_incumbent = true
     btime_updated = true
-    node = shift!(tree.branch_nodes)
-    next_step_obj = new_default_step_obj(node)
-    step_obj = next_step_obj # to make step_obj accesible after the loop for timing
-    # = 0 is last because it will be shifted at the end of the loop
-    while length(tree.branch_nodes) >= 0 
+    # this is only needed for btime_updated so that step_obj is defined after the loop
+    step_obj = new_default_step_obj(tree.branch_nodes[1]) 
+    while length(tree.branch_nodes) > 0 
         btime_updated = false
-        step_obj = next_step_obj
+        # get next node also computes best bound
+        step_obj = get_next_branch_node!(tree)   
+    
+    # check if best & maybe break on solution limit
+        isbreak_after_step!(tree) && break
+        
         node = step_obj.node
 
     # get branch variable    
@@ -750,18 +754,12 @@ function solve(tree::BnBTreeObj)
 
     # branch
         branch!(tree,step_obj,counter)
-        step_obj.state == :Break && break
-        length(tree.branch_nodes) == 0 && break
 
-    # get next node also computes best bound
-        next_step_obj = get_next_branch_node!(tree)
-    
+        step_obj.state == :Break && break
+        
         if check_print(ps,[:Table]) 
             last_table_arr = print_table(tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
         end
-
-    # check if best & maybe break on solution limit
-        isbreak_after_step!(tree) && break
 
         counter += 1
         time_solve_leaves_get_idx += step_obj.leaf_idx_time

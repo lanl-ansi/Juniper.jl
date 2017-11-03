@@ -7,9 +7,10 @@ include("basic/gamsworld.jl")
     println("Bruteforce")
     println("==================================")
     minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:MostInfeasible,
+        branch_strategy=:StrongPseudoCost,
         all_solutions = true,
-        list_of_solutions = true
+        list_of_solutions = true,
+        strong_restart = true
     )
 
     m = Model(solver=minlpbnb_all_solutions)
@@ -40,7 +41,7 @@ end
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=minlpbnb_strong_restart)
 
     @variable(m, 1 <= x <= 5, Int)
     @variable(m, -2 <= y <= 2, Int)
