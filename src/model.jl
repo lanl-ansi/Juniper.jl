@@ -205,6 +205,8 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     return m.status
 end
 
+MathProgBase.getsolvetime(m::MINLPBnBModel) = m.soltime
+
 MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = fill(0.0, length(x))
 
 """

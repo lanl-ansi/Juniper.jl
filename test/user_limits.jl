@@ -30,6 +30,7 @@ include("POD_experiment/blend029.jl")
     println("gap_val: ", gap_val)
 
     @test best_bound_val >= objval
+    @test getsolvetime(m) <= 15 # it might be a bit higher than 10s
 end
 
 @testset "blend029 5% limit" begin
