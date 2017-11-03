@@ -56,6 +56,14 @@ type StepObj
     branch_time     :: Float64
 end
 
+type TimeObj
+    solve_leaves_get_idx :: Float64
+    solve_leaves_branch :: Float64
+    branch :: Float64
+    get_idx :: Float64
+    upd_gains :: Float64
+end
+
 function init(start_time, m)
     srand(1)
     node = BnBNode(1,1,m.l_var,m.u_var,m.solution,0,:Branch,m.objval)
@@ -688,12 +696,54 @@ function isbreak_after_step!(tree)
     return false
 end
 
-function run_step(tree)
+function run_step(tree,counter,last_table_arr,time_bnb_solve_start,fields,field_chars,time_obj)
+    ps = tree.options.log_levels
 
+    btime_updated = false
+    # get next node also computes best bound
+    step_obj = get_next_branch_node!(tree)   
+
+# check if best & maybe break on solution limit
+    isbreak_after_step!(tree) && return true,counter,btime_updated, last_table_arr
+    
+    node = step_obj.node
+
+# get branch variable    
+    upd_int_variable_idx!(step_obj,tree,counter)
+    if step_obj.state == :Infeasible
+        tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
+        return true,counter,btime_updated, last_table_arr
+    end
+
+# branch
+    branch!(tree,step_obj,counter)
+
+    step_obj.state == :Break && return true,counter,btime_updated, last_table_arr
+    
+    if check_print(ps,[:Table]) 
+        last_table_arr = print_table(tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
+    end
+
+    counter += 1
+    upd_time_obj!(time_obj,step_obj)
+    btime_updated = true
+    return false,counter,btime_updated, last_table_arr
+end
+
+function upd_time_obj!(time_obj, step_obj)
+    time_obj.solve_leaves_get_idx += step_obj.leaf_idx_time
+    time_obj.solve_leaves_branch += step_obj.leaf_branch_time
+    time_obj.branch += step_obj.branch_time
+    time_obj.get_idx += step_obj.idx_time
+    time_obj.upd_gains += step_obj.upd_gains_time
+end
+
+function init_time_obj()
+    return TimeObj(0.0,0.0,0.0,0.0,0.0)
 end
 
 """
-    solve(tree::BnBTreeObj,temp)
+    solve(tree::BnBTreeObj)
 
 Solve the MIP part of a problem given by BnBTreeObj using branch and bound.
  - Identify the node to branch on
@@ -701,12 +751,7 @@ Solve the MIP part of a problem given by BnBTreeObj using branch and bound.
  - Solve subproblems
 """
 function solve(tree::BnBTreeObj)
-    time_solve_leaves_get_idx = 0.0
-    time_solve_leaves_branch = 0.0
-    time_upd_gains = 0.0
-    time_get_idx = 0.0
-    time_branch = 0.0
-    time_solve_leaves = 0.0
+    time_obj = init_time_obj()
     time_bnb_solve_start = time()
 
     ps = tree.options.log_levels
@@ -736,46 +781,12 @@ function solve(tree::BnBTreeObj)
     # this is only needed for btime_updated so that step_obj is defined after the loop
     step_obj = new_default_step_obj(tree.branch_nodes[1]) 
     while length(tree.branch_nodes) > 0 
-        btime_updated = false
-        # get next node also computes best bound
-        step_obj = get_next_branch_node!(tree)   
-    
-    # check if best & maybe break on solution limit
-        isbreak_after_step!(tree) && break
-        
-        node = step_obj.node
-
-    # get branch variable    
-        upd_int_variable_idx!(step_obj,tree,counter)
-        if step_obj.state == :Infeasible
-            tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
-            break
-        end
-
-    # branch
-        branch!(tree,step_obj,counter)
-
-        step_obj.state == :Break && break
-        
-        if check_print(ps,[:Table]) 
-            last_table_arr = print_table(tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
-        end
-
-        counter += 1
-        time_solve_leaves_get_idx += step_obj.leaf_idx_time
-        time_solve_leaves_branch += step_obj.leaf_branch_time
-        time_branch += step_obj.branch_time
-        time_get_idx += step_obj.idx_time
-        time_upd_gains += step_obj.upd_gains_time
-        btime_updated = true
+        isbreak, counter, btime_updated, last_table_arr = run_step(tree,counter,last_table_arr,time_bnb_solve_start,fields,field_chars,time_obj)
+        isbreak && break
     end
 
     if !btime_updated 
-        time_solve_leaves_get_idx += step_obj.leaf_idx_time
-        time_solve_leaves_branch += step_obj.leaf_branch_time
-        time_branch += step_obj.branch_time
-        time_get_idx += step_obj.idx_time
-        time_upd_gains += step_obj.upd_gains_time
+        upd_time_obj!(time_obj,step_obj)
     end
 
     if tree.incumbent == nothing
@@ -799,12 +810,12 @@ function solve(tree::BnBTreeObj)
     println("#branches: ", counter)
     if :Timing in tree.options.log_levels
         println("BnB time: ", round(time_bnb_solve,2))
-        println("% leaf time: ", round((time_solve_leaves_get_idx+time_solve_leaves_branch)/time_bnb_solve*100,1))
-        println("Solve leaf time get idx: ", round(time_solve_leaves_get_idx,2))
-        println("Solve leaf time branch: ", round(time_solve_leaves_branch,2))
-        println("Branch time: ", round(time_branch,2))
-        println("Get idx time: ", round(time_get_idx,2))
-        println("Upd gains time: ", round(time_upd_gains,2))
+        println("% leaf time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
+        println("Solve leaf time get idx: ", round(time_obj.solve_leaves_get_idx,2))
+        println("Solve leaf time branch: ", round(time_obj.solve_leaves_branch,2))
+        println("Branch time: ", round(time_obj.branch,2))
+        println("Get idx time: ", round(time_obj.get_idx,2))
+        println("Upd gains time: ", round(time_obj.upd_gains,2))
     end
     return tree.incumbent
 end
