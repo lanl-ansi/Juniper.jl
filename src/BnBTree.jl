@@ -799,7 +799,7 @@ function solve(tree::BnBTreeObj)
     
     time_bnb_solve = time()-time_bnb_solve_start
     println("#branches: ", counter)
-    if [:Timing] in tree.options.log_levels
+    if :Timing in tree.options.log_levels
         println("BnB time: ", round(time_bnb_solve,2))
         println("% leaf time: ", round((time_solve_leaves_get_idx+time_solve_leaves_branch)/time_bnb_solve*100,1))
         println("Solve leaf time get idx: ", round(time_solve_leaves_get_idx,2))
