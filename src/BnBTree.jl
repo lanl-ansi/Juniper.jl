@@ -112,17 +112,17 @@ function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
 end
 
 """
-    branch_mostinfeasible(tree,node)
+    branch_mostinfeasible(num_var,var_type,node)
 
 Get the index of an integer variable which is currently continuous which is most unintegral.
 (nearest to *.5)
 """
-function branch_mostinfeasible(tree,node)
+function branch_mostinfeasible(m,node)
     x = node.solution
     idx = 0
     max_diff = 0
-    for i=1:tree.m.num_var
-        if tree.m.var_type[i] != :Cont
+    for i=1:m.num_var
+        if m.var_type[i] != :Cont
             diff = abs(x[i]-round(x[i]))
             if diff > max_diff
                 idx = i
@@ -291,19 +291,19 @@ function branch_strong(tree,step_obj,counter)
 end
 
 """
-    upd_int_variable_idx!(step_obj,tree,node,counter=1)    
+    upd_int_variable_idx!(step_obj,opts,node,counter=1)    
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(step_obj,tree,counter::Int64=1)   
+function upd_int_variable_idx!(m,step_obj,opts,counter::Int64=1)   
     start = time()
     node = step_obj.node
     idx = 0
     strong_restarts = 0
-    branch_strat = tree.options.branch_strategy
+    branch_strat = opts.branch_strategy
     status = :Normal
     if branch_strat == :MostInfeasible
-        idx = branch_mostinfeasible(tree,node)
+        idx = branch_mostinfeasible(m,node)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
             idx = branch_mostinfeasible(tree,node)
@@ -372,25 +372,25 @@ Set the state and best_bound property
 Update incumbent if new and add node to branch list if :Branch
 Return state
 """
-function solve_leaf!(tree,step_obj,leaf,temp)
+function solve_leaf!(m,step_obj,leaf,temp)
      # set bounds
-    for i=1:tree.m.num_var
-        JuMP.setlowerbound(tree.m.x[i], leaf.l_var[i])    
-        JuMP.setupperbound(tree.m.x[i], leaf.u_var[i])
+    for i=1:m.num_var
+        JuMP.setlowerbound(m.x[i], leaf.l_var[i])    
+        JuMP.setupperbound(m.x[i], leaf.u_var[i])
     end
 
-    status = JuMP.solve(tree.m.model)
-    objval = getobjectivevalue(tree.m.model)
-    leaf.solution = getvalue(tree.m.x)
+    status = JuMP.solve(m.model)
+    objval = getobjectivevalue(m.model)
+    leaf.solution = getvalue(m.x)
     status = status
     if status == :Error
         # println(leaf.m.model)
-        println(Ipopt.ApplicationReturnStatus[internalmodel(tree.m.model).inner.status])
+        println(Ipopt.ApplicationReturnStatus[internalmodel(m.model).inner.status])
         # error("...")
         leaf.state = :Error
     elseif status == :Optimal
         # check if all int vars are int
-        if are_type_correct(leaf.solution,tree.m.var_type)
+        if are_type_correct(leaf.solution,m.var_type)
             leaf.state = :Integral
             leaf.best_bound = objval
             if !temp
@@ -437,8 +437,8 @@ end
 Branch a node by using x[idx] <= floor(x[idx]) and x[idx] >= ceil(x[idx])
 Solve both nodes and set current node state to done.
 """
-function branch!(tree,step_obj,counter;temp=false)
-    ps = tree.options.log_levels
+function branch!(m,opts,step_obj,counter;temp=false)
+    ps = opts.log_levels
     node = step_obj.node
     vidx = step_obj.var_idx
 
@@ -465,8 +465,8 @@ function branch!(tree,step_obj,counter;temp=false)
     end
     
     start_leaf = time()
-    l_state = solve_leaf!(tree,step_obj,l_nd,temp)
-    r_state = solve_leaf!(tree,step_obj,r_nd,temp)
+    l_state = solve_leaf!(m,step_obj,l_nd,temp)
+    r_state = solve_leaf!(m,step_obj,r_nd,temp)
     leaf_time = time() - start_leaf
 
     if temp
@@ -479,8 +479,8 @@ function branch!(tree,step_obj,counter;temp=false)
         step_obj.state = :Break
     end
 
-    branch_strat = tree.options.branch_strategy
-    if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > tree.options.strong_branching_nsteps)
+    branch_strat = opts.branch_strategy
+    if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > opts.strong_branching_nsteps)
         upd_start = time()
         step_obj.gain_gap = update_gains!(tree,node,l_nd,r_nd,counter)    
         step_obj.upd_gains_time = time()-upd_start
@@ -694,36 +694,27 @@ function isbreak_after_step!(tree)
     return false
 end
 
-function run_step(tree,step_obj,counter,last_table_arr,
-    time_bnb_solve_start,fields,field_chars,time_obj)
-    ps = tree.options.log_levels
-
-    println("Worker: ", myid())
-
-    btime_updated = false
-
-
+function run_step(m, opts, step_obj,counter)
 # check if best & maybe break on solution limit
-    isbreak_after_step!(tree) && return true,counter,btime_updated, last_table_arr
+    # isbreak_after_step!(tree) && return true,counter,btime_updated, last_table_arr
     
     node = step_obj.node
 
 # get branch variable    
-    upd_int_variable_idx!(step_obj,tree,counter)
-    if step_obj.state == :Infeasible
-        tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
-        return true,counter,btime_updated, last_table_arr
-    end
+    upd_int_variable_idx!(m,step_obj,opts,counter)
+    
+    # if step_obj.state == :Infeasible
+        # tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
+        # return true,counter,btime_updated, last_table_arr
+    # end
 
 # branch
-    branch!(tree,step_obj,counter)
+    branch!(m,opts,step_obj,counter)
 
-    step_obj.state == :Break && return true,counter,btime_updated, last_table_arr
+    # step_obj.state == :Break && return true,counter,btime_updated, last_table_arr
     
-    counter += 1
-    upd_time_obj!(time_obj,step_obj)
-    btime_updated = true
-    return false,counter,btime_updated, step_obj, last_table_arr
+    # return false,counter,btime_updated, step_obj, last_table_arr
+    return step_obj
 end
 
 function upd_time_obj!(time_obj, step_obj)
@@ -744,29 +735,44 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     # function to produce the next work item from the queue.
     # in this case it's just an index.
     ps = tree.options.log_levels
+    println("Inside pmap")
+    still_running = true
+    run_counter = 0
     @sync begin
         for p=1:np
             if p != myid() || np == 1
                 @async begin
                     while true
                         exists,step_obj = get_next_branch_node!(tree)
-                        println("p: ", p)
-                        println("length: ", length(tree.branch_nodes))
-                        while !exists
+                        # println("p: ", p)
+                        while !exists && still_running
                             sleep(0.1)
                             exists,step_obj = get_next_branch_node!(tree)
                             exists && break
                         end
+                        if !still_running
+                            break
+                        end
                         println("p finished waiting: ", p)
                         node = step_obj.node
-                        result = remotecall_fetch(f, p, tree, step_obj, counter, last_table_arr, time_bnb_solve_start,
-                        fields, field_chars, time_obj)
-                        step_obj = result[end-1]
+                        run_counter += 1
+                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, counter)
+                        run_counter -= 1
                         for integral_node in step_obj.integral
                             new_integral!(tree,integral_node)
                         end
                         for branch_node in step_obj.branch
                             push_to_branch_list!(tree,branch_node)
+                        end
+                        # println("step_obj: ", step_obj)
+                        if isbreak_after_step!(tree) 
+                            still_running = false 
+                            break
+                        end
+
+                        if run_counter == 0 && length(tree.branch_nodes) == 0
+                            still_running = false 
+                            break
                         end
                         
                         if check_print(ps,[:Table]) 
@@ -817,7 +823,7 @@ function solvemip(tree::BnBTreeObj)
     btime_updated = true
     # this is only needed for btime_updated so that step_obj is defined after the loop
     println("-p ", nprocs())
-    pmap(MINLPBnB.run_step,tree,
+    @time pmap(MINLPBnB.run_step,tree,
         counter,
         last_table_arr,
         time_bnb_solve_start,

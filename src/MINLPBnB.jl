@@ -1,4 +1,4 @@
-@everywhere module MINLPBnB
+module MINLPBnB
 
 using MathProgBase
 using JuMP
