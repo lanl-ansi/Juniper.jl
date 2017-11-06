@@ -332,27 +332,6 @@ end
     @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
 end
 
-
-@testset "Batch.mod no restart" begin
-    println("==================================")
-    println("BATCH.MOD NO RESTART")
-    println("==================================")
-    
-    m = batch_problem()
-
-    setsolver(m, minlpbnb_strong_no_restart)
-    status = solve(m)
-    @test status == :Optimal
-
-    minlpbnb_val = getobjectivevalue(m)
-
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
-
-    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
-end
-
-
 @testset "Batch.mod Restart" begin
     println("==================================")
     println("BATCH.MOD RESTART")

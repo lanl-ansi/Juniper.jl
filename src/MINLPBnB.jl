@@ -17,6 +17,7 @@ type SolverOptions
     solution_limit              :: Int64
     all_solutions               :: Bool
     list_of_solutions           :: Bool
+    processors                  :: Int64
 end
 
 include(Pkg.dir("MINLPBnB")*"/src/solver.jl")

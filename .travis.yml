@@ -26,11 +26,13 @@ before_install:
   - julia -e 'Pkg.update()' #make sure we get the latest version of METADATA
   - julia -e 'if !("Coverage" in keys(Pkg.installed())) Pkg.add("Coverage") end'
   - julia -e 'if !("Documenter" in keys(Pkg.installed())) Pkg.add("Documenter") end'
+  - julia -e 'cd(Pkg.dir("MINLPBnB"))'
 
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd())'
   - julia -e 'Pkg.test("MINLPBnB", coverage=true)'
+  - julia -p 4 test/runtests_parallel.jl
 
 after_success:
   - echo $TRAVIS_JULIA_VERSION

@@ -1,4 +1,3 @@
-addprocs(3)
 using Logging
 
 # suppress warnings during testing
