@@ -1,3 +1,7 @@
+if !("Logging" in keys(Pkg.installed())) Pkg.add("Logging") end
+if !("JuMP" in keys(Pkg.installed())) Pkg.add("JuMP") end
+if !("Ipopt" in keys(Pkg.installed())) Pkg.add("Ipopt") end
+
 using Logging
 
 # suppress warnings during testing
@@ -7,7 +11,6 @@ using Base.Test
 using JuMP
 
 using Ipopt
-using PowerModels
 
 using MINLPBnB
 

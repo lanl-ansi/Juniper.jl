@@ -395,6 +395,11 @@ function solve_leaf!(m,step_obj,leaf,temp)
     return leaf.state
 end
 
+"""
+    push_integral_or_branch!(m,step_obj,leaf,temp)
+
+Add integral or branch node to step_obj
+"""
 function push_integral_or_branch!(m,step_obj,leaf,temp)
     # check if all int vars are int
     if are_type_correct(leaf.solution,m.var_type)
@@ -410,6 +415,12 @@ function push_integral_or_branch!(m,step_obj,leaf,temp)
     end
 end
 
+"""
+    new_integral!(tree,node)
+
+Update the incumbent and add obj constr if in options
+Add to solutions if list_of_solutions in options
+"""
 function new_integral!(tree,node)
     # node.best_bound is the objective for integral values
     tree.nsolutions += 1
@@ -421,6 +432,11 @@ function new_integral!(tree,node)
     end
 end
 
+"""
+    push_to_branch_list!(tree,leaf)
+
+Push a node to the list of branch nodes if better than incumbent
+"""
 function push_to_branch_list!(tree,leaf)
     if tree.incumbent == nothing || tree.obj_fac*leaf.best_bound >= tree.obj_fac*tree.incumbent.objval
         # tree.incumbent != nothing && println("Inc", tree.incumbent.objval)
@@ -602,6 +618,11 @@ function bound!(tree::BnBTreeObj)
     filter!(isbetter,tree.branch_nodes)
 end
 
+"""
+    break_new_incumbent_limits(tree)
+
+Return true if mip_gap or best_obj_stop is reached
+"""
 function break_new_incumbent_limits(tree)
     if !isnan(tree.options.best_obj_stop)
         inc_val = tree.incumbent.objval
@@ -627,6 +648,11 @@ function break_new_incumbent_limits(tree)
     return false
 end
 
+"""
+    break_time_limit!(tree)
+
+Check if time limit is reached and  set or update the IncumbentSolution
+"""
 function break_time_limit!(tree)
     if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
         if tree.incumbent == nothing
@@ -640,6 +666,11 @@ function break_time_limit!(tree)
     return false
 end
 
+"""
+    add_obj_constr(tree)
+
+Add a constraint >=/<= incumbent 
+"""
 function add_obj_constr(tree)
     # add constr for objval
     if tree.options.incumbent_constr
@@ -655,16 +686,13 @@ function add_obj_constr(tree)
     end
 end
 
-function print_branch_nodes(nodes)
-    for node in nodes
-        println("------")
-        println("BB: ", node.best_bound)
-        println("LV: ", node.l_var)
-        println("UV: ", node.u_var)
-        println("------")
-    end
-end
+"""
+    get_next_branch_node!(tree)
 
+Get the next branch node (sorted by best bound)
+Return true,step_obj if there is a branch node and
+false, nothing otherwise
+"""
 function get_next_branch_node!(tree)
     if length(tree.branch_nodes) == 0
         return false,nothing
@@ -677,6 +705,15 @@ function get_next_branch_node!(tree)
     return true,new_default_step_obj(tree.m,node)
 end
 
+"""
+    isbreak_after_step!(tree)
+
+Check if break...
+Break if 
+    - incumbent equals best bound
+    - solution limit is reached
+    - time limit is reached    
+"""
 function isbreak_after_step!(tree)
     if !tree.options.all_solutions && tree.incumbent != nothing && tree.incumbent.objval == tree.best_bound
         return true
@@ -695,6 +732,12 @@ function isbreak_after_step!(tree)
     return false
 end
 
+"""
+    one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+
+Get a branch variable using the specified strategy and branch on the node in step_obj 
+using that variable. Return the new updated step_obj
+"""
 function one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
     node = step_obj.node
     step_obj.counter = counter
@@ -708,6 +751,11 @@ function one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
     return step_obj
 end
 
+"""
+    upd_time_obj!(time_obj, step_obj)
+
+Add step_obj times to time_obj
+"""
 function upd_time_obj!(time_obj, step_obj)
     time_obj.solve_leaves_get_idx += step_obj.leaf_idx_time
     time_obj.solve_leaves_branch += step_obj.leaf_branch_time
@@ -720,6 +768,11 @@ function init_time_obj()
     return TimeObj(0.0,0.0,0.0,0.0,0.0)
 end
 
+"""
+    upd_gains_step!(tree,step_obj)
+
+Update the gains using the step_obj if using StrongPseudoCost or PseudoCost
+"""
 function upd_gains_step!(tree,step_obj)
     branch_strat = tree.options.branch_strategy
     opts = tree.options
@@ -742,6 +795,12 @@ function upd_gains_step!(tree,step_obj)
     end
 end
 
+"""
+    upd_integral_branch!(tree,step_obj)
+
+Update the list of integral and branch nodes using the new step_obj
+Return true if break
+"""
 function upd_integral_branch!(tree,step_obj)
     for integral_node in step_obj.integral
         new_integral!(tree,integral_node)
@@ -756,6 +815,12 @@ function upd_integral_branch!(tree,step_obj)
     return false
 end
 
+"""
+    upd_tree_obj!(tree,step_obj,time_obj)
+
+Update the tree obj like new incumbent or new branch nodes using the step_obj
+Return false if it's the end of the algorithm (checking different break rules)
+"""
 function upd_tree_obj!(tree,step_obj,time_obj)
     node = step_obj.node
     still_running = true
@@ -786,6 +851,16 @@ function upd_tree_obj!(tree,step_obj,time_obj)
     end
 end
 
+"""
+    solve_sequential(tree,
+        last_table_arr,
+        time_bnb_solve_start,
+        fields,
+        field_chars,
+        time_obj)
+    
+Run branch and bound on a single processor
+"""
 function solve_sequential(tree,
     last_table_arr,
     time_bnb_solve_start,
@@ -821,6 +896,12 @@ function solve_sequential(tree,
     return counter
 end
 
+"""
+    pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
+        fields, field_chars, time_obj)
+
+Run the solving steps on several processors
+"""
 function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     fields, field_chars, time_obj)
     np = nprocs()  # determine the number of processes available
@@ -923,13 +1004,10 @@ function solvemip(tree::BnBTreeObj)
     
     check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     
-    # get variable where to split
     counter = 1    
     branch_strat = tree.options.branch_strategy
 
-    first_incumbent = true
-    btime_updated = true
-    # this is only needed for btime_updated so that step_obj is defined after the loop
+    # use pmap if more then one processor
     if tree.options.processors > 1
         counter = pmap(MINLPBnB.one_branch_step,tree,
             counter,
