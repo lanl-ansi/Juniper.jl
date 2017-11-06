@@ -2,34 +2,6 @@ include("POD_experiment/blend029.jl")
 
 @testset "User limit testing" begin
 
-@testset "blend029 10s limit" begin
-    println("==================================")
-    println("blend029 10s limit")
-    println("==================================")
-
-    m,objval = get_blend029()
-
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
-            branch_strategy=:PseudoCost, 
-            time_limit = 10 # seconds
-    ))
-    status = solve(m)
-
-    @test status == :UserLimit
-
-    minlpbnb_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
-
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
-    println("best_bound_val: ", best_bound_val)
-    println("gap_val: ", gap_val)
-
-    @test best_bound_val >= objval
-    @test getsolvetime(m) <= 15 # it might be a bit higher than 10s
-end
-
 @testset "blend029 5% limit" begin
     println("==================================")
     println("blend029 5%")
@@ -59,6 +31,34 @@ end
 
     @test best_bound_val >= objval
     @test 0.01 <= gap_val <= 0.05
+end
+
+@testset "blend029 10s limit" begin
+    println("==================================")
+    println("blend029 10s limit")
+    println("==================================")
+
+    m,objval = get_blend029()
+
+    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
+            branch_strategy=:PseudoCost, 
+            time_limit = 10 # seconds
+    ))
+    status = solve(m)
+
+    @test status == :UserLimit
+
+    minlpbnb_val = getobjectivevalue(m)
+    best_bound_val = getobjbound(m)
+    gap_val = getobjgap(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+    println("best_bound_val: ", best_bound_val)
+    println("gap_val: ", gap_val)
+
+    @test best_bound_val >= objval
+    @test getsolvetime(m) <= 15 # it might be a bit higher than 10s
 end
 
 @testset "case 5 socwr solution limit" begin

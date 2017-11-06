@@ -43,6 +43,8 @@ type StepObj
     state       :: Symbol  # if infeasible => break (might be set by strong branching)
     nrestarts   :: Int64 
     gain_gap    :: Float64
+    gains       :: Vector{Float64}
+    strong_int_vars :: Vector{Int64}
     idx_time    :: Float64
     leaf_idx_time :: Float64
     upd_gains_time :: Float64
@@ -50,6 +52,8 @@ type StepObj
     branch_time     :: Float64
     integral       :: Vector{BnBNode}
     branch       :: Vector{BnBNode}
+    l_nd        :: Union{Void,BnBNode}
+    r_nd        :: Union{Void,BnBNode}
 end
 
 type TimeObj
@@ -93,13 +97,13 @@ function new_default_node(idx,level,l_var,u_var,solution;
     return BnBNode(idx,level,l_var,u_var,solution,var_idx,state,best_bound)     
 end
 
-function new_default_step_obj(node)
+function new_default_step_obj(m,node)
     idx_time = 0.0
     leaf_idx_time = 0.0
     upd_gains_time = 0.0
     leaf_branch_time = 0.0
     branch_time = 0.0
-    return StepObj(node,0,:None,0,0.0,idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time,[],[])
+    return StepObj(node,0,:None,0,0.0,zeros(m.num_int_bin_var),zeros(Int64,0),idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time,[],[],nothing,nothing)
 end
 
 function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
@@ -168,33 +172,34 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
 end
 
 """
-    branch_strong(tree,node,counter)
+    branch_strong(m,opts,int2var_idx,step_obj,counter)
 
 Try to branch on a few different variables and choose the one with highest obj_gain.
 Update obj_gain for the variables tried and average the other ones.
 """
-function branch_strong(tree,step_obj,counter)
+function branch_strong(m,opts,int2var_idx,step_obj,counter)
     function init_variables()
         max_gain = -Inf # then one is definitely better
         max_gain_var = 0
         strong_int_vars = zeros(Int64,0)
         return max_gain, max_gain_var, strong_int_vars
     end
+
     node = step_obj.node
 
     strong_restarts = -1 
 
     # generate an of variables to branch on
-    num_strong_var = tree.options.strong_branching_nvars
+    num_strong_var = opts.strong_branching_nvars
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
-    int_vars = tree.m.num_int_bin_var
+    int_vars = m.num_int_bin_var
     reasonable_int_vars = zeros(Int64,0)
     for i=1:int_vars
-        idx = tree.int2var_idx[i]
+        idx = int2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
-        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],tree.m.var_type[idx])
+        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
             continue
         end
         push!(reasonable_int_vars,i)
@@ -219,23 +224,23 @@ function branch_strong(tree,step_obj,counter)
                 continue
             end
             push!(strong_int_vars, int_var_idx)
-            var_idx = tree.int2var_idx[int_var_idx]
+            var_idx = int2var_idx[int_var_idx]
             step_obj.var_idx = var_idx
             u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
             # don't rerun if bounds are exact or is type correct
-            if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[var_idx],tree.m.var_type[var_idx])
+            if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx])
                 continue
             end
             # branch on the current variable and get the corresponding children
-            l_nd,r_nd = branch!(tree,step_obj,counter;temp=true)
-
+            l_nd,r_nd = branch!(m,opts,step_obj,counter;temp=true)
+            println("States: ", l_nd.state, " ", r_nd.state)
             if l_nd.state == :Infeasible && r_nd.state == :Infeasible && counter == 1
                 status = :Infeasible
                 break
             end
 
             # if restart is true => check if one part is infeasible => update bounds & restart
-            if tree.options.strong_restart == true
+            if opts.strong_restart == true
                 if l_nd.state == :Infeasible || r_nd.state == :Infeasible
                     max_gain = 0.0
                     if l_nd.state == :Infeasible && r_nd.state == :Infeasible
@@ -257,25 +262,21 @@ function branch_strong(tree,step_obj,counter)
                     break
                 end
             end
-            tree.obj_gain[int_var_idx] = gain
+            step_obj.gains[int_var_idx] = gain
         end
     end
     
     if status != :Infeasible
-        for leaf in [left_node,right_node]
-            if leaf.state == :Branch
-                push_to_branch_list!(tree,leaf)
-            elseif leaf.state == :Integral
-                new_integral!(tree,leaf)
-            end
-        end   
-
+        step_obj.l_nd = left_node
+        step_obj.r_nd = right_node
+       
         # set the variable to branch (best gain)
         node.state = :Done
         node.var_idx = max_gain_var
+        step_obj.strong_int_vars = strong_int_vars
 
         # assign values to untested variables only for the first strong branch
-        if counter == 1
+        #= if counter == 1
             # all other variables that haven't been checked get the median value of the others
             med_gain = median(tree.obj_gain[strong_int_vars])
             rest = filter(i->!(i in strong_int_vars),1:int_vars)
@@ -283,7 +284,7 @@ function branch_strong(tree,step_obj,counter)
             tree.obj_gain_c += 1
         else
             tree.obj_gain_c[strong_int_vars] += 1
-        end
+        end=#
     end
 
     @assert max_gain_var != 0 || status == :Infeasible || node.state == :Infeasible
@@ -291,11 +292,11 @@ function branch_strong(tree,step_obj,counter)
 end
 
 """
-    upd_int_variable_idx!(step_obj,opts,node,counter=1)    
+    upd_int_variable_idx!(m,step_obj,opts,node,counter=1)    
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m,step_obj,opts,counter::Int64=1)   
+function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter::Int64=1)  
     start = time()
     node = step_obj.node
     idx = 0
@@ -306,15 +307,15 @@ function upd_int_variable_idx!(m,step_obj,opts,counter::Int64=1)
         idx = branch_mostinfeasible(m,node)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
-            idx = branch_mostinfeasible(tree,node)
-        elseif counter <= tree.options.strong_branching_nsteps && branch_strat == :StrongPseudoCost
-            status, idx, strong_restarts = branch_strong(tree,step_obj,counter)
+            idx = branch_mostinfeasible(m,node)
+        elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
+            status, idx, strong_restarts = branch_strong(m,opts,int2var_idx,step_obj,counter)
         else
             # use the one with highest obj_gain which is currently continous
-            obj_gain_average = tree.obj_gain./tree.obj_gain_c
-            sort_idx = tree.int2var_idx[sortperm(obj_gain_average, rev=true)]
+            obj_gain_average = gain./gain_c
+            sort_idx = int2var_idx[sortperm(obj_gain_average, rev=true)]
             for l_idx in sort_idx
-                if !is_type_correct(node.solution[l_idx],tree.m.var_type[l_idx])
+                if !is_type_correct(node.solution[l_idx],m.var_type[l_idx])
                     u_b = node.u_var[l_idx]
                     l_b = node.l_var[l_idx]
                     # if the upper bound is the lower bound => no reason to branch
@@ -384,29 +385,29 @@ function solve_leaf!(m,step_obj,leaf,temp)
     leaf.solution = getvalue(m.x)
     status = status
     if status == :Error
-        # println(leaf.m.model)
-        println(Ipopt.ApplicationReturnStatus[internalmodel(m.model).inner.status])
-        # error("...")
         leaf.state = :Error
     elseif status == :Optimal
-        # check if all int vars are int
-        if are_type_correct(leaf.solution,m.var_type)
-            leaf.state = :Integral
-            leaf.best_bound = objval
-            if !temp
-                push!(step_obj.integral, leaf)
-            end
-        else
-            leaf.state = :Branch
-            leaf.best_bound = objval
-            if !temp
-                push!(step_obj.branch, leaf)
-            end
-        end
+        leaf.best_bound = objval
+        push_integral_or_branch!(m,step_obj,leaf,temp)
     else
         leaf.state = :Infeasible
     end
     return leaf.state
+end
+
+function push_integral_or_branch!(m,step_obj,leaf,temp)
+    # check if all int vars are int
+    if are_type_correct(leaf.solution,m.var_type)
+        leaf.state = :Integral
+        if !temp
+            push!(step_obj.integral, leaf)
+        end
+    else
+        leaf.state = :Branch
+        if !temp
+            push!(step_obj.branch, leaf)
+        end
+    end
 end
 
 function new_integral!(tree,node)
@@ -417,9 +418,6 @@ function new_integral!(tree,node)
     end
     if update_incumbent!(tree,node) # returns if new 
         add_obj_constr(tree)
-    end
-    if break_new_incumbent_limits(tree)
-        return :Break
     end
 end
 
@@ -443,9 +441,13 @@ function branch!(m,opts,step_obj,counter;temp=false)
     vidx = step_obj.var_idx
 
     start = time()
-
     # it might be already branched on
     if node.state != :Branch
+        for leaf in [step_obj.l_nd,step_obj.r_nd]
+            if leaf.state == :Branch || leaf.state == :Integral
+                push_integral_or_branch!(m,step_obj,leaf,false)
+            end
+        end
         return nothing,nothing
     end
     
@@ -462,7 +464,11 @@ function branch!(m,opts,step_obj,counter;temp=false)
     
     if !temp
         node.state = :Done
+        step_obj.l_nd = l_nd
+        step_obj.r_nd = r_nd
     end
+
+    
     
     start_leaf = time()
     l_state = solve_leaf!(m,step_obj,l_nd,temp)
@@ -480,11 +486,6 @@ function branch!(m,opts,step_obj,counter;temp=false)
     end
 
     branch_strat = opts.branch_strategy
-    if branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > opts.strong_branching_nsteps)
-        upd_start = time()
-        step_obj.gain_gap = update_gains!(tree,node,l_nd,r_nd,counter)    
-        step_obj.upd_gains_time = time()-upd_start
-    end
 
     if check_print(ps,[:All])
         println("State of left leaf: ", l_state)
@@ -510,6 +511,7 @@ If the state of one child is Integral or Infeasible
 else return the smaller gain of both children
 """
 function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right,inf=false)
+    println("compute_gain")
     gc = 0
     gain_l = 0.0
     gain_r = 0.0
@@ -602,6 +604,7 @@ function bound!(tree::BnBTreeObj)
 end
 
 function break_new_incumbent_limits(tree)
+    println("In: break_new_incumbent_limits")
     if !isnan(tree.options.best_obj_stop)
         inc_val = tree.incumbent.objval
         bos = tree.options.best_obj_stop
@@ -617,6 +620,7 @@ function break_new_incumbent_limits(tree)
         b = tree.best_bound
         f = tree.incumbent.objval
         gap_perc = abs(b-f)/abs(f)*100
+        println("gap_perc: ",gap_perc)
         if gap_perc <= tree.options.mip_gap
             incu = tree.incumbent
             tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
@@ -673,7 +677,7 @@ function get_next_branch_node!(tree)
     deleteat!(tree.branch_nodes,nidx)
 
     tree.best_bound = tree.obj_fac*value
-    return true,new_default_step_obj(node)
+    return true,new_default_step_obj(tree.m,node)
 end
 
 function isbreak_after_step!(tree)
@@ -694,26 +698,16 @@ function isbreak_after_step!(tree)
     return false
 end
 
-function run_step(m, opts, step_obj,counter)
-# check if best & maybe break on solution limit
-    # isbreak_after_step!(tree) && return true,counter,btime_updated, last_table_arr
-    
+function run_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
     node = step_obj.node
+    println("run_step")
 
 # get branch variable    
-    upd_int_variable_idx!(m,step_obj,opts,counter)
+    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter)
     
-    # if step_obj.state == :Infeasible
-        # tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
-        # return true,counter,btime_updated, last_table_arr
-    # end
-
 # branch
     branch!(m,opts,step_obj,counter)
-
-    # step_obj.state == :Break && return true,counter,btime_updated, last_table_arr
-    
-    # return false,counter,btime_updated, step_obj, last_table_arr
+    println("end of run_step")
     return step_obj
 end
 
@@ -738,11 +732,15 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     println("Inside pmap")
     still_running = true
     run_counter = 0
+    counter = 0
+    branch_strat = tree.options.branch_strategy
+    opts = tree.options
     @sync begin
         for p=1:np
             if p != myid() || np == 1
                 @async begin
                     while true
+                        counter += 1
                         exists,step_obj = get_next_branch_node!(tree)
                         # println("p: ", p)
                         while !exists && still_running
@@ -753,28 +751,73 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         if !still_running
                             break
                         end
-                        println("p finished waiting: ", p)
-                        node = step_obj.node
-                        run_counter += 1
-                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, counter)
-                        run_counter -= 1
-                        for integral_node in step_obj.integral
-                            new_integral!(tree,integral_node)
-                        end
-                        for branch_node in step_obj.branch
-                            push_to_branch_list!(tree,branch_node)
-                        end
-                        # println("step_obj: ", step_obj)
+
                         if isbreak_after_step!(tree) 
+                            println("is break after step")
                             still_running = false 
                             break
+                        end
+
+                        println("p finished waiting: ", p)
+                        
+                        run_counter += 1
+                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain,tree.obj_gain_c, counter)
+                        run_counter -= 1
+
+                        node = step_obj.node
+
+                        println("step_obj.state: ", step_obj.state)
+                        # println("step_obj.integral: ", step_obj.integral)
+                        # println("step_obj.branch: ", step_obj.branch)
+                       
+                        if step_obj.state == :Infeasible
+                            tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
+                            still_running = false 
+                            break
+                        end
+
+                        if step_obj.state == :Break 
+                            break
+                        end
+                     
+                        if branch_strat == :StrongPseudoCost && counter <= opts.strong_branching_nsteps
+                            println("update gains")
+                            tree.obj_gain += step_obj.gains
+                            println("updated gains")
+                            strong_int_vars = step_obj.strong_int_vars
+                            if counter == 1
+                                # all other variables that haven't been checked get the median value of the others
+                                med_gain = median(tree.obj_gain[strong_int_vars])
+                                rest = filter(i->!(i in strong_int_vars),1:int_vars)
+                                tree.obj_gain[rest] += med_gain
+                                tree.obj_gain_c += 1
+                            else
+                                tree.obj_gain_c[strong_int_vars] += 1
+                            end
+                        elseif branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && counter > opts.strong_branching_nsteps)
+                            upd_start = time()
+                            step_obj.gain_gap = update_gains!(tree,node,step_obj.l_nd,step_obj.r_nd,counter)    
+                            step_obj.upd_gains_time = time()-upd_start
+                        end
+
+                        for integral_node in step_obj.integral
+                            new_integral!(tree,integral_node)
+                            if break_new_incumbent_limits(tree)
+                                still_running = false 
+                                break
+                            end
+                        end
+                        !still_running && break
+
+                        for branch_node in step_obj.branch
+                            push_to_branch_list!(tree,branch_node)
                         end
 
                         if run_counter == 0 && length(tree.branch_nodes) == 0
                             still_running = false 
                             break
                         end
-                        
+
                         if check_print(ps,[:Table]) 
                             last_table_arr = print_table(p,tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
                         end

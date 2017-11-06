@@ -7,7 +7,7 @@ include("basic/gamsworld.jl")
     println("Bruteforce")
     println("==================================")
     minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:MostInfeasible,
+        branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
@@ -37,12 +37,12 @@ include("basic/gamsworld.jl")
     @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
 end
 
-@testset "bruteforce 2" begin
+@testset "bruteforce PseudoCost" begin
     println("==================================")
-    println("Bruteforce 2")
+    println("Bruteforce PseudoCost")
     println("==================================")
     minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:MostInfeasible,
+        branch_strategy=:PseudoCost,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
@@ -73,7 +73,7 @@ end
 end
 
 
-#=
+
 @testset "infeasible cos" begin
     println("==================================")
     println("Infeasible cos")
@@ -429,6 +429,5 @@ end
 
     @test isapprox(minlpbnb_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
 end
-=#
 
 end
