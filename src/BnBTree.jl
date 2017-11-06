@@ -994,11 +994,13 @@ function solvemip(tree::BnBTreeObj)
         return tree.m
     end
 
+    last_table_arr = []
+    fields = []
+    field_chars = []
     # Print table init
     if check_print(ps,[:Table]) 
         fields, field_chars = get_table_config(tree.options)
-        print_table_header(fields,field_chars)
-        last_table_arr = []
+        print_table_header(fields,field_chars)        
     end
     
     
