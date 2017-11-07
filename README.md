@@ -104,6 +104,18 @@ Defines the number of steps in which strong branching is used. `:PseudoCost` wil
 
 If a child while running strong branching is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
 
+## Parallel
+
+MINLPBnB can be run in parallel to speed up the algorithm.
+You have to start julia with `julia -p P` where `P` is the number of processors available or at least the number of processors you want to use.
+
+Then you have to specify the number of processor as an option.
+
+### processors::Int64 [1]
+
+The number of processors used for the branch and bound part. **Attention:** Even if you start julia using
+`julia -p P` you still have to define the number of processors using this option.
+
 ## Other options:
 
 [UserLimits](options/user_limits.md)
