@@ -29,8 +29,7 @@ before_install:
 
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd())'
-  - julia -e 'Pkg.test("MINLPBnB", coverage=true)'
+  - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("MINLPBnB"); Pkg.test("MINLPBnB"; coverage=true)'
 
 after_success:
   - echo $TRAVIS_JULIA_VERSION

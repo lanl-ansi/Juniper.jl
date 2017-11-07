@@ -8,11 +8,12 @@ using Base.Test
 if nworkers() > 1
     rmprocs(workers())
 end
+processors = 4 # Sys.CPU_CORES
 
 if Base.JLOptions().code_coverage == 1
-    addprocs(Sys.CPU_CORES, exeflags = ["--code-coverage=user", "--inline=no", "--check-bounds=yes"])
+    addprocs(processors, exeflags = ["--code-coverage=user", "--inline=no", "--check-bounds=yes"])
 else
-    addprocs(Sys.CPU_CORES, exeflags = "--check-bounds=yes")
+    addprocs(processors, exeflags = "--check-bounds=yes")
 end
 
 println("Workers:", nworkers())
