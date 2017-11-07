@@ -66,6 +66,7 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.solution = Float64[]
     m.nsolutions = 0
     m.solutions = []
+    m.num_int_bin_var = 0
 
     return m
 end
@@ -193,11 +194,13 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
-    bnbtree = init(start,m)
-    best_known = solvemip(bnbtree)
+    if m.num_int_bin_var > 0
+        bnbtree = init(start,m)
+        best_known = solvemip(bnbtree)
 
-    replace_solution!(m, best_known)
-    m.nsolutions = bnbtree.nsolutions
+        replace_solution!(m, best_known)
+        m.nsolutions = bnbtree.nsolutions
+    end
     m.soltime = time()-start
     
     if length(m.solutions) == 0
