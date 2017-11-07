@@ -216,6 +216,12 @@ The number of int/bin variables is saved in num_int_bin_var
 function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol}) 
     m.var_type = v
     c = count(i->(i==:Int || i==:Bin), v)
+    for (i,s) in enumerate(v)
+        if s==:Bin
+            m.l_var[i] = 0
+            m.u_var[i] = 1
+        end
+    end
     m.num_int_bin_var = c
 end
 
