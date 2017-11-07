@@ -15,6 +15,8 @@ else
     addprocs(Sys.CPU_CORES, exeflags = "--check-bounds=yes")
 end
 
+println("Workers:", nworkers())
+
 using JuMP
 
 using Ipopt
