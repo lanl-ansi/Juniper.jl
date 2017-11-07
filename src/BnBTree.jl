@@ -521,7 +521,7 @@ function solvemip(tree::BnBTreeObj)
     
     check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     
-    counter = 0    
+    counter = 1    
     branch_strat = tree.options.branch_strategy
 
     # use pmap if more then one processor
@@ -541,8 +541,7 @@ function solvemip(tree::BnBTreeObj)
             field_chars,
             time_obj)
     end
-
-
+    counter -= 1 # to have the correct number of branches
 
     if tree.incumbent == nothing
         # infeasible
