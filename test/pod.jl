@@ -9,7 +9,7 @@ include("POD_experiment/blend029.jl")
 
     m,objval = get_blend029()
 
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
+    setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_nvars = 15,
             strong_branching_nsteps = 5,

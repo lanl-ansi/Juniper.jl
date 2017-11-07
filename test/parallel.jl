@@ -10,7 +10,7 @@ include("POD_experiment/blend029.jl")
 
     m = batch_problem()
 
-    minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
+    minlpbnb = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         strong_restart = false,
         processors = 4
@@ -38,7 +38,7 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
+    setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_nvars = 15,
             strong_branching_nsteps = 5,
@@ -67,7 +67,7 @@ end
     println("==================================")
     println("Bruteforce")
     println("==================================")
-    minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
+    minlpbnb_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
@@ -103,7 +103,7 @@ end
     println("==================================")
     println("Bruteforce PseudoCost")
     println("==================================")
-    minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
+    minlpbnb_all_solutions = DefaultTestSolver(
         branch_strategy=:PseudoCost,
         all_solutions = true,
         list_of_solutions = true,
@@ -141,7 +141,7 @@ end
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(solver=MINLPBnBSolver(IpoptSolver(print_level=0);
+    m = Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
@@ -163,7 +163,7 @@ end
     println("==================================")
     println("Infeasible relaxation")
     println("==================================")
-    m = Model(solver=MINLPBnBSolver(IpoptSolver(print_level=0);
+    m = Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
@@ -185,7 +185,7 @@ end
     println("==================================")
     println("Infeasible integer")
     println("==================================")
-    m = Model(solver=MINLPBnBSolver(IpoptSolver(print_level=0);
+    m = Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))
@@ -208,7 +208,7 @@ end
     println("==================================")
     println("Infeasible in strong")
     println("==================================")
-    m = Model(solver=MINLPBnBSolver(IpoptSolver(print_level=0);
+    m = Model(solver=DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         processors = 2
     ))

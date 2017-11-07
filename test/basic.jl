@@ -6,7 +6,7 @@ include("basic/gamsworld.jl")
     println("==================================")
     println("Bruteforce")
     println("==================================")
-    minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
+    minlpbnb_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
@@ -41,7 +41,7 @@ end
     println("==================================")
     println("Bruteforce PseudoCost")
     println("==================================")
-    minlpbnb_all_solutions = MINLPBnBSolver(IpoptSolver(print_level=0);
+    minlpbnb_all_solutions = DefaultTestSolver(
         branch_strategy=:PseudoCost,
         all_solutions = true,
         list_of_solutions = true,

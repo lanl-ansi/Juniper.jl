@@ -9,7 +9,7 @@ include("POD_experiment/blend029.jl")
 
     m,objval = get_blend029()
 
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
+    setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost, 
             strong_branching_nvars = 15,
             strong_branching_nsteps = 5,
@@ -40,7 +40,7 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
+    setsolver(m, DefaultTestSolver(
             branch_strategy=:PseudoCost, 
             time_limit = 10 # seconds
     ))
@@ -71,7 +71,7 @@ end
     @variable(m, 0 <= aeiou <= 1)
     @NLconstraint(m, aeiou^2== 1)
 
-    solver = MINLPBnBSolver(IpoptSolver(print_level=0);
+    solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
         strong_branching_nvars = 5,
         strong_restart = false,
@@ -103,7 +103,7 @@ end
     @NLconstraint(m, aeiou^2== 1)
 
     best_obj_stop = 15000
-    solver = MINLPBnBSolver(IpoptSolver(print_level=0);
+    solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
         strong_branching_nvars = 5,
         strong_restart = false,
