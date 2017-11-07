@@ -67,6 +67,10 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.nsolutions = 0
     m.solutions = []
     m.num_int_bin_var = 0
+    m.nintvars = 0
+    m.nbinvars = 0
+    m.nnodes = 0
+    m.ncuts = 0
 
     return m
 end
