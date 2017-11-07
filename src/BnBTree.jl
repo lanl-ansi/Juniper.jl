@@ -268,6 +268,7 @@ function add_obj_constr(tree)
         MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
         # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
         JuMP.addNLconstraint(tree.m.model, obj_constr)
+        tree.m.ncuts += 1
     end
 end
 
@@ -392,6 +393,7 @@ function solve_sequential(tree,
         !exists && break
         isbreak_after_step!(tree) && break
         step_obj = one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+        m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
@@ -457,6 +459,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         counter += 1
                         run_counter += 1
                         step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain,tree.obj_gain_c, counter)
+                        tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
                         !still_running && break
                     
@@ -518,7 +521,7 @@ function solvemip(tree::BnBTreeObj)
     
     check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
     
-    counter = 1    
+    counter = 0    
     branch_strat = tree.options.branch_strategy
 
     # use pmap if more then one processor
@@ -558,6 +561,8 @@ function solvemip(tree::BnBTreeObj)
         end
     end
     
+    tree.m.nbranches = counter
+
     time_bnb_solve = time()-time_bnb_solve_start
     (:Timing in tree.options.log_levels) && println("#branches: ", counter)
     if :Timing in tree.options.log_levels
