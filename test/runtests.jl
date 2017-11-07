@@ -1,9 +1,20 @@
-using Logging
+using Base,Logging
 
 # suppress warnings during testing
 Logging.configure(level=ERROR)
 
 using Base.Test
+
+if nworkers() > 1
+    rmprocs(workers())
+end
+
+if Base.JLOptions().code_coverage == 1
+    addprocs(Sys.CPU_CORES, exeflags = ["--code-coverage=user", "--inline=no", "--check-bounds=yes"])
+else
+    addprocs(Sys.CPU_CORES, exeflags = "--check-bounds=yes")
+end
+
 using JuMP
 
 using Ipopt
@@ -47,6 +58,7 @@ start = time()
 
 include("basic.jl")
 include("user_limits.jl")
+include("parallel.jl")
 include("pod.jl")
 include("power_models_acp.jl")
 include("power_models_socwr.jl")

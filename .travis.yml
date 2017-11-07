@@ -31,7 +31,6 @@ script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd())'
   - julia -e 'Pkg.test("MINLPBnB", coverage=true)'
-  - julia -p 4 test/runtests_parallel.jl
 
 after_success:
   - echo $TRAVIS_JULIA_VERSION
