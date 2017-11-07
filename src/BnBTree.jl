@@ -338,6 +338,10 @@ function upd_tree_obj!(tree,step_obj,time_obj)
     node = step_obj.node
     still_running = true
 
+    if step_obj.node.level+1 > tree.m.nlevels
+        tree.m.nlevels = step_obj.node.level+1
+    end
+
     if step_obj.state == :Infeasible
         tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
         still_running = false 
@@ -476,7 +480,6 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         if check_print(ps,[:Table]) 
                             last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
                         end
-
 
                         if !still_running
                             break
