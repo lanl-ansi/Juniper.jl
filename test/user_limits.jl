@@ -2,36 +2,6 @@ include("POD_experiment/blend029.jl")
 
 @testset "User limit testing" begin
 
-@testset "blend029 10s limit" begin
-    println("==================================")
-    println("blend029 10s limit")
-    println("==================================")
-
-    m,objval = get_blend029()
-
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
-            branch_strategy=:StrongPseudoCost,
-            strong_branching_nvars = 15,
-            strong_branching_nsteps = 5,
-            strong_restart = true,
-            time_limit = 10 # seconds
-    ))
-    status = solve(m)
-
-    @test status == :UserLimit
-
-    minlpbnb_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
-
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
-    println("best_bound_val: ", best_bound_val)
-    println("gap_val: ", gap_val)
-
-    @test best_bound_val >= objval
-end
-
 @testset "blend029 5% limit" begin
     println("==================================")
     println("blend029 5%")
@@ -39,8 +9,8 @@ end
 
     m,objval = get_blend029()
 
-    setsolver(m, MINLPBnBSolver(IpoptSolver(print_level=0);
-            branch_strategy=:StrongPseudoCost,
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost, 
             strong_branching_nvars = 15,
             strong_branching_nsteps = 5,
             strong_restart = true,
@@ -60,7 +30,35 @@ end
     println("gap_val: ", gap_val)
 
     @test best_bound_val >= objval
-    @test gap_val <= 0.05
+    @test 0.01 <= gap_val <= 0.05
+end
+
+@testset "blend029 10s limit" begin
+    println("==================================")
+    println("blend029 10s limit")
+    println("==================================")
+
+    m,objval = get_blend029()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:PseudoCost, 
+            time_limit = 10 # seconds
+    ))
+    status = solve(m)
+
+    @test status == :UserLimit
+
+    minlpbnb_val = getobjectivevalue(m)
+    best_bound_val = getobjbound(m)
+    gap_val = getobjgap(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+    println("best_bound_val: ", best_bound_val)
+    println("gap_val: ", gap_val)
+
+    @test best_bound_val >= objval
+    @test getsolvetime(m) <= 15 # it might be a bit higher than 10s
 end
 
 @testset "case 5 socwr solution limit" begin
@@ -73,8 +71,8 @@ end
     @variable(m, 0 <= aeiou <= 1)
     @NLconstraint(m, aeiou^2== 1)
 
-    solver = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:StrongPseudoCost,
+    solver = DefaultTestSolver(
+        branch_strategy=:StrongPseudoCost, #
         strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,
@@ -105,8 +103,8 @@ end
     @NLconstraint(m, aeiou^2== 1)
 
     best_obj_stop = 15000
-    solver = MINLPBnBSolver(IpoptSolver(print_level=0);
-        branch_strategy=:StrongPseudoCost,
+    solver = DefaultTestSolver(
+        branch_strategy=:StrongPseudoCost, #
         strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,

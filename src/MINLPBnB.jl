@@ -17,10 +17,11 @@ type SolverOptions
     solution_limit              :: Int64
     all_solutions               :: Bool
     list_of_solutions           :: Bool
+    processors                  :: Int64
 end
 
-include("solver.jl")
-include("model.jl")
-include("BnBTree.jl")
+include(Pkg.dir("MINLPBnB")*"/src/solver.jl")
+include(Pkg.dir("MINLPBnB")*"/src/model.jl")
+include(Pkg.dir("MINLPBnB")*"/src/BnBTree.jl")
 
 end

@@ -33,7 +33,7 @@ end
     @variable(m, 0 <= aeiou <= 1)
     @NLconstraint(m, aeiou^2== 1)
 
-    solver = MINLPBnBSolver(IpoptSolver(print_level=0);
+    solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         strong_branching_nvars = 5,
         strong_restart = false,

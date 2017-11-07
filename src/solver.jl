@@ -10,7 +10,7 @@ type MINLPBnBSolverObj <: MathProgBase.AbstractMathProgSolver
 end
 
 function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
-        log_levels                  = [:Table,:Info],
+        log_levels                  = [:Table,:Info,:Timing],
         branch_strategy             = :MostInfeasible,
         # Strong branching
         strong_branching_nvars      = 5,
@@ -24,7 +24,9 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         best_obj_stop               = NaN,
         solution_limit              = 0,
         all_solutions               = false,
-        list_of_solutions           = false
+        list_of_solutions           = false,
+        # Parallel
+        processors                  = 1
     )
     options_obj = MINLPBnB.SolverOptions(log_levels,
                                         branch_strategy,
@@ -37,6 +39,7 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
                                         best_obj_stop,
                                         solution_limit,
                                         all_solutions,
-                                        list_of_solutions)
+                                        list_of_solutions,
+                                        processors)
     return MINLPBnBSolverObj(nl_solver,options_obj)
 end

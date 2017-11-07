@@ -153,7 +153,8 @@ end
 Optimize by creating a model based on the variables saved in MINLPBnBModel.
 """
 function MathProgBase.optimize!(m::MINLPBnBModel)
-    (:All in m.options.log_levels || :Info in m.options.log_levels) && print_info(m)
+    ps = m.options.log_levels
+    (:All in ps || :Info in ps) && print_info(m)
 
     m.model = Model(solver=m.nl_solver) 
     lb = [m.l_var; -1e6]
@@ -179,20 +180,21 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     m.x = x
     start = time()
     m.status = solve(m.model)
-    println("Status of relaxation: ", m.status)
+    
+    (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     if m.status != :Optimal && m.status != :LocalOptimal
         return m.status
     end
     m.soltime = time()-start
-    println("Time for relaxation: ", m.soltime)
+    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
-    println("Relaxation Obj: ", m.objval)
+    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
-    bnbtree = BnBTree.init(start,m)
-    best_known = BnBTree.solve(bnbtree)
+    bnbtree = init(start,m)
+    best_known = solvemip(bnbtree)
 
     replace_solution!(m, best_known)
     m.nsolutions = bnbtree.nsolutions
@@ -204,6 +206,8 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     return m.status
 end
+
+MathProgBase.getsolvetime(m::MINLPBnBModel) = m.soltime
 
 MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = fill(0.0, length(x))
 
