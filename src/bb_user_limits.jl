@@ -6,7 +6,6 @@ function isbreak_mip_gap(tree)
         if gap_perc <= tree.options.mip_gap
             incu = tree.incumbent
             tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
-            println("mip gap break")
             return true
         end
     end
