@@ -304,7 +304,7 @@ function one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
 
 # get branch variable    
     upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter)
-    if step_obj.state != :Infeasible
+    if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
         # branch
         branch!(m,opts,step_obj,counter)
     end
@@ -342,7 +342,7 @@ function upd_tree_obj!(tree,step_obj,time_obj)
         tree.m.nlevels = step_obj.node.level+1
     end
 
-    if step_obj.state == :Infeasible
+    if step_obj.state == :GlobalInfeasible
         tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
         still_running = false 
     end

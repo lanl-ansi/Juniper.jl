@@ -117,7 +117,7 @@ function branch_strong(m,opts,int2var_idx,step_obj,counter)
             # branch on the current variable and get the corresponding children
             l_nd,r_nd = branch!(m,opts,step_obj,counter;temp=true)
             if l_nd.state == :Infeasible && r_nd.state == :Infeasible && counter == 1
-                status = :Infeasible
+                status = :GlobalInfeasible
                 break
             end
 
@@ -126,7 +126,7 @@ function branch_strong(m,opts,int2var_idx,step_obj,counter)
                 if l_nd.state == :Infeasible || r_nd.state == :Infeasible
                     max_gain = 0.0
                     if l_nd.state == :Infeasible && r_nd.state == :Infeasible
-                        status = :Infeasible
+                        status = :LocalInfeasible
                         break
                     end
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
@@ -148,7 +148,7 @@ function branch_strong(m,opts,int2var_idx,step_obj,counter)
         end
     end
 
-    if status != :Infeasible
+    if status != :GlobalInfeasible && status != :LocalInfeasible
         step_obj.l_nd = left_node
         step_obj.r_nd = right_node
     
@@ -158,7 +158,7 @@ function branch_strong(m,opts,int2var_idx,step_obj,counter)
         step_obj.strong_int_vars = strong_int_vars
     end
 
-    @assert max_gain_var != 0 || status == :Infeasible || node.state == :Infeasible
+    @assert max_gain_var != 0 || status == :LocalInfeasible || status == :GlobalInfeasible || node.state == :Infeasible
     return status, max_gain_var, strong_restarts
 end
 

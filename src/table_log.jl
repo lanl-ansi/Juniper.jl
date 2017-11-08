@@ -1,12 +1,17 @@
 function get_table_config(opts)
+    fields = ["#ONodes","CLevel","Incumbent","Best Bound","Gap","Time"]
+    field_chars = [9,8,28,28,7,8]
+
     if opts.branch_strategy == :StrongPseudoCost && opts.strong_restart
-        fields = ["p","CLevel","Incumbent","Best Bound","Gap","Time","#Restarts"]
-        field_chars = [3,8,28,28,7,8,10]
-    else
-        fields = ["p","CLevel","Incumbent","Best Bound","Gap","Time"]
-        field_chars = [3,8,28,28,7,8]
+        push!(fields,"#Restarts")
+        push!(field_chars,10)
     end
-    
+
+    if opts.processors > 1
+        unshift!(fields,"p")
+        unshift!(field_chars, 3)
+    end
+
     if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
         push!(fields, "GainGap")
         push!(field_chars, 10)
@@ -62,6 +67,8 @@ function print_table(p,tree,node,step_obj,start_time,fields,field_chars,counter;
         val = ""
         if f == "p"
             val = string(p)
+        elseif f == "#ONodes"
+            val = string(length(tree.branch_nodes))
         elseif f == "Incumbent"
             val = tree.incumbent != nothing ? string(round(tree.incumbent.objval,2)) : "-"
         elseif f == "Best Bound"
