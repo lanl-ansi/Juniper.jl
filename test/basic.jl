@@ -29,7 +29,7 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
     status = solve(m)
-    println("Status: ", status)
+
     list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
 

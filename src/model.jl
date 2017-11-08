@@ -37,6 +37,14 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     options         :: SolverOptions
     solutions       :: Vector{SolutionObj}
 
+    # Info
+    nintvars        :: Int64
+    nbinvars        :: Int64
+    nnodes          :: Int64
+    ncuts           :: Int64
+    nbranches       :: Int64
+    nlevels         :: Int64
+
     MINLPBnBModel() = new()
 end
 
@@ -67,6 +75,12 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.nsolutions = 0
     m.solutions = []
     m.num_int_bin_var = 0
+    m.nintvars = 0
+    m.nbinvars = 0
+    m.nnodes = 1 # is set to one for the root node
+    m.ncuts = 0
+    m.nbranches = 0
+    m.nlevels = 1
 
     return m
 end
@@ -222,14 +236,15 @@ The number of int/bin variables is saved in num_int_bin_var
 """
 function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol}) 
     m.var_type = v
-    c = count(i->(i==:Int || i==:Bin), v)
+    m.nintvars = count(i->(i==:Int), v)
+    m.nbinvars = count(i->(i==:Bin), v)
+    m.num_int_bin_var =  m.nintvars + m.nbinvars
     for (i,s) in enumerate(v)
         if s==:Bin
             m.l_var[i] = 0
             m.u_var[i] = 1
         end
     end
-    m.num_int_bin_var = c
 end
 
 MathProgBase.status(m::MINLPBnBModel) = m.status

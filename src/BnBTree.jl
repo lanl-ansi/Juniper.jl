@@ -268,6 +268,7 @@ function add_obj_constr(tree)
         MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
         # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
         JuMP.addNLconstraint(tree.m.model, obj_constr)
+        tree.m.ncuts += 1
     end
 end
 
@@ -337,6 +338,10 @@ function upd_tree_obj!(tree,step_obj,time_obj)
     node = step_obj.node
     still_running = true
 
+    if step_obj.node.level+1 > tree.m.nlevels
+        tree.m.nlevels = step_obj.node.level+1
+    end
+
     if step_obj.state == :Infeasible
         tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
         still_running = false 
@@ -392,6 +397,7 @@ function solve_sequential(tree,
         !exists && break
         isbreak_after_step!(tree) && break
         step_obj = one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+        m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
@@ -457,6 +463,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         counter += 1
                         run_counter += 1
                         step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain,tree.obj_gain_c, counter)
+                        tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
                         !still_running && break
                     
@@ -473,7 +480,6 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         if check_print(ps,[:Table]) 
                             last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
                         end
-
 
                         if !still_running
                             break
@@ -538,8 +544,7 @@ function solvemip(tree::BnBTreeObj)
             field_chars,
             time_obj)
     end
-
-
+    counter -= 1 # to have the correct number of branches
 
     if tree.incumbent == nothing
         # infeasible
@@ -558,6 +563,8 @@ function solvemip(tree::BnBTreeObj)
         end
     end
     
+    tree.m.nbranches = counter
+
     time_bnb_solve = time()-time_bnb_solve_start
     (:Timing in tree.options.log_levels) && println("#branches: ", counter)
     if :Timing in tree.options.log_levels

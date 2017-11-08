@@ -118,4 +118,8 @@ The number of processors used for the branch and bound part. **Attention:** Even
 
 ## Other options:
 
-[UserLimits](options/user_limits.md)
+[UserLimits](readme/user_limits.md)
+
+## Statistics 
+
+[Statistics](readme/statistics.md)
