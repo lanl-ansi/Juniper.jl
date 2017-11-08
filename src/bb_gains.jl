@@ -12,7 +12,7 @@ function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right,inf=
     gain_l = 0.0
     gain_r = 0.0
     frac_val = node.solution[node.var_idx]
-    if inf && (l_nd.state == :Integral || r_nd.state == :Integral || l_nd.relaxation_state == :Optimal || r_nd.relaxation_state == :Optimal)
+    if inf && (l_nd.state == :Integral || r_nd.state == :Integral || l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal)
         return Inf
     end
     if l_nd.state == :Error && r_nd.state == :Error
@@ -55,6 +55,7 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd,counter)
     if counter == 1
         tree.obj_gain += gain
     else
+        tree.obj_gain[idx] += gain
         if isinf(tree.obj_gain[idx])
             tree.obj_gain[idx] = gain*(tree.obj_gain_c[idx]+1)
         else
