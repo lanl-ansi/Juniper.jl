@@ -4,14 +4,15 @@ rtol = 1e-6
 atol = 1e-6
 
 type BnBNode
-    idx         :: Int64
-    level       :: Int64
-    l_var       :: Vector{Float64}
-    u_var       :: Vector{Float64}
-    solution    :: Vector{Float64}
-    var_idx     :: Int64
-    state       :: Symbol
-    best_bound  :: Union{Void,Float64}
+    idx                 :: Int64
+    level               :: Int64
+    l_var               :: Vector{Float64}
+    u_var               :: Vector{Float64}
+    solution            :: Vector{Float64}
+    var_idx             :: Int64
+    state               :: Symbol
+    relaxation_state    :: Symbol
+    best_bound          :: Union{Void,Float64}
 end
 
 type IncumbentSolution
@@ -99,7 +100,7 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter::
         if counter == 1 && branch_strat == :PseudoCost
             idx = branch_mostinfeasible(m,node)
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
-            status, idx, strong_restarts = branch_strong(m,opts,int2var_idx,step_obj,counter)
+            status, idx, strong_restarts = branch_strong!(m,opts,int2var_idx,step_obj,counter)
         else
             idx = branch_pseudo(m,node,int2var_idx,gain,gain_c)
         end
@@ -130,6 +131,7 @@ function solve_leaf!(m,step_obj,leaf,temp)
     objval = getobjectivevalue(m.model)
     leaf.solution = getvalue(m.x)
     status = status
+    leaf.relaxation_state = status
     if status == :Error
         leaf.state = :Error
     elseif status == :Optimal
@@ -160,7 +162,7 @@ function branch!(m,opts,step_obj,counter;temp=false)
                 push_integral_or_branch!(m,step_obj,leaf,false)
             end
         end
-        return nothing,nothing
+        return step_obj.l_nd,step_obj.r_nd
     end
     
     l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,node.u_var,node.solution)
@@ -180,8 +182,6 @@ function branch!(m,opts,step_obj,counter;temp=false)
         step_obj.r_nd = r_nd
     end
 
-    
-    
     start_leaf = time()
     l_state = solve_leaf!(m,step_obj,l_nd,temp)
     r_state = solve_leaf!(m,step_obj,r_nd,temp)
@@ -288,17 +288,21 @@ function get_next_branch_node!(tree)
     deleteat!(tree.branch_nodes,nidx)
 
     tree.best_bound = tree.obj_fac*value
+    bbreak = isbreak_mip_gap(tree)
+    if bbreak 
+        return false,nothing
+    end
     return true,new_default_step_obj(tree.m,node)
 end
 
 
 """
-    one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+    one_branch_step!(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+function one_branch_step!(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
     node = step_obj.node
     step_obj.counter = counter
 
@@ -396,7 +400,7 @@ function solve_sequential(tree,
         exists,step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
-        step_obj = one_branch_step(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
@@ -436,6 +440,11 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     still_running = true
     run_counter = 0
     counter = 0
+
+    for p=1:np
+        remotecall_fetch(srand, p, 1)
+    end
+
     branch_strat = tree.options.branch_strategy
     opts = tree.options
     @sync begin
@@ -529,7 +538,7 @@ function solvemip(tree::BnBTreeObj)
 
     # use pmap if more then one processor
     if tree.options.processors > 1
-        counter = pmap(MINLPBnB.one_branch_step,tree,
+        counter = pmap(MINLPBnB.one_branch_step!,tree,
             counter,
             last_table_arr,
             time_bnb_solve_start,

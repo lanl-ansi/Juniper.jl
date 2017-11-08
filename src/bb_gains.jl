@@ -12,7 +12,7 @@ function compute_gain(node;l_nd::BnBNode=node.left,r_nd::BnBNode=node.right,inf=
     gain_l = 0.0
     gain_r = 0.0
     frac_val = node.solution[node.var_idx]
-    if inf && (l_nd.state == :Integral || r_nd.state == :Integral || l_nd.state == :Infeasible || r_nd.state == :Infeasible)
+    if inf && (l_nd.state == :Integral || r_nd.state == :Integral || l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal)
         return Inf
     end
     if l_nd.state == :Error && r_nd.state == :Error
@@ -40,7 +40,7 @@ Update the objective gains for the branch variable used for node
 """
 function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd,counter)
     gain = compute_gain(parent;l_nd=l_nd,r_nd=r_nd)
-
+    
     idx = tree.var2int_idx[parent.var_idx]
     guess = tree.obj_gain[idx]/tree.obj_gain_c[idx]
     if gain == 0 && guess == 0
@@ -56,6 +56,11 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd,counter)
         tree.obj_gain += gain
     else
         tree.obj_gain[idx] += gain
+        if isinf(tree.obj_gain[idx])
+            tree.obj_gain[idx] = gain*(tree.obj_gain_c[idx]+1)
+        else
+            tree.obj_gain[idx] += gain
+        end
         tree.obj_gain_c[idx] += 1
     end
     return gap

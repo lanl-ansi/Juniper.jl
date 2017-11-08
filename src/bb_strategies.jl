@@ -30,7 +30,7 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
 
     # set the bounds directly for the node
     # also update the best bound and the solution
-    if l_nd.state == :Infeasible
+    if l_nd.relaxation_state != :Optimal
         node.l_var[var_idx] = ceil(node.solution[var_idx])
         node.best_bound = r_nd.best_bound
         node.solution = r_nd.solution
@@ -55,12 +55,12 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
 end
 
 """
-branch_strong(m,opts,int2var_idx,step_obj,counter)
+branch_strong!(m,opts,int2var_idx,step_obj,counter)
 
 Try to branch on a few different variables and choose the one with highest obj_gain.
 Update obj_gain for the variables tried and average the other ones.
 """
-function branch_strong(m,opts,int2var_idx,step_obj,counter)
+function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     function init_variables()
         max_gain = -Inf # then one is definitely better
         max_gain_var = 0
@@ -116,16 +116,18 @@ function branch_strong(m,opts,int2var_idx,step_obj,counter)
             end
             # branch on the current variable and get the corresponding children
             l_nd,r_nd = branch!(m,opts,step_obj,counter;temp=true)
-            if l_nd.state == :Infeasible && r_nd.state == :Infeasible && counter == 1
+            if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
+                # TODO: Might be Error instead of infeasible
                 status = :GlobalInfeasible
                 break
             end
 
             # if restart is true => check if one part is infeasible => update bounds & restart
             if opts.strong_restart == true
-                if l_nd.state == :Infeasible || r_nd.state == :Infeasible
+                if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
                     max_gain = 0.0
-                    if l_nd.state == :Infeasible && r_nd.state == :Infeasible
+                    if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
+                        # TODO: Might be Error instead of infeasible
                         status = :LocalInfeasible
                         break
                     end
