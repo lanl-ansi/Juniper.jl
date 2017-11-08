@@ -43,8 +43,6 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd,counter)
     
     idx = tree.var2int_idx[parent.var_idx]
     guess = tree.obj_gain[idx]/tree.obj_gain_c[idx]
-    println("gain: ", gain)
-    println("guess: ", guess)
     if gain == 0 && guess == 0
         gap = 0.0
     elseif gain == 0
