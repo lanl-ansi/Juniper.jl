@@ -288,6 +288,10 @@ function get_next_branch_node!(tree)
     deleteat!(tree.branch_nodes,nidx)
 
     tree.best_bound = tree.obj_fac*value
+    bbreak = isbreak_mip_gap(tree)
+    if bbreak 
+        return false,nothing
+    end
     return true,new_default_step_obj(tree.m,node)
 end
 

@@ -1,3 +1,18 @@
+function isbreak_mip_gap(tree)
+    if tree.options.mip_gap != 0 && typeof(tree.incumbent) != Void
+        b = tree.best_bound
+        f = tree.incumbent.objval
+        gap_perc = abs(b-f)/abs(f)*100
+        if gap_perc <= tree.options.mip_gap
+            incu = tree.incumbent
+            tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
+            println("mip gap break")
+            return true
+        end
+    end
+    return false
+end
+
 """
     isbreak_new_incumbent_limits(tree)
 
@@ -15,16 +30,7 @@ function isbreak_new_incumbent_limits(tree)
         end
     end
 
-    if tree.options.mip_gap != 0
-        b = tree.best_bound
-        f = tree.incumbent.objval
-        gap_perc = abs(b-f)/abs(f)*100
-        if gap_perc <= tree.options.mip_gap
-            incu = tree.incumbent
-            tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
-            return true
-        end
-    end
+    return isbreak_mip_gap(tree)
     return false
 end
 

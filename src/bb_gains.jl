@@ -55,7 +55,11 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd,counter)
     if counter == 1
         tree.obj_gain += gain
     else
-        tree.obj_gain[idx] += gain
+        if isinf(tree.obj_gain[idx])
+            tree.obj_gain[idx] = gain*(tree.obj_gain_c[idx]+1)
+        else
+            tree.obj_gain[idx] += gain
+        end
         tree.obj_gain_c[idx] += 1
     end
     return gap
