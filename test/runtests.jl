@@ -33,7 +33,7 @@ sol_atol = 1e-3
 
 function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0),
     log_levels                  = [],
-    branch_strategy             = :MostInfeasible,
+    branch_strategy             = :StrongPseudoCost,
     # Strong branching
     strong_branching_nvars      = 5,
     strong_branching_nsteps     = 1,
@@ -48,7 +48,9 @@ function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0),
     all_solutions               = false,
     list_of_solutions           = false,
     # Parallel
-    processors                  = 1
+    processors                  = 1,
+    # Traversing
+    traverse_strategy           = :BFS
 )
     return MINLPBnBSolver(nl_solver;
         log_levels = log_levels,
@@ -63,7 +65,8 @@ function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0),
         solution_limit = solution_limit,
         all_solutions = all_solutions,
         list_of_solutions = list_of_solutions,
-        processors = processors)
+        processors = processors,
+        traverse_strategy = traverse_strategy)
 end
 
 minlpbnb_strong_restart_2 = DefaultTestSolver(

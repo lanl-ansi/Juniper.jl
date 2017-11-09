@@ -11,7 +11,7 @@ end
 
 function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         log_levels                  = [:Table,:Info,:Timing],
-        branch_strategy             = :MostInfeasible,
+        branch_strategy             = :StrongPseudoCost,
         # Strong branching
         strong_branching_nvars      = 5,
         strong_branching_nsteps     = 1,
@@ -20,13 +20,15 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         incumbent_constr            = true,
         # :UserLimit
         time_limit                  = Inf,  
-        mip_gap                     = 0,
+        mip_gap                     = 1e-2, # in % used in bb_user_limits (#TODO)
         best_obj_stop               = NaN,
         solution_limit              = 0,
         all_solutions               = false,
         list_of_solutions           = false,
         # Parallel
-        processors                  = 1
+        processors                  = 1,
+        # Traversing
+        traverse_strategy           = :BFS
     )
     options_obj = MINLPBnB.SolverOptions(log_levels,
                                         branch_strategy,
@@ -40,6 +42,7 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
                                         solution_limit,
                                         all_solutions,
                                         list_of_solutions,
-                                        processors)
+                                        processors,
+                                        traverse_strategy)
     return MINLPBnBSolverObj(nl_solver,options_obj)
 end

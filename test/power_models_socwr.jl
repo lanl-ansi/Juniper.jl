@@ -37,7 +37,8 @@ end
         branch_strategy=:StrongPseudoCost,
         strong_branching_nvars = 5,
         strong_restart = false,
-        incumbent_constr = false
+        incumbent_constr = false,
+        traverse_strategy = :DFS
     )
     setsolver(m, solver)
     status = solve(m)

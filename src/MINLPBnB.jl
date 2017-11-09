@@ -18,6 +18,7 @@ type SolverOptions
     all_solutions               :: Bool
     list_of_solutions           :: Bool
     processors                  :: Int64
+    traverse_strategy           :: Symbol
 end
 
 include(Pkg.dir("MINLPBnB")*"/src/solver.jl")
