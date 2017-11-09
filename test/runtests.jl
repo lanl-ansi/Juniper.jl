@@ -31,42 +31,12 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0),
-    log_levels                  = [],
-    branch_strategy             = :StrongPseudoCost,
-    # Strong branching
-    strong_branching_nvars      = 5,
-    strong_branching_nsteps     = 1,
-    strong_restart              = true,
-    # Obj cuts
-    incumbent_constr            = true,
-    # :UserLimit
-    time_limit                  = Inf,  
-    mip_gap                     = 0,
-    best_obj_stop               = NaN,
-    solution_limit              = 0,
-    all_solutions               = false,
-    list_of_solutions           = false,
-    # Parallel
-    processors                  = 1,
-    # Traversing
-    traverse_strategy           = :BFS
-)
-    return MINLPBnBSolver(nl_solver;
-        log_levels = log_levels,
-        branch_strategy = branch_strategy,
-        strong_branching_nvars = strong_branching_nvars,
-        strong_branching_nsteps = strong_branching_nsteps,
-        strong_restart = strong_restart,
-        incumbent_constr = incumbent_constr,
-        time_limit = time_limit,
-        mip_gap = mip_gap,
-        best_obj_stop = best_obj_stop,
-        solution_limit = solution_limit,
-        all_solutions = all_solutions,
-        list_of_solutions = list_of_solutions,
-        processors = processors,
-        traverse_strategy = traverse_strategy)
+function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0), solver_args...)
+    solver_args_dict = Dict{Symbol,Any}()
+    for v in solver_args
+        solver_args_dict[v[1]] = v[2]
+    end
+    return MINLPBnBSolver(nl_solver; solver_args_dict...)
 end
 
 minlpbnb_strong_restart_2 = DefaultTestSolver(
