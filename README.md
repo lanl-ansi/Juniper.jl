@@ -86,6 +86,20 @@ Possible values:
 * `:StrongPseudoCost`
     * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`.
 
+## traverse_strategy::Symbol [:BFS]
+
+Determines which node is used for the next branching.
+
+Possible values:
+
+* `:BFS`
+    * Best-first-search: always take the node with the best bound
+* `:DFS`
+    * Depth-first-search: always take the node with the highest level
+    * Might find a feasible solution faster
+* `:DBFS`
+    * Use of DFS first until the first feasible solution is found then switch to BFS
+
 ## incumbent_constr::Bool [true]
 
 Add a constraint `objval >=/<= incumbent`. 

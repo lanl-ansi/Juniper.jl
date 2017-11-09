@@ -10,7 +10,7 @@ The maximum time in seconds the solver should run.
 
 **Note:** The solver will check after each branching step therefore it isn't a strict limit and depends on the duration of a relaxation.
 
-### mip_gap::Float64 [0]
+### mip_gap::Float64 [0.01]%
 
 Stops the solver if the gap is smaller than `mip_gap`. This is a percentage value.
 

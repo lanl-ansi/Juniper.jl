@@ -283,11 +283,17 @@ function get_next_branch_node!(tree)
     if length(tree.branch_nodes) == 0
         return false,nothing
     end
-    value, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+    bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+
+    trav_strat = tree.options.traverse_strategy
+    if trav_strat == :DFS || (trav_strat == :DBFS && tree.incumbent == nothing)
+        _value, nidx = findmax([n.level for n in tree.branch_nodes])
+    end
+
     node = tree.branch_nodes[nidx]
     deleteat!(tree.branch_nodes,nidx)
 
-    tree.best_bound = tree.obj_fac*value
+    tree.best_bound = tree.obj_fac*bvalue
     bbreak = isbreak_mip_gap(tree)
     if bbreak 
         return false,nothing
