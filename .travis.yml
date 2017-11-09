@@ -36,4 +36,4 @@ after_success:
 
   - julia -e 'using Coverage; cd(Pkg.dir("MINLPBnB")); Codecov.submit(process_folder("."));'
 
- - julia -e 'cd(Pkg.dir("MINLPBnB")); include(joinpath("docs", "make.jl"))'
+  - julia -e 'cd(Pkg.dir("MINLPBnB")); include(joinpath("docs", "make.jl"));'
