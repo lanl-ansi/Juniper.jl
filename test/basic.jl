@@ -332,6 +332,49 @@ end
     @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
 end
 
+@testset "Knapsack Max with epsilon" begin
+    println("==================================")
+    println("KNAPSACK with epsilon")
+    println("==================================")
+
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
+    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+end
+
+@testset "Knapsack Max with epsilon too strong" begin
+    println("==================================")
+    println("KNAPSACK with epsilon too strong")
+    println("==================================")
+
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.1))
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    status = solve(m)
+
+    @test status == :Infeasible
+end
+
 @testset "Batch.mod Restart" begin
     println("==================================")
     println("BATCH.MOD RESTART")

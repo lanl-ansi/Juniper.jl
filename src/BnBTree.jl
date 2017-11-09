@@ -252,11 +252,11 @@ function bound!(tree::BnBTreeObj)
 end
 
 """
-    add_obj_constr(tree)
+    add_incumbent_constr(tree)
 
 Add a constraint >=/<= incumbent 
 """
-function add_obj_constr(tree)
+function add_incumbent_constr(tree)
     # add constr for objval
     if tree.options.incumbent_constr
         obj_expr = MathProgBase.obj_expr(tree.m.d)
@@ -267,6 +267,27 @@ function add_obj_constr(tree)
         end
         MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
         # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
+        JuMP.addNLconstraint(tree.m.model, obj_constr)
+        tree.m.ncuts += 1
+    end
+end
+
+"""
+    add_obj_epsilon_constr(tree)
+
+Add a constraint obj ≦ (1+ϵ)*LB or obj ≧ (1-ϵ)*UB
+"""
+function add_obj_epsilon_constr(tree)
+    # add constr for objval
+    if tree.options.obj_epsilon > 0
+        ϵ = tree.options.obj_epsilon
+        obj_expr = MathProgBase.obj_expr(tree.m.d)
+        if tree.m.obj_sense == :Min
+            obj_constr = Expr(:call, :<=, obj_expr, (1+ϵ)*tree.m.objval)
+        else
+            obj_constr = Expr(:call, :>=, obj_expr, (1-ϵ)*tree.m.objval)
+        end
+        MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
         JuMP.addNLconstraint(tree.m.model, obj_constr)
         tree.m.ncuts += 1
     end
@@ -542,6 +563,8 @@ function solvemip(tree::BnBTreeObj)
     counter = 1    
     branch_strat = tree.options.branch_strategy
 
+    add_obj_epsilon_constr(tree)
+
     # use pmap if more then one processor
     if tree.options.processors > 1
         counter = pmap(MINLPBnB.one_branch_step!,tree,
@@ -568,6 +591,10 @@ function solvemip(tree::BnBTreeObj)
 
     # update best bound in incumbent
     tree.incumbent.best_bound = tree.best_bound
+
+    if tree.options.obj_epsilon != 0 && tree.incumbent.status == :Infeasible
+        warn("Maybe only infeasible because of obj_epsilon.")
+    end
 
     if !isnan(tree.options.best_obj_stop)
         inc_val = tree.incumbent.objval

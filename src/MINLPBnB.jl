@@ -11,6 +11,7 @@ type SolverOptions
     strong_branching_nsteps     :: Int64
     strong_restart              :: Bool
     incumbent_constr            :: Bool
+    obj_epsilon                 :: Float64
     time_limit                  :: Float64
     mip_gap                     :: Float64
     best_obj_stop               :: Float64
