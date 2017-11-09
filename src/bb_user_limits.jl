@@ -59,15 +59,10 @@ end
 
 Check if break...
 Break if 
-- incumbent equals best bound
 - solution limit is reached
 - time limit is reached    
 """
 function isbreak_after_step!(tree)
-    if !tree.options.all_solutions && tree.incumbent != nothing && tree.incumbent.objval == tree.best_bound
-        return true
-    end
-
     # maybe break on solution_limit (can be higher if two solutions found in last step)
     if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
         incu = tree.incumbent
