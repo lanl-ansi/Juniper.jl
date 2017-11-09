@@ -592,6 +592,10 @@ function solvemip(tree::BnBTreeObj)
     # update best bound in incumbent
     tree.incumbent.best_bound = tree.best_bound
 
+    if tree.options.obj_epsilon != 0 && tree.incumbent.status == :Infeasible
+        warn("Maybe only infeasible because of obj_epsilon.")
+    end
+
     if !isnan(tree.options.best_obj_stop)
         inc_val = tree.incumbent.objval
         bos = tree.options.best_obj_stop
