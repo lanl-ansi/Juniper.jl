@@ -314,7 +314,7 @@ end
     println("KNAPSACK")
     println("==================================")
 
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]

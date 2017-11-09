@@ -34,7 +34,6 @@ function isbreak_new_incumbent_limits(tree)
     end
 
     return isbreak_mip_gap(tree)
-    return false
 end
 
 """
