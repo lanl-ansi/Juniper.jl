@@ -18,6 +18,7 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
         strong_restart              = true,
         # Obj cuts
         incumbent_constr            = true,
+        obj_epsilon                 = 0,
         # :UserLimit
         time_limit                  = Inf,  
         mip_gap                     = 1e-2, # in % used in bb_user_limits (#TODO)
@@ -36,6 +37,7 @@ function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;
                                         strong_branching_nsteps,
                                         strong_restart,
                                         incumbent_constr,
+                                        obj_epsilon,
                                         time_limit,
                                         mip_gap,
                                         best_obj_stop,

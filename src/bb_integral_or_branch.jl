@@ -31,7 +31,7 @@ function new_integral!(tree,node)
         push!(tree.m.solutions, MINLPBnB.SolutionObj(node.solution,node.best_bound))
     end
     if update_incumbent!(tree,node) # returns if new 
-        add_obj_constr(tree)
+        add_incumbent_constr(tree)
     end
 end
 
