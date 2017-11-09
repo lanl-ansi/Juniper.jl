@@ -2,35 +2,31 @@ include("POD_experiment/blend029.jl")
 
 @testset "User limit testing" begin
 
-@testset "blend029 5% limit" begin
+@testset "Knapsack 10% limit" begin
     println("==================================")
-    println("blend029 5%")
+    println("KNAPSACK 10%")
     println("==================================")
 
-    m,objval = get_blend029()
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=10))
 
-    setsolver(m, DefaultTestSolver(
-            branch_strategy=:StrongPseudoCost, 
-            strong_branching_nvars = 15,
-            strong_branching_nsteps = 5,
-            strong_restart = true,
-            mip_gap = 5 # %
-    ))
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
     status = solve(m)
-
-    @test status == :UserLimit
-
-    minlpbnb_val = getobjectivevalue(m)
+    objval = getobjectivevalue(m)
+    println("Obj: ", objval)
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
-    println("best_bound_val: ", best_bound_val)
-    println("gap_val: ", gap_val)
+    @test status == :UserLimit
 
     @test best_bound_val >= objval
-    @test 0.01 <= gap_val <= 0.05
+    @test 0.01 <= gap_val <= 0.1
 end
 
 @testset "blend029 10s limit" begin
