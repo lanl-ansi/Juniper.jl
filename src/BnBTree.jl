@@ -608,7 +608,8 @@ function solvemip(tree::BnBTreeObj)
     tree.m.nbranches = counter
 
     time_bnb_solve = time()-time_bnb_solve_start
-    (:Timing in tree.options.log_levels) && println("#branches: ", counter)
+    (:Table in tree.options.log_levels) && println("")
+    (:Info in tree.options.log_levels) && println("#branches: ", counter)
     if :Timing in tree.options.log_levels
         println("BnB time: ", round(time_bnb_solve,2))
         println("% leaf time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))

@@ -19,10 +19,10 @@ function get_table_config(opts)
     return fields, field_chars
 end
 
-
 function print_table_header(fields, field_chars)
     ln = ""
     i = 1
+    println("")
     for f in fields
         padding = field_chars[i]-length(f)
         ln *= repeat(" ",trunc(Int, floor(padding/2)))
