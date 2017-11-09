@@ -162,6 +162,12 @@ function print_info(m::MINLPBnBModel)
     println("Obj Sense: ", m.obj_sense)
 end
 
+function print_settings(m::MINLPBnBModel;all=true)
+    if all
+        println(m.options)
+    end
+end
+
 """
     MathProgBase.optimize!(m::MINLPBnBModel)
 
@@ -170,6 +176,7 @@ Optimize by creating a model based on the variables saved in MINLPBnBModel.
 function MathProgBase.optimize!(m::MINLPBnBModel)
     ps = m.options.log_levels
     (:All in ps || :Info in ps) && print_info(m)
+    (:All in ps || :AllSettings in ps) && print_settings(m;all=true)
 
     m.model = Model(solver=m.nl_solver) 
     lb = [m.l_var; -1e6]
