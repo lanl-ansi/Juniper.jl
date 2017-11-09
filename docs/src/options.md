@@ -134,5 +134,7 @@ Possible symbols which can be added to the vector are:
 
 - :Timing
     - Provides some more timing informations
-- :AllSettings
-    - prints all settings chosen 
+- :Options
+    - prints all options that differ from default
+- :AllOptions
+    - prints all options 
