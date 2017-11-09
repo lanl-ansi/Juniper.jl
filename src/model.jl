@@ -233,6 +233,8 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     end
     m.soltime = time()-start
     
+    (:All in ps || :Info in ps) && println("Obj: ",m.objval)
+
     if length(m.solutions) == 0
         push!(m.solutions, SolutionObj(m.solution, m.objval))
     end

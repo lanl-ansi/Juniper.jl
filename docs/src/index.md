@@ -1,12 +1,12 @@
 # MINLPBnB
 
-Dev: [![Build Status](https://travis-ci.org/Wikunia/MINLPBnB.svg?branch=master)](https://travis-ci.org/Wikunia/MINLPBnB) [![codecov](https://codecov.io/gh/Wikunia/MINLPBnB/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/MINLPBnB)
-[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://wikunia.github.io/MINLPBnB/latest)
+MINLPBnB is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia.
+MINLPBnB solves these kind of problems using a NLP solver and then branch and bound.
 
-# Idea
+# Why?
+You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part? => Use MINLPBnB
 
-You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
-The relaxation should be solveable by any solver you prefer. Some solvers might not be able to solve the mixed integer part by themselves.
+You have a really good solver for the relaxation and just want to solve problems with discrete variables as well? Just combine your solver with MINLPBnB.
 
 # Basic usage
 
