@@ -162,6 +162,15 @@ function print_info(m::MINLPBnBModel)
     println("Obj Sense: ", m.obj_sense)
 end
 
+function Base.show(io::IO, opts::SolverOptions) 
+    longest_field_name = maximum([length(string(fname)) for fname in fieldnames(SolverOptions)])+2
+    for name in fieldnames(SolverOptions)
+        sname = string(name)
+        pname = sname*repeat(" ", longest_field_name-length(sname))
+        println(io, pname, ": ", getfield(opts,name))
+    end
+end
+
 function print_settings(m::MINLPBnBModel;all=true)
     if all
         println(m.options)
