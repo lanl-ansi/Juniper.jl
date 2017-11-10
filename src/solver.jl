@@ -36,7 +36,10 @@ function get_default_options()
 end
 
 function combine_options(options)
-    options_dict = Dict(kv[1]=>kv[2] for kv in options) 
+    options_dict = Dict{Symbol,Any}()
+    for kv in options
+        options_dict[kv[1]] = kv[2]
+    end
     if get(options_dict,:log_levels,false) != false
         if length(options_dict[:log_levels]) == 0
             options_dict[:log_levels] = Symbol[]
