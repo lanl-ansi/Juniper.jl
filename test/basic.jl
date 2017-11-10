@@ -329,7 +329,24 @@ end
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
+    @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
     @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+end
+
+@testset "Integer at root" begin
+    println("==================================")
+    println("INTEGER AT ROOT")
+    println("==================================")
+    m = Model(solver=DefaultTestSolver())
+
+    @variable(m, x[1:6] <= 1, Int)
+    @constraint(m, x[1:6] .== 1)
+    @objective(m, Max, sum(x))
+    @NLconstraint(m, x[1]*x[2]*x[3]+x[4]*x[5]*x[6] <= 100)
+    status = solve(m)
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), 6, atol=opt_atol)
+    @test isapprox(getobjectivebound(m), 0, atol=opt_atol) # Ipopt return 0
 end
 
 @testset "Knapsack Max with epsilon" begin
