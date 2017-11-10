@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "log_levels::Vector{Symbol} [[:Table,:Info]]",
     "category": "section",
-    "text": "You can change the option log_levels to define what kind of logs you want to see.The default is [:Table,:Info] which outputs something like this:(Image: default-logging)Possible symbols which can be added to the vector are::Timing\nProvides some more timing informations\n:AllSettings\nprints all settings chosen "
+    "text": "You can change the option log_levels to define what kind of logs you want to see.The default is [:Table,:Info] which outputs something like this:(Image: default-logging)Possible symbols which can be added to the vector are::Timing\nProvides some more timing informations\n:Options\nprints all options that differ from default\n:AllOptions\nprints all options "
 },
 
 {
