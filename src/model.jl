@@ -162,6 +162,36 @@ function print_info(m::MINLPBnBModel)
     println("Obj Sense: ", m.obj_sense)
 end
 
+function print_dict(d)
+    longest_key_name = maximum([length(string(key)) for key in keys(d)])+2
+    for key in keys(d)
+        skey = string(key)
+        pkey = skey*repeat(" ", longest_key_name-length(skey))
+        println(pkey, ": ",d[key])
+    end
+end
+
+function get_non_default_options(options)
+    defaults = MINLPBnB.get_default_options()
+    non_defaults = Dict{Symbol,Any}()
+    for fname in fieldnames(SolverOptions)
+        # doesn't work for arrays but the only array atm is log_levels 
+        # and the default doesn't include :Options therefore !== should work...
+        if getfield(options,fname) !== getfield(defaults,fname)
+            non_defaults[fname] = getfield(options,fname)
+        end
+    end
+    return non_defaults
+end
+
+function print_options(m::MINLPBnBModel;all=true)
+    if all
+        println(m.options)
+    else
+        print_dict(get_non_default_options(m.options))
+    end
+end
+
 """
     MathProgBase.optimize!(m::MINLPBnBModel)
 
@@ -170,6 +200,8 @@ Optimize by creating a model based on the variables saved in MINLPBnBModel.
 function MathProgBase.optimize!(m::MINLPBnBModel)
     ps = m.options.log_levels
     (:All in ps || :Info in ps) && print_info(m)
+    (:All in ps || :AllOptions in ps) && print_options(m;all=true)
+    (:Options in ps) && print_options(m;all=false)
 
     m.model = Model(solver=m.nl_solver) 
     lb = [m.l_var; -1e6]

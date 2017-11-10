@@ -22,6 +22,15 @@ type SolverOptions
     traverse_strategy           :: Symbol
 end
 
+function Base.show(io::IO, opts::SolverOptions) 
+    longest_field_name = maximum([length(string(fname)) for fname in fieldnames(SolverOptions)])+2
+    for name in fieldnames(SolverOptions)
+        sname = string(name)
+        pname = sname*repeat(" ", longest_field_name-length(sname))
+        println(io, pname, ": ", getfield(opts,name))
+    end
+end
+
 include(Pkg.dir("MINLPBnB")*"/src/solver.jl")
 include(Pkg.dir("MINLPBnB")*"/src/model.jl")
 include(Pkg.dir("MINLPBnB")*"/src/BnBTree.jl")

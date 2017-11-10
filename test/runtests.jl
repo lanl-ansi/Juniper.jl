@@ -68,6 +68,7 @@ minlpbnb_pseudo = DefaultTestSolver(
 
 start = time()
 
+include("functions.jl")
 include("basic.jl")
 include("user_limits.jl")
 include("parallel.jl")
