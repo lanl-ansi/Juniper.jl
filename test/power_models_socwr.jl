@@ -64,6 +64,7 @@ end
 
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
+        strong_branching_perc = 0, # this defaults to 2 variables
         strong_restart = false,
         obj_epsilon = 0.5,
         traverse_strategy = :DFS

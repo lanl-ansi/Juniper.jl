@@ -483,7 +483,6 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         end
                         
                         if isbreak_after_step!(tree) 
-                            println("is break after step")
                             still_running = false 
                             break
                         end

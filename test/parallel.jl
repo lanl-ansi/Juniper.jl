@@ -136,6 +136,26 @@ end
 end
 
 
+@testset "time limit 5s" begin
+    println("==================================")
+    println("time imit 5s")
+    println("==================================")
+    minlpbnb_all_solutions = DefaultTestSolver(
+        branch_strategy=:PseudoCost,
+        strong_restart = true,
+        processors = 3,
+        time_limit = 5
+    )
+
+    m,objval = get_blend029()
+    setsolver(m, minlpbnb_all_solutions)
+
+    status = solve(m)
+    println("Status: ", status)
+    
+    @test status == :UserLimit
+    @test getsolvetime(m) <= 8 # some seconds more are allowed
+end
 
 @testset "infeasible cos" begin
     println("==================================")
