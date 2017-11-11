@@ -545,7 +545,10 @@ function solvemip(tree::BnBTreeObj)
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type)
         tree.nsolutions = 1
-        return tree.m
+        objval = getobjectivevalue(tree.m.model)
+        sol = getvalue(tree.m.x)
+        bbound = getobjectivebound(tree.m.model)
+        return IncumbentSolution(objval,sol,:Optimal,bbound)
     end
 
     last_table_arr = []
@@ -605,6 +608,13 @@ function solvemip(tree::BnBTreeObj)
         end
     end
     
+    if length(tree.branch_nodes) > 0
+        bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+        tree.incumbent.best_bound = bvalue 
+    else
+        tree.incumbent.best_bound = tree.incumbent.objval 
+    end
+
     tree.m.nbranches = counter
 
     time_bnb_solve = time()-time_bnb_solve_start
