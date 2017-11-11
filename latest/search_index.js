@@ -105,11 +105,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#strong_branching_nvars::Int64-[5]-1",
+    "location": "options.html#strong_branching_perc::Float64-[25]-1",
     "page": "Options",
-    "title": "strong_branching_nvars::Int64 [5]",
+    "title": "strong_branching_perc::Float64 [25]",
     "category": "section",
-    "text": "Defines the number of variables to consider for strong branching. "
+    "text": "Defines the percentage of variables to consider for strong branching.  If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
 },
 
 {
@@ -125,7 +125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "strong_restart::Bool [true]",
     "category": "section",
-    "text": "If a child while running strong branching is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)"
+    "text": "If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)"
 },
 
 {
