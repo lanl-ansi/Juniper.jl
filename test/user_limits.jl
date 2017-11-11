@@ -69,7 +69,6 @@ end
 
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
-        strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,
         solution_limit = 1
@@ -101,7 +100,6 @@ end
     best_obj_stop = 15000
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
-        strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,
         best_obj_stop = best_obj_stop

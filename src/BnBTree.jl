@@ -193,10 +193,6 @@ function branch!(m,opts,step_obj,counter;temp=false)
         step_obj.leaf_branch_time += leaf_time
     end
 
-    if l_state == :Break || r_state == :Break
-        step_obj.state = :Break
-    end
-
     branch_strat = opts.branch_strategy
 
     if check_print(ps,[:All])
@@ -377,11 +373,7 @@ function upd_tree_obj!(tree,step_obj,time_obj)
         tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
         still_running = false 
     end
-
-    if step_obj.state == :Break 
-        still_running = false
-    end
-    
+   
     if still_running
         upd_gains_step!(tree,step_obj)
     end
@@ -491,7 +483,6 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         end
                         
                         if isbreak_after_step!(tree) 
-                            println("is break after step")
                             still_running = false 
                             break
                         end

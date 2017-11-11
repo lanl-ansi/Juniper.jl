@@ -11,7 +11,7 @@ include("POD_experiment/blend029.jl")
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_branching_nvars = 100,
+            strong_branching_perc = 100,
             strong_branching_nsteps = 100,
             strong_restart = true
     ))

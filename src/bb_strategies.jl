@@ -73,7 +73,9 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     strong_restarts = -1 
 
     # generate an of variables to branch on
-    num_strong_var = opts.strong_branching_nvars
+    num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_int_bin_var))
+    # if smaller than 2 it doesn't make sense
+    num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
     int_vars = m.num_int_bin_var
