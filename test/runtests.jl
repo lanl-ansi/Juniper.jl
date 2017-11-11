@@ -42,19 +42,19 @@ end
 
 minlpbnb_strong_restart_2 = DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_branching_nvars = 5,
+            strong_branching_perc = 25,
             strong_branching_nsteps = 2,
             strong_restart = true
             )
 
 minlpbnb_strong_restart = DefaultTestSolver(
                 branch_strategy=:StrongPseudoCost,
-                strong_branching_nvars = 5,
+                strong_branching_perc = 25,
                 strong_restart = true
             )
 minlpbnb_strong_no_restart = DefaultTestSolver(
                 branch_strategy=:StrongPseudoCost,
-                strong_branching_nvars = 5,
+                strong_branching_perc = 25,
                 strong_restart = false
             )
 

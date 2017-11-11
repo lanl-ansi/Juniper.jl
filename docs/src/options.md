@@ -71,9 +71,10 @@ $\text{obj } \geq (1-\epsilon)\text{UB}$
 
 ## Options for strong branching
 
-### strong_branching_nvars::Int64 [5]
+### strong_branching_perc::Float64 [25]
 
-Defines the number of variables to consider for strong branching. 
+Defines the percentage of variables to consider for strong branching. 
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
 
 ### strong_branching_nsteps::Int64 [1]
 
@@ -81,7 +82,7 @@ Defines the number of steps in which strong branching is used. `:PseudoCost` wil
 
 ### strong_restart::Bool [true]
 
-If a child while running strong branching is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
+If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
 
 ## Parallel
 

@@ -35,7 +35,6 @@ end
 
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
-        strong_branching_nvars = 5,
         strong_restart = false,
         incumbent_constr = false,
         traverse_strategy = :DFS
@@ -65,7 +64,6 @@ end
 
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
-        strong_branching_nvars = 5,
         strong_restart = false,
         obj_epsilon = 0.5,
         traverse_strategy = :DFS

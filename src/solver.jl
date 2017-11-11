@@ -13,7 +13,7 @@ function get_default_options()
     log_levels                  = [:Table,:Info]
     branch_strategy             = :StrongPseudoCost
     # Strong branching
-    strong_branching_nvars      = 5
+    strong_branching_perc       = 25
     strong_branching_nsteps     = 1
     strong_restart              = true
     # Obj cuts
@@ -30,7 +30,7 @@ function get_default_options()
     processors                  = 1
     # Traversing
     traverse_strategy           = :BFS
-    return SolverOptions(log_levels,branch_strategy,strong_branching_nvars,strong_branching_nsteps,strong_restart,
+    return SolverOptions(log_levels,branch_strategy,strong_branching_perc,strong_branching_nsteps,strong_restart,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy)
 end

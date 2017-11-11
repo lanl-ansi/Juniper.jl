@@ -40,7 +40,7 @@ end
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_branching_nvars = 15,
+            strong_branching_perc = 50,
             strong_branching_nsteps = 5,
             strong_restart = true,
             processors = 4
