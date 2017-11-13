@@ -7,6 +7,7 @@ using JuMP
 type SolverOptions
     log_levels                  :: Vector{Symbol}
     branch_strategy             :: Symbol
+    gain_mu                     :: Float64
     strong_branching_perc       :: Float64
     strong_branching_nsteps     :: Int64
     strong_restart              :: Bool

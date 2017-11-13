@@ -84,6 +84,16 @@ Defines the number of steps in which strong branching is used. `:PseudoCost` wil
 
 If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
 
+## Options gain computation
+
+The objective gain is used for pseudo cost and therefore also for strong pseudo cost branching.
+$\mu$ is a parameter inside the computation of a so called score.
+The version we use for the score function is described [here](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf).
+
+### gain_mu::Float64 [0.167]
+
+The parameter is used and a bit described in this [paper](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf) in (3).
+
 ## Parallel
 
 MINLPBnB can be run in parallel to speed up the algorithm.

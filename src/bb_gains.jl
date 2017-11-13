@@ -73,5 +73,6 @@ function guess_gain(tree,step_obj)
     x = tree.m.solution
     g_minus, g_minus_c = tree.obj_gain_m,tree.obj_gain_mc
     g_plus, g_plus_c = tree.obj_gain_p,tree.obj_gain_pc
-    return score(f_minus(x[i])*g_minus[inti]/g_minus_c[inti],f_plus(x[i])*g_plus[inti]/g_plus_c[inti])
+    mu = tree.options.gain_mu
+    return score(f_minus(x[i])*g_minus[inti]/g_minus_c[inti],f_plus(x[i])*g_plus[inti]/g_plus_c[inti],mu)
 end
