@@ -103,7 +103,7 @@ function get_table_line(p,tree,node,step_obj,start_time,fields,field_chars,count
             elseif gain_gap == -1.0
                 val = "-"
             else
-                val = string(round(gain_gap))*"%"
+                val = string(round(gain_gap*100,1))*"%"
             end
             if length(val) > field_chars[i]
                 val = ">>"
