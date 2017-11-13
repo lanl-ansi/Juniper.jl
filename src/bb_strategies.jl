@@ -197,7 +197,9 @@ function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c)
 end
 
 function sorted_score_idx(x,g_minus,g_minus_c,g_plus,g_plus_c,i2v)
-    return sortperm([score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i]) for i=1:length(g_minus)])
+    scores = [score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i]) for i=1:length(g_minus)]
+    sortedidx = sortperm(scores; rev=true)
+    return sortedidx
 end
 
 """

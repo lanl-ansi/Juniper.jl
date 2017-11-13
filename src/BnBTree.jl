@@ -416,13 +416,14 @@ function solve_sequential(tree,
     m = tree.m
     opts = tree.options
     int2var_idx = tree.int2var_idx
-    gain_m = tree.obj_gain_m
-    gain_mc = tree.obj_gain_mc
-    gain_p = tree.obj_gain_p
-    gain_pc = tree.obj_gain_pc
     counter = 1
     ps = tree.options.log_levels
     while true
+        gain_m = tree.obj_gain_m
+        gain_mc = tree.obj_gain_mc
+        gain_p = tree.obj_gain_p
+        gain_pc = tree.obj_gain_pc
+
         exists,step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break

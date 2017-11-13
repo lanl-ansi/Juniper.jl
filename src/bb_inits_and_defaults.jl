@@ -3,8 +3,8 @@ function init(start_time, m)
     node = BnBNode(1,1,m.l_var,m.u_var,m.solution,0,:Branch,:Optimal,m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)
-    obj_gain_mc = zeros(m.num_int_bin_var)
-    obj_gain_pc = zeros(m.num_int_bin_var)
+    obj_gain_mc = ones(Int64,m.num_int_bin_var)
+    obj_gain_pc = ones(Int64,m.num_int_bin_var)
     int2var_idx = zeros(m.num_int_bin_var)
     var2int_idx = zeros(m.num_var)
     int_i = 1
@@ -35,9 +35,9 @@ end
 
 function new_default_step_obj(m,node)
     gains_m = zeros(m.num_int_bin_var)
-    gains_mc = zeros(m.num_int_bin_var)
+    gains_mc = ones(Int64,m.num_int_bin_var)
     gains_p = zeros(m.num_int_bin_var)
-    gains_pc = zeros(m.num_int_bin_var)
+    gains_pc = ones(Int64,m.num_int_bin_var)
     idx_time = 0.0
     leaf_idx_time = 0.0
     upd_gains_time = 0.0

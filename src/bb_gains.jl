@@ -57,7 +57,21 @@ function upd_gains_step!(tree,step_obj)
         end
     elseif branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && step_obj.counter > opts.strong_branching_nsteps)
         upd_start = time()
-        step_obj.gain_gap = update_gains!(tree,step_obj.node,step_obj.l_nd,step_obj.r_nd)    
+        guess_gain_val = guess_gain(tree,step_obj)
+        gain = update_gains!(tree,step_obj.node,step_obj.l_nd,step_obj.r_nd)    
+        step_obj.gain_gap = abs(guess_gain_val-gain)/abs(gain)
+        if isnan(step_obj.gain_gap) # 0/0
+            step_obj.gain_gap = 0.0
+        end
         step_obj.upd_gains_time = time()-upd_start
     end
+end
+
+function guess_gain(tree,step_obj)
+    i = step_obj.var_idx
+    inti = tree.var2int_idx[i]
+    x = tree.m.solution
+    g_minus, g_minus_c = tree.obj_gain_m,tree.obj_gain_mc
+    g_plus, g_plus_c = tree.obj_gain_p,tree.obj_gain_pc
+    return score(f_minus(x[i])*g_minus[inti]/g_minus_c[inti],f_plus(x[i])*g_plus[inti]/g_plus_c[inti])
 end
