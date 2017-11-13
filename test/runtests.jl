@@ -68,11 +68,11 @@ minlpbnb_pseudo = DefaultTestSolver(
 
 start = time()
 
-include("functions.jl")
-include("basic.jl")
-include("user_limits.jl")
-include("parallel.jl")
+# include("functions.jl")
+# include("basic.jl")
+# include("user_limits.jl")
+# include("parallel.jl")
 include("pod.jl")
-include("power_models_acp.jl")
-include("power_models_socwr.jl")
+# include("power_models_acp.jl")
+# include("power_models_socwr.jl")
 println("Time for all tests: ", time()-start)

@@ -25,8 +25,10 @@ end
 type BnBTreeObj
     m           :: MINLPBnB.MINLPBnBModel
     incumbent   :: Union{Void,IncumbentSolution}
-    obj_gain    :: Vector{Float64} # gain of objective per variable
-    obj_gain_c  :: Vector{Float64} # obj_gain / obj_gain_c => average gain
+    obj_gain_m  :: Vector{Float64} # gain of objective per variable on left node
+    obj_gain_p  :: Vector{Float64} # gain of objective per variable on right node
+    obj_gain_mc :: Vector{Float64} # obj_gain_m / obj_gain_mc => average gain on left node
+    obj_gain_pc :: Vector{Float64} # obj_gain_p / obj_gain_pc => average gain on right node
     int2var_idx :: Vector{Int64}
     var2int_idx :: Vector{Int64}
     options     :: MINLPBnB.SolverOptions
@@ -44,7 +46,10 @@ type StepObj
     state       :: Symbol  # if infeasible => break (might be set by strong branching)
     nrestarts   :: Int64 
     gain_gap    :: Float64
-    gains       :: Vector{Float64}
+    gains_m       :: Vector{Float64}
+    gains_mc      :: Vector{Float64}
+    gains_p       :: Vector{Float64}
+    gains_pc      :: Vector{Float64}
     strong_int_vars :: Vector{Int64}
     idx_time    :: Float64
     leaf_idx_time :: Float64
@@ -87,7 +92,7 @@ end
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter::Int64=1)  
+function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter::Int64=1)  
     start = time()
     node = step_obj.node
     idx = 0
@@ -102,7 +107,7 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter::
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m,opts,int2var_idx,step_obj,counter)
         else
-            idx = branch_pseudo(m,node,int2var_idx,gain,gain_c)
+            idx = branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c)
         end
     end
     step_obj.state = status
@@ -320,17 +325,17 @@ end
 
 
 """
-    one_branch_step!(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+    one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c, counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c, counter)
     node = step_obj.node
     step_obj.counter = counter
 
 # get branch variable    
-    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gain,gain_c,counter)
+    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter)
     if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
         # branch
         branch!(m,opts,step_obj,counter)
@@ -411,15 +416,17 @@ function solve_sequential(tree,
     m = tree.m
     opts = tree.options
     int2var_idx = tree.int2var_idx
-    gain = tree.obj_gain
-    gain_c = tree.obj_gain_c
+    gain_m = tree.obj_gain_m
+    gain_mc = tree.obj_gain_mc
+    gain_p = tree.obj_gain_p
+    gain_pc = tree.obj_gain_pc
     counter = 1
     ps = tree.options.log_levels
     while true
         exists,step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
-        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain,gain_c, counter)
+        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc, counter)
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 

@@ -136,7 +136,9 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            gain = compute_gain(node;l_nd=l_nd,r_nd=r_nd,inf=true)
+            gain_l = sigma_minus(node,l_nd,m.solution[node.var_idx])
+            gain_r = sigma_plus(node,r_nd,m.solution[node.var_idx])
+            gain = (gain_l+gain_r)/2
             if gain > max_gain
                 max_gain = gain
                 max_gain_var = var_idx
@@ -148,7 +150,15 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                     break
                 end
             end
-            step_obj.gains[int_var_idx] = gain
+            if !isinf(gain_l)
+                step_obj.gains_m[int_var_idx] = gain_l
+                step_obj.gains_mc[int_var_idx] += 1
+            end
+
+            if !isinf(gain_r)
+                step_obj.gains_p[int_var_idx] = gain_r
+                step_obj.gains_pc[int_var_idx] += 1
+            end
         end
     end
 
@@ -166,22 +176,50 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     return status, max_gain_var, strong_restarts
 end
 
-function branch_pseudo(m,node,int2var_idx,gain,gain_c)
+function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c)
     # use the one with highest obj_gain which is currently continous
     idx = 0
-    obj_gain_average = gain./gain_c
-    sort_idx = int2var_idx[sortperm(obj_gain_average, rev=true)]
+    sort_idx = sorted_score_idx(m.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx)
     for l_idx in sort_idx
-        if !is_type_correct(node.solution[l_idx],m.var_type[l_idx])
-            u_b = node.u_var[l_idx]
-            l_b = node.l_var[l_idx]
+        var_idx = int2var_idx[l_idx]
+        if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])
+            u_b = node.u_var[var_idx]
+            l_b = node.l_var[var_idx]
             # if the upper bound is the lower bound => no reason to branch
             if isapprox(u_b,l_b,atol=atol)
                 continue
             end
-            idx = l_idx
+            idx = var_idx
             break
         end
     end
     return idx
 end
+
+function sorted_score_idx(x,g_minus,g_minus_c,g_plus,g_plus_c,i2v)
+    return sortperm([score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i]) for i=1:length(g_minus)])
+end
+
+"""
+    Score function from 
+    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
+"""
+function score(q_m,q_p) 
+    mu = 0.167 # TODO changeable
+    minq = q_m < q_p ? q_m : q_p
+    maxq = q_m < q_p ? q_p : q_m
+    return (1-mu)*minq+mu*maxq
+end
+
+function diff_obj(node,leaf)
+    if leaf.relaxation_state == :Optimal
+        return abs(node.best_bound - leaf.best_bound)
+    else
+        return Inf
+    end
+end
+
+f_plus(x) = ceil(x)-x
+f_minus(x) = x-floor(x)
+sigma_plus(node,r_nd,x) = diff_obj(node,r_nd)/f_plus(x)
+sigma_minus(node,l_nd,x) = diff_obj(node,l_nd)/f_minus(x)
