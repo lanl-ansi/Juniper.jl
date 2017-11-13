@@ -54,52 +54,14 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
     return restart, infeasible_int_vars, max_gain_var, strong_int_vars
 end
 
-"""
-branch_strong!(m,opts,int2var_idx,step_obj,counter)
-
-Try to branch on a few different variables and choose the one with highest obj_gain.
-Update obj_gain for the variables tried and average the other ones.
-"""
-function branch_strong!(m,opts,int2var_idx,step_obj,counter)
-    function init_variables()
-        max_gain = -Inf # then one is definitely better
-        max_gain_var = 0
-        strong_int_vars = zeros(Int64,0)
-        return max_gain, max_gain_var, strong_int_vars
-    end
-
-    node = step_obj.node
-
-    strong_restarts = -1 
-
-    # generate an of variables to branch on
-    num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_int_bin_var))
-    # if smaller than 2 it doesn't make sense
-    num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
-
-    # get reasonable candidates (not type correct and not already perfectly bounded)
-    int_vars = m.num_int_bin_var
-    reasonable_int_vars = zeros(Int64,0)
-    for i=1:int_vars
-        idx = int2var_idx[i]
-        u_b = node.u_var[idx]
-        l_b = node.l_var[idx]
-        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
-            continue
-        end
-        push!(reasonable_int_vars,i)
-    end
-    shuffle!(reasonable_int_vars)
-    reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
-
-    # compute the gain for each reasonable candidate and choose the highest
-    max_gain, max_gain_var, strong_int_vars = init_variables()
-    left_node = nothing
-    right_node = nothing
-
-    restart = true
-    infeasible_int_vars = zeros(Int64,0)
-    status = :Normal
+function branch_strong_on(m,opts,step_obj,node,status,restart, max_gain, max_gain_var, strong_int_vars,
+    infeasible_int_vars, reasonable_int_vars, int2var_idx, counter)
+    strong_restarts = -1
+    gains_m = zeros(m.num_int_bin_var)
+    gains_p = zeros(m.num_int_bin_var)
+    gains_mc = zeros(Int64,m.num_int_bin_var)
+    gains_pc = zeros(Int64,m.num_int_bin_var)
+    left_node, right_node = nothing, nothing
     while restart 
         strong_restarts += 1 # is init with -1
         restart = false
@@ -151,16 +113,68 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                 end
             end
             if !isinf(gain_l)
-                step_obj.gains_m[int_var_idx] = gain_l
-                step_obj.gains_mc[int_var_idx] += 1
+                gains_m[int_var_idx] = gain_l
+                gains_mc[int_var_idx] += 1
             end
 
             if !isinf(gain_r)
-                step_obj.gains_p[int_var_idx] = gain_r
-                step_obj.gains_pc[int_var_idx] += 1
+                gains_p[int_var_idx] = gain_r
+                gains_pc[int_var_idx] += 1
             end
         end
     end
+    return status, max_gain_var, left_node, right_node, (gains_m, gains_mc, gains_p, gains_pc), strong_restarts
+end
+
+"""
+branch_strong!(m,opts,int2var_idx,step_obj,counter)
+
+Try to branch on a few different variables and choose the one with highest obj_gain.
+Update obj_gain for the variables tried and average the other ones.
+"""
+function branch_strong!(m,opts,int2var_idx,step_obj,counter)
+    function init_variables()
+        max_gain = -Inf # then one is definitely better
+        max_gain_var = 0
+        strong_int_vars = zeros(Int64,0)
+        return max_gain, max_gain_var, strong_int_vars
+    end
+
+    node = step_obj.node
+
+
+    # generate an of variables to branch on
+    num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_int_bin_var))
+    # if smaller than 2 it doesn't make sense
+    num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
+
+    # get reasonable candidates (not type correct and not already perfectly bounded)
+    int_vars = m.num_int_bin_var
+    reasonable_int_vars = zeros(Int64,0)
+    for i=1:int_vars
+        idx = int2var_idx[i]
+        u_b = node.u_var[idx]
+        l_b = node.l_var[idx]
+        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
+            continue
+        end
+        push!(reasonable_int_vars,i)
+    end
+    shuffle!(reasonable_int_vars)
+    reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
+
+    # compute the gain for each reasonable candidate and choose the highest
+    max_gain, max_gain_var, strong_int_vars = init_variables()
+    left_node = nothing
+    right_node = nothing
+
+    restart = true
+    infeasible_int_vars = zeros(Int64,0)
+    status = :Normal
+    status, max_gain_var,  left_node, right_node, gains, strong_restarts = branch_strong_on(m,opts,step_obj,node,status,restart, max_gain, max_gain_var, strong_int_vars,
+        infeasible_int_vars, reasonable_int_vars, int2var_idx, counter)
+
+    gains_m, gains_mc, gains_p, gains_pc = gains
 
     if status != :GlobalInfeasible && status != :LocalInfeasible
         step_obj.l_nd = left_node
