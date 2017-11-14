@@ -274,7 +274,7 @@ end
 function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
     # use the one with highest obj_gain which is currently continous
     idx = 0
-    sort_idx = sorted_score_idx(m.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx,mu)
+    scores, sort_idx = sorted_score_idx(m.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx,mu)
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
         if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])
