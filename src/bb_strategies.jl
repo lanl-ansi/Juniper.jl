@@ -105,7 +105,6 @@ function branch_strong_on(m,opts,step_obj,
                         break
                     end
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
-                    break
                 end
             end
             println("x: ", node.solution[var_idx])
@@ -114,14 +113,19 @@ function branch_strong_on(m,opts,step_obj,
             gain_r = sigma_plus(node,r_nd,m.solution[node.var_idx])
             println("gain_r: ", gain_r)
             gain = (gain_l+gain_r)/2
+            if isnan(gain)
+                gain = Inf
+            end
             if gain > max_gain
+                println("gain1: ", gain)
                 max_gain = gain
                 max_gain_var = var_idx
                 left_node = l_nd
                 right_node = r_nd
                 # gain is set to inf if Integral or Infeasible
                 # TODO: Might be reasonable to use something different
-                if gain == Inf
+                # (should still break on restart then)
+                if isinf(gain)
                     break
                 end
             end
@@ -199,7 +203,7 @@ end
 function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter) 
     idx = 0
     node = step_obj.node
-    reliability_param = 5
+    reliability_param = 10
     reliability_perc = 50
     num_strong_var = Int(round((reliability_perc/100)*m.num_int_bin_var))
     # if smaller than 2 it doesn't make sense
