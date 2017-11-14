@@ -1,6 +1,7 @@
 function init(start_time, m)
     srand(1)
-    node = BnBNode(1,1,m.l_var,m.u_var,m.solution,0,:Branch,:Optimal,m.objval)
+    hash_val = hash(hcat(m.l_var,m.u_var))
+    node = BnBNode(1,1,hash_val,m.l_var,m.u_var,m.solution,0,:Branch,:Optimal,m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)
     obj_gain_mc = ones(Int64,m.num_int_bin_var)
@@ -30,7 +31,8 @@ function new_default_node(idx,level,l_var,u_var,solution;
     l_var = copy(l_var)
     u_var = copy(u_var)
     solution = copy(solution)
-    return BnBNode(idx,level,l_var,u_var,solution,var_idx,state,relaxation_state,best_bound)     
+    hash_val = hash(hcat(l_var,u_var))
+    return BnBNode(idx,level,hash_val,l_var,u_var,solution,var_idx,state,relaxation_state,best_bound)     
 end
 
 function new_default_step_obj(m,node)

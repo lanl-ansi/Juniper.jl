@@ -6,6 +6,7 @@ atol = 1e-6
 type BnBNode
     idx                 :: Int64
     level               :: Int64
+    hash                :: UInt64
     l_var               :: Vector{Float64}
     u_var               :: Vector{Float64}
     solution            :: Vector{Float64}
@@ -320,6 +321,7 @@ function get_next_branch_node!(tree)
     if bbreak 
         return false,nothing
     end
+    println("hash: ", node.hash)
     return true,new_default_step_obj(tree.m,node)
 end
 
