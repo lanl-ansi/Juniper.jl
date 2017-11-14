@@ -611,7 +611,7 @@ function solvemip(tree::BnBTreeObj)
     
     if length(tree.branch_nodes) > 0
         bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-        tree.incumbent.best_bound = bvalue 
+        tree.incumbent.best_bound = tree.obj_fac*bvalue 
     else
         tree.incumbent.best_bound = tree.incumbent.objval 
     end
