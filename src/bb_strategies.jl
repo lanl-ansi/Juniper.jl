@@ -107,17 +107,13 @@ function branch_strong_on(m,opts,step_obj,
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            println("x: ", node.solution[var_idx])
             gain_l = sigma_minus(node,l_nd,m.solution[node.var_idx])
-            println("gain_l: ", gain_l)
             gain_r = sigma_plus(node,r_nd,m.solution[node.var_idx])
-            println("gain_r: ", gain_r)
             gain = (gain_l+gain_r)/2
             if isnan(gain)
                 gain = Inf
             end
             if gain > max_gain
-                println("gain1: ", gain)
                 max_gain = gain
                 max_gain_var = var_idx
                 left_node = l_nd
@@ -203,8 +199,8 @@ end
 function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter) 
     idx = 0
     node = step_obj.node
-    reliability_param = 10
-    reliability_perc = 50
+    reliability_param = opts.reliability_branching_threshold
+    reliability_perc = opts.reliability_branching_perc
     num_strong_var = Int(round((reliability_perc/100)*m.num_int_bin_var))
     # if smaller than 2 it doesn't make sense
     num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
@@ -215,6 +211,12 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
     reasonable_int_vars = []
     for i=1:length(gmc_r)
         if gmc_r[i] || gpc_r[i]
+            idx = int2var_idx[i]
+            u_b = node.u_var[idx]
+            l_b = node.l_var[idx]
+            if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
+                continue
+            end
             push!(reasonable_int_vars,i)
         end
     end
@@ -223,12 +225,10 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
         num_reasonable = num_strong_var < length(reasonable_int_vars) ? num_strong_var : length(reasonable_int_vars)
         reasonable_int_vars = reasonable_int_vars[1:num_reasonable]
         
-        println("reasonable_int_vars: ", reasonable_int_vars)
         @assert are_type_correct(node.solution,m.var_type) == false
         status, max_gain_var,  left_node, right_node, gains, strong_restarts, strong_int_vars = branch_strong_on(m,opts,step_obj,
             reasonable_int_vars, int2var_idx, opts.strong_restart, counter)
         gains_m, gains_mc, gains_p, gains_pc = gains
-        println("gains: ", gains)
         step_obj.gains_m += gains_m
         step_obj.gains_mc += gains_mc
         step_obj.gains_p += gains_p
@@ -246,14 +246,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
         new_gains_p = g_plus
         new_gains_pc = g_plus_c
     end
-    println("step_obj.upd_gains: ", step_obj.upd_gains)
     scores, sort_idx = sorted_score_idx(m.solution,new_gains_m,new_gains_mc,new_gains_p,new_gains_pc,int2var_idx,mu)
-    println("sorted scores: ", scores[sort_idx])
-    println("new_gains_m: ", new_gains_m)
-    println("new_gains_mc: ", new_gains_mc)
-    println("new_gains_p: ", new_gains_p)
-    println("new_gains_pc: ", new_gains_pc)
-    @assert are_type_correct(node.solution,m.var_type) == false
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
         if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])

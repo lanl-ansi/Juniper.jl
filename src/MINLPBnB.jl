@@ -5,22 +5,24 @@ using JuMP
 
 # Options for the solver (more details like defaults in solver.jl)
 type SolverOptions
-    log_levels                  :: Vector{Symbol}
-    branch_strategy             :: Symbol
-    gain_mu                     :: Float64
-    strong_branching_perc       :: Float64
-    strong_branching_nsteps     :: Int64
-    strong_restart              :: Bool
-    incumbent_constr            :: Bool
-    obj_epsilon                 :: Float64
-    time_limit                  :: Float64
-    mip_gap                     :: Float64
-    best_obj_stop               :: Float64
-    solution_limit              :: Int64
-    all_solutions               :: Bool
-    list_of_solutions           :: Bool
-    processors                  :: Int64
-    traverse_strategy           :: Symbol
+    log_levels                      :: Vector{Symbol}
+    branch_strategy                 :: Symbol
+    gain_mu                         :: Float64
+    strong_branching_perc           :: Float64
+    strong_branching_nsteps         :: Int64
+    strong_restart                  :: Bool
+    reliability_branching_threshold :: Int64
+    reliability_branching_perc      :: Float64
+    incumbent_constr                :: Bool
+    obj_epsilon                     :: Float64
+    time_limit                      :: Float64
+    mip_gap                         :: Float64
+    best_obj_stop                   :: Float64
+    solution_limit                  :: Int64
+    all_solutions                   :: Bool
+    list_of_solutions               :: Bool
+    processors                      :: Int64
+    traverse_strategy               :: Symbol
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

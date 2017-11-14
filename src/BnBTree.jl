@@ -110,7 +110,7 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_p
         else
             idx = branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
         end
-    elseif branch_strat == :Reliable 
+    elseif branch_strat == :Reliability 
         idx = branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
     end
     step_obj.state = status

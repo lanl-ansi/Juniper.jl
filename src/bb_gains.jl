@@ -9,9 +9,6 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
     gain_r = sigma_plus(parent,r_nd,tree.m.solution[parent.var_idx])
     idx = tree.var2int_idx[parent.var_idx]
 
-    println("gain_l: ", gain_l)
-    println("gain_r: ", gain_r)
-
     gain = 0.0
     gain_c = 0
     if !isinf(gain_l) 
@@ -43,8 +40,6 @@ function upd_gains_step!(tree,step_obj)
     branch_strat = tree.options.branch_strategy
     opts = tree.options
     if step_obj.upd_gains == :GainsToTree || (branch_strat == :StrongPseudoCost && step_obj.counter <= opts.strong_branching_nsteps)
-        println("here")
-        println("step_obj.gains_m: ", step_obj.gains_m)
         tree.obj_gain_m += step_obj.gains_m
         tree.obj_gain_mc += step_obj.gains_mc
         tree.obj_gain_p += step_obj.gains_p
