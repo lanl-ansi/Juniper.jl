@@ -208,6 +208,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
     gmc_r = g_minus_c .< reliability_param
     gpc_r = g_plus_c  .< reliability_param
     
+    strong_restarts = 0
     reasonable_int_vars = []
     for i=1:length(gmc_r)
         if gmc_r[i] || gpc_r[i]
@@ -261,7 +262,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
         end
     end
     @assert idx != 0
-    return idx
+    return idx, strong_restarts
 end
 
 function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)

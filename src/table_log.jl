@@ -1,8 +1,9 @@
 function get_table_config(opts)
     fields = ["#ONodes","CLevel","Incumbent","Best Bound","Gap","Time"]
     field_chars = [9,8,28,28,7,8]
+    opbs = opts.branch_strategy
 
-    if opts.branch_strategy == :StrongPseudoCost && opts.strong_restart
+    if (opbs == :StrongPseudoCost || opbs == :Reliability) && opts.strong_restart
         push!(fields,"#Restarts")
         push!(field_chars,10)
     end
@@ -12,7 +13,7 @@ function get_table_config(opts)
         unshift!(field_chars, 3)
     end
 
-    if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
+    if opbs == :StrongPseudoCost || opbs == :PseudoCost || opbs == :Reliability
         push!(fields, "GainGap")
         push!(field_chars, 10)
     end
@@ -58,10 +59,11 @@ end
 
 function get_table_line(p,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
     gain_gap = step_obj.gain_gap
-    if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
+    opbs = tree.options.branch_strategy
+    if (opbs != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps) && step_obj.upd_gains != :GainsToTree
         step_obj.nrestarts = -1 # will be displayed as -
     end
-    if counter <= tree.options.strong_branching_nsteps
+    if counter <= tree.options.strong_branching_nsteps || step_obj.upd_gains == :GainsToTree
         gain_gap = -1.0 # will be displayed as -
     end
 
@@ -83,7 +85,7 @@ function get_table_line(p,tree,node,step_obj,start_time,fields,field_chars,count
             if tree.incumbent != nothing
                 b = tree.best_bound
                 f = tree.incumbent.objval
-                val = string(round(abs(b-f)/abs(f)*100,1))*"%"
+                val = string(round(abs(b-f)/abs(f)*100,2))*"%"
             else
                 val = "-"
             end
