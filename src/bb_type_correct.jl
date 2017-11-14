@@ -13,14 +13,14 @@ function is_type_correct(x,var_type)
 end
 
 """
-are_type_correct(sol,types)
+are_type_correct(x,types)
 
 Check whether all variables have the correct type
 """
-function are_type_correct(sol,types)
-    for i=1:length(sol)
+function are_type_correct(x,types)
+    for i=1:length(x)
         if types[i] != :Cont
-            if !isapprox(abs(round(sol[i])-sol[i]),0, atol=atol, rtol=rtol)
+            if !isapprox(abs(round(x[i])-x[i]),0, atol=atol, rtol=rtol)
                 return false
             end
         end

@@ -3,8 +3,8 @@ function init(start_time, m)
     node = BnBNode(1,1,m.l_var,m.u_var,m.solution,0,:Branch,:Optimal,m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)
-    obj_gain_mc = ones(Int64,m.num_int_bin_var)
-    obj_gain_pc = ones(Int64,m.num_int_bin_var)
+    obj_gain_mc = zeros(Int64,m.num_int_bin_var)
+    obj_gain_pc = zeros(Int64,m.num_int_bin_var)
     int2var_idx = zeros(m.num_int_bin_var)
     var2int_idx = zeros(m.num_var)
     int_i = 1
@@ -43,5 +43,6 @@ function new_default_step_obj(m,node)
     upd_gains_time = 0.0
     leaf_branch_time = 0.0
     branch_time = 0.0
-    return StepObj(node,0,:None,0,0.0,gains_m,gains_mc,gains_p,gains_pc,zeros(Int64,0),idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time,[],[],nothing,nothing,0)
+    return StepObj(node,0,:None,0,0.0,gains_m,gains_mc,gains_p,gains_pc,zeros(Int64,0),
+    idx_time,leaf_idx_time,upd_gains_time,leaf_branch_time,branch_time,[],[],nothing,nothing,0,:None)
 end

@@ -61,6 +61,7 @@ type StepObj
     l_nd        :: Union{Void,BnBNode}
     r_nd        :: Union{Void,BnBNode}
     counter     :: Int64
+    upd_gains   :: Symbol
 end
 
 type TimeObj
@@ -109,6 +110,8 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_p
         else
             idx = branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
         end
+    elseif branch_strat == :Reliable 
+        idx = branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
     end
     step_obj.state = status
     step_obj.var_idx = idx
@@ -313,6 +316,8 @@ function get_next_branch_node!(tree)
     end
 
     node = tree.branch_nodes[nidx]
+    @assert are_type_correct(node.solution,tree.m.var_type) == false
+
     deleteat!(tree.branch_nodes,nidx)
 
     tree.best_bound = tree.obj_fac*bvalue

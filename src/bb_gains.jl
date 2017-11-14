@@ -9,6 +9,9 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
     gain_r = sigma_plus(parent,r_nd,tree.m.solution[parent.var_idx])
     idx = tree.var2int_idx[parent.var_idx]
 
+    println("gain_l: ", gain_l)
+    println("gain_r: ", gain_r)
+
     gain = 0.0
     gain_c = 0
     if !isinf(gain_l) 
@@ -39,7 +42,9 @@ Update the gains using the step_obj if using StrongPseudoCost or PseudoCost
 function upd_gains_step!(tree,step_obj)
     branch_strat = tree.options.branch_strategy
     opts = tree.options
-    if branch_strat == :StrongPseudoCost && step_obj.counter <= opts.strong_branching_nsteps
+    if step_obj.upd_gains == :GainsToTree || (branch_strat == :StrongPseudoCost && step_obj.counter <= opts.strong_branching_nsteps)
+        println("here")
+        println("step_obj.gains_m: ", step_obj.gains_m)
         tree.obj_gain_m += step_obj.gains_m
         tree.obj_gain_mc += step_obj.gains_mc
         tree.obj_gain_p += step_obj.gains_p
@@ -55,7 +60,7 @@ function upd_gains_step!(tree,step_obj)
             tree.obj_gain_mc[rest] += 1
             tree.obj_gain_pc[rest] += 1
         end
-    elseif branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && step_obj.counter > opts.strong_branching_nsteps)
+    elseif step_obj.upd_gains == :GuessAndUpdate || branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && step_obj.counter > opts.strong_branching_nsteps)
         upd_start = time()
         guess_gain_val = guess_gain(tree,step_obj)
         gain = update_gains!(tree,step_obj.node,step_obj.l_nd,step_obj.r_nd)    
