@@ -63,6 +63,7 @@ function upd_integral_branch!(tree,step_obj)
     end
 
     for branch_node in step_obj.branch
+        println(branch_node.hash," got pushed by ", step_obj.node.hash)       
         push_to_branch_list!(tree,branch_node)
     end
     return false

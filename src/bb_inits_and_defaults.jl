@@ -21,7 +21,7 @@ function init(start_time, m)
         factor = -1
     end
     return BnBTreeObj(m,nothing,obj_gain_m,obj_gain_p,obj_gain_mc,obj_gain_pc,int2var_idx,var2int_idx,m.options,
-                    factor,start_time,0,[node],NaN)
+                    factor,start_time,0,[node],NaN,false)
 end
 
 function new_default_node(idx,level,l_var,u_var,solution;

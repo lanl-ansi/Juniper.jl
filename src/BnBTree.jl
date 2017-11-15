@@ -38,6 +38,7 @@ type BnBTreeObj
     nsolutions  :: Int64
     branch_nodes:: Vector{BnBNode}
     best_bound  :: Float64
+    mutex_get_node :: Bool # false => open, true => block
 end
 
 # the object holds information for the current step
@@ -127,21 +128,53 @@ Update incumbent if new and add node to branch list if :Branch
 Return state
 """
 function solve_leaf!(m,step_obj,leaf,temp)
+    # global bounds
+    # global solutions
+    # println("Copy model")
+    # model = deepcopy(m.model)
+    # println("copied model")
+    # x_new = copy(m.x, model)
+    # println("copied x")
+
      # set bounds
     for i=1:m.num_var
         JuMP.setlowerbound(m.x[i], leaf.l_var[i])    
         JuMP.setupperbound(m.x[i], leaf.u_var[i])
     end
+    setvalue(m.x[1:m.num_var],zeros(m.num_var))
+    # amplmodel = deepcopy(model)
+    # setsolver(amplmodel, AmplNLSolver("bonmin", filename="nl4/"*string(leaf.hash)))
+    # JuMP.solve(amplmodel)
 
+    println("before solve")
     status = JuMP.solve(m.model)
+    println("solved")
     objval = getobjectivevalue(m.model)
     leaf.solution = getvalue(m.x)
+
     status = status
     leaf.relaxation_state = status
     if status == :Error
         leaf.state = :Error
     elseif status == :Optimal
         leaf.best_bound = objval
+        #=shash = string(leaf.hash)
+        if haskey(bounds,shash)
+            println("======Check bounds========")
+            if bounds[shash] != objval
+                println("shash: ", shash)
+                println(bounds[shash]," != ",objval)
+                # exit(1)
+            end
+        end
+        if haskey(solutions,shash)
+            println("======Check solution========")
+            if solutions[shash] != hash(leaf.solution)
+                println("shash: ", shash)
+                println(solutions[shash]," != ",hash(leaf.solution))
+                # exit(1)
+            end
+        end=#
         push_integral_or_branch!(m,step_obj,leaf,temp)
     else
         leaf.state = :Infeasible
@@ -171,11 +204,13 @@ function branch!(m,opts,step_obj,counter;temp=false)
         return step_obj.l_nd,step_obj.r_nd
     end
     
-    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,node.u_var,node.solution)
-    r_nd = new_default_node(node.idx*2+1,node.level+1,node.l_var,node.u_var,node.solution)
+    l_nd_u_var = copy(node.u_var)
+    r_nd_l_var = copy(node.l_var)
+    l_nd_u_var[vidx] = floor(node.solution[vidx])
+    r_nd_l_var[vidx] = ceil(node.solution[vidx])
 
-    l_nd.u_var[vidx] = floor(node.solution[vidx])
-    r_nd.l_var[vidx] = ceil(node.solution[vidx])
+    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,l_nd_u_var,node.solution)
+    r_nd = new_default_node(node.idx*2+1,node.level+1,r_nd_l_var,node.u_var,node.solution)
 
     # save that this node branches on this particular variable
     node.var_idx = vidx
@@ -303,26 +338,48 @@ Return true,step_obj if there is a branch node and
 false, nothing otherwise
 """
 function get_next_branch_node!(tree)
-    if length(tree.branch_nodes) == 0
+    if !tree.mutex_get_node 
+        tree.mutex_get_node = true
+        if length(tree.branch_nodes) == 0
+            tree.mutex_get_node = false
+            return false,nothing
+        end
+        for n in tree.branch_nodes
+            if n.hash == 13226842140824422094
+                println("13226842140824422094 Hash Exists")
+            elseif n.hash == 9159858871083765761
+                println("9159858871083765761 Hash Exists")
+            elseif n.hash == 12593581476760906843
+                println("12593581476760906843 Hash Exists")
+            end
+        end
+        bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+        # println([n.best_bound for n in tree.branch_nodes])
+
+        trav_strat = tree.options.traverse_strategy
+        if trav_strat == :DFS || (trav_strat == :DBFS && tree.incumbent == nothing)
+            _value, nidx = findmax([n.level for n in tree.branch_nodes])
+        end
+
+        node = tree.branch_nodes[nidx]
+        # println("nidx: ",nidx)
+        # println("node.bb: ",node.best_bound)
+        hash = node.hash
+        println("hash: ", hash)
+        @assert hash == tree.branch_nodes[nidx].hash
+        deleteat!(tree.branch_nodes,nidx)
+
+        tree.best_bound = tree.obj_fac*bvalue
+        bbreak = isbreak_mip_gap(tree)
+        if bbreak 
+            tree.mutex_get_node = false
+            return false,nothing
+        end
+        tree.mutex_get_node = false
+        return true,new_default_step_obj(tree.m,node)
+    else
         return false,nothing
     end
-    bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-
-    trav_strat = tree.options.traverse_strategy
-    if trav_strat == :DFS || (trav_strat == :DBFS && tree.incumbent == nothing)
-        _value, nidx = findmax([n.level for n in tree.branch_nodes])
-    end
-
-    node = tree.branch_nodes[nidx]
-    deleteat!(tree.branch_nodes,nidx)
-
-    tree.best_bound = tree.obj_fac*bvalue
-    bbreak = isbreak_mip_gap(tree)
-    if bbreak 
-        return false,nothing
-    end
-    println("hash: ", node.hash)
-    return true,new_default_step_obj(tree.m,node)
 end
 
 
@@ -332,7 +389,12 @@ end
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu, counter)
+function one_branch_step!(m1, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu, counter)
+    if m1 == nothing
+        global m
+    else 
+        m = m1
+    end
     node = step_obj.node
     step_obj.counter = counter
 
@@ -420,6 +482,8 @@ function solve_sequential(tree,
     int2var_idx = tree.int2var_idx
     counter = 1
     ps = tree.options.log_levels
+    bbdict = JSON.parsefile("bounds.json")
+    soldict = JSON.parsefile("solution.json")
     while true
         gain_m = tree.obj_gain_m
         gain_mc = tree.obj_gain_mc
@@ -431,8 +495,16 @@ function solve_sequential(tree,
         !exists && break
         isbreak_after_step!(tree) && break
         step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc,mu, counter)
+        slhash = string(step_obj.l_nd.hash)
+        srhash = string(step_obj.r_nd.hash)
+        bbdict[slhash] = step_obj.l_nd.best_bound
+        bbdict[srhash] = step_obj.r_nd.best_bound
+        soldict[slhash] = hash(step_obj.l_nd.solution)
+        soldict[srhash] = hash(step_obj.r_nd.solution)
+
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
+
 
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
         
@@ -445,8 +517,18 @@ function solve_sequential(tree,
         end
         counter += 1
     end
+    write("bounds.json", JSON.json(bbdict))
+    write("solution.json", JSON.json(soldict))
     return counter
 end
+
+
+function sendto(p::Int; args...)
+    for (nm, val) in args
+        @spawnat(p, eval(MINLPBnB, Expr(:(=), nm, val)))
+    end
+end
+
 
 """
     pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
@@ -471,10 +553,16 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     run_counter = 0
     counter = 0
 
-    for p=1:np
-        remotecall_fetch(srand, p, 1)
-    end
+    bounds = JSON.parsefile("bounds.json")
+    solutions = JSON.parsefile("solution.json")
 
+    for p=2:np
+        remotecall_fetch(srand, p, 1)
+        sendto(p, m=tree.m)
+        sendto(p, bounds=bounds)
+        sendto(p, solutions=solutions)
+    end
+    
     branch_strat = tree.options.branch_strategy
     opts = tree.options
     @sync begin
@@ -501,7 +589,8 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         counter += 1
                         run_counter += 1
                         mu = tree.options.gain_mu
-                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
+                        step_obj = remotecall_fetch(f, p, nothing, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
+                    
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
                         !still_running && break

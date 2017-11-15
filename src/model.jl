@@ -45,6 +45,7 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     nbranches       :: Int64
     nlevels         :: Int64
 
+    proc            :: Int64
     MINLPBnBModel() = new()
 end
 
@@ -81,6 +82,7 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.ncuts = 0
     m.nbranches = 0
     m.nlevels = 1
+    m.proc = 1
 
     return m
 end

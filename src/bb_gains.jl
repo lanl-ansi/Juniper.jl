@@ -12,7 +12,6 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
     gain = 0.0
     gain_c = 0
     if !isinf(gain_l) 
-        println("gain_l: ", tree.obj_gain_m[idx])
         tree.obj_gain_m[idx] = gain_l
         tree.obj_gain_mc[idx] += 1
         gain += gain_l
@@ -20,7 +19,6 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
     end
 
     if !isinf(gain_r) 
-        println("gain_r: ", tree.obj_gain_p[idx])
         tree.obj_gain_p[idx] = gain_r
         tree.obj_gain_pc[idx] += 1
         gain += gain_r
