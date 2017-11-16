@@ -2,6 +2,7 @@ module MINLPBnB
 
 using MathProgBase
 using JuMP
+using JSON
 
 # Options for the solver (more details like defaults in solver.jl)
 type SolverOptions

@@ -1,4 +1,5 @@
 include("table_log.jl")
+include("tree.jl")
 
 rtol = 1e-6
 atol = 1e-6
@@ -13,6 +14,8 @@ type BnBNode
     state               :: Symbol
     relaxation_state    :: Symbol
     best_bound          :: Union{Void,Float64}
+    path                :: Vector{BnBNode}
+    hash                :: String
 end
 
 type IncumbentSolution
@@ -132,7 +135,7 @@ function solve_leaf!(m,step_obj,leaf,temp)
         JuMP.setlowerbound(m.x[i], leaf.l_var[i])    
         JuMP.setupperbound(m.x[i], leaf.u_var[i])
     end
-    setvalue(m.x[1:m.num_var],step_obj.node.solution)
+    setvalue(m.x[1:m.num_var],zeros(m.num_var))
   
     status = JuMP.solve(m.model)
     objval = getobjectivevalue(m.model)
@@ -140,6 +143,7 @@ function solve_leaf!(m,step_obj,leaf,temp)
 
     status = status
     leaf.relaxation_state = status
+    println("Status: ", status)
     if status == :Error
         leaf.state = :Error
     elseif status == :Optimal
@@ -178,8 +182,12 @@ function branch!(m,opts,step_obj,counter;temp=false)
     l_nd_u_var[vidx] = floor(node.solution[vidx])
     r_nd_l_var[vidx] = ceil(node.solution[vidx])
 
-    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,l_nd_u_var,node.solution)
-    r_nd = new_default_node(node.idx*2+1,node.level+1,r_nd_l_var,node.u_var,node.solution)
+    path_l = copy(node.path)
+    path_r = copy(node.path)
+    push!(path_l,node)
+    push!(path_r,node)
+    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,l_nd_u_var,node.solution;path=path_l)
+    r_nd = new_default_node(node.idx*2+1,node.level+1,r_nd_l_var,node.u_var,node.solution;path=path_r)
 
     # save that this node branches on this particular variable
     node.var_idx = vidx
@@ -351,6 +359,7 @@ function one_branch_step!(m1, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plu
     else 
         m = m1
     end
+    step_obj = deepcopy(step_obj)
     node = step_obj.node
     step_obj.counter = counter
 
@@ -438,6 +447,7 @@ function solve_sequential(tree,
     int2var_idx = tree.int2var_idx
     counter = 1
     ps = tree.options.log_levels
+    dictTree = Dict{Any,Any}()
     while true
         gain_m = tree.obj_gain_m
         gain_mc = tree.obj_gain_mc
@@ -452,7 +462,7 @@ function solve_sequential(tree,
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
-
+        dictTree = push_step2treeDict!(dictTree,step_obj)
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
         
         if check_print(ps,[:Table]) 
@@ -464,6 +474,7 @@ function solve_sequential(tree,
         end
         counter += 1
     end
+    write("tree.json", JSON.json(dictTree))
     return counter
 end
 
@@ -503,6 +514,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
         sendto(p, m=tree.m)
     end
     
+    dictTree = Dict{Any,Any}()
     branch_strat = tree.options.branch_strategy
     opts = tree.options
     @sync begin
@@ -530,7 +542,8 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         run_counter += 1
                         mu = tree.options.gain_mu
                         step_obj = remotecall_fetch(f, p, nothing, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
-                    
+                        dictTree = push_step2treeDict!(dictTree,step_obj)
+
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
                         !still_running && break
@@ -557,6 +570,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
             end
         end
     end
+    write("tree_parallel.json", JSON.json(dictTree))
     return counter
 end
 

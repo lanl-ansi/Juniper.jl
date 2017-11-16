@@ -79,7 +79,6 @@ end
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
-
     @objective(m, Min, x[1])
 
     @constraint(m, x[1] == 1)
