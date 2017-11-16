@@ -41,14 +41,14 @@ function combine_options(options)
     for kv in options
         options_dict[kv[1]] = kv[2]
     end
-    if get(options_dict,:log_levels,false) != false
+    if haskey(options_dict,:log_levels)
         if length(options_dict[:log_levels]) == 0
             options_dict[:log_levels] = Symbol[]
         end
     end
     defaults = get_default_options()
     for fname in fieldnames(SolverOptions)
-        if get(options_dict,fname,false) != false
+        if haskey(options_dict,fname)
             if fieldtype(SolverOptions,fname) != typeof(options_dict[fname])
                 options_dict[fname] = convert(fieldtype(SolverOptions,fname),options_dict[fname])
             end

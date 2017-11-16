@@ -136,7 +136,14 @@ function solve_leaf!(m,step_obj,leaf,temp)
         JuMP.setupperbound(m.x[i], leaf.u_var[i])
     end
     setvalue(m.x[1:m.num_var],zeros(m.num_var))
-  
+    amplmodel = deepcopy(m.model)
+    if myid() > 1
+        setsolver(amplmodel, AmplNLSolver("bonmin", filename="nl4/"*string(leaf.hash)))
+    else
+        setsolver(amplmodel, AmplNLSolver("bonmin", filename="nl1/"*string(leaf.hash)))
+    end
+    JuMP.solve(amplmodel)
+
     status = JuMP.solve(m.model)
     objval = getobjectivevalue(m.model)
     leaf.solution = getvalue(m.x)
@@ -273,6 +280,7 @@ Add a constraint >=/<= incumbent
 function add_incumbent_constr(tree)
     # add constr for objval
     if tree.options.incumbent_constr
+        error("here")
         obj_expr = MathProgBase.obj_expr(tree.m.d)
         if tree.m.obj_sense == :Min
             obj_constr = Expr(:call, :<=, obj_expr, tree.incumbent.objval)
