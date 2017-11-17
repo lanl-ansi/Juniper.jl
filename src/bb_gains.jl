@@ -4,9 +4,9 @@
 Update the objective gains for the branch variable used for node
 """
 function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
-    
-    gain_l = sigma_minus(parent,l_nd,tree.m.solution[parent.var_idx])
-    gain_r = sigma_plus(parent,r_nd,tree.m.solution[parent.var_idx])
+    sol = parent.solution    
+    gain_l = sigma_minus(parent,l_nd,sol[parent.var_idx])
+    gain_r = sigma_plus(parent,r_nd,sol[parent.var_idx])
     idx = tree.var2int_idx[parent.var_idx]
 
     gain = 0.0
@@ -70,7 +70,7 @@ end
 function guess_gain(tree,step_obj)
     i = step_obj.var_idx
     inti = tree.var2int_idx[i]
-    x = tree.m.solution
+    x = step_obj.node.solution
     g_minus, g_minus_c = tree.obj_gain_m,tree.obj_gain_mc
     g_plus, g_plus_c = tree.obj_gain_p,tree.obj_gain_pc
     mu = tree.options.gain_mu
