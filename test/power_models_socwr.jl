@@ -49,6 +49,8 @@ end
     println("Solution by MINLPBnb")
     println("obj: ", minlpbnb_val)
 
+    @test m.internalModel.options.strong_restart == false
+    @test m.internalModel.options.incumbent_constr == false
     @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
 end
 
