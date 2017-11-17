@@ -295,13 +295,23 @@ function add_obj_epsilon_constr(tree)
 end
 
 """
-    get_next_branch_node!(tree)
+    get_next_branch_node!(tree, p, np, counter)
 
 Get the next branch node (sorted by best bound)
 Return true,step_obj if there is a branch node and
 false, nothing otherwise
 """
-function get_next_branch_node!(tree)
+function get_next_branch_node!(tree, p, np, counter)
+    if counter == 0
+        println("p: ", p)
+        if p != np
+            node = tree.branch_nodes[1]
+        else
+            node = pop!(tree.branch_nodes)
+        end
+        return true,new_default_step_obj(tree.m,node)
+    end
+
     if length(tree.branch_nodes) == 0
         return false,nothing
     end
@@ -325,12 +335,30 @@ end
 
 
 """
-    one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
+    one_branch_step!(m, incumbent, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu, counter)
+function one_branch_step!(m1, incumbent, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu, counter)
+    if m1 == nothing
+        global m
+        if opts.incumbent_constr && incumbent != nothing
+            obj_expr = MathProgBase.obj_expr(m.d)
+            if m.obj_sense == :Min
+                obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
+            else
+                obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
+            end
+            MINLPBnB.expr_dereferencing!(obj_constr, m.model)            
+            # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
+            JuMP.addNLconstraint(m.model, obj_constr)
+            m.ncuts += 1
+        end
+    else 
+        m = m1
+    end
+    
     node = step_obj.node
     step_obj.counter = counter
 
@@ -425,10 +453,10 @@ function solve_sequential(tree,
         gain_pc = tree.obj_gain_pc
         mu = tree.options.gain_mu
 
-        exists,step_obj = get_next_branch_node!(tree)
+        exists,step_obj = get_next_branch_node!(tree, 1,1, counter)
         !exists && break
         isbreak_after_step!(tree) && break
-        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc,mu, counter)
+        step_obj = one_branch_step!(m, tree.incumbent, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc,mu, counter)
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
@@ -444,6 +472,12 @@ function solve_sequential(tree,
         counter += 1
     end
     return counter
+end
+
+function sendto(p::Int; args...)
+    for (nm, val) in args
+        @spawnat(p, eval(MINLPBnB, Expr(:(=), nm, val)))
+    end
 end
 
 """
@@ -471,7 +505,10 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
 
     for p=1:np
         remotecall_fetch(srand, p, 1)
+        sendto(p, m=tree.m)
     end
+
+    p_counter = zeros(np)
 
     branch_strat = tree.options.branch_strategy
     opts = tree.options
@@ -480,11 +517,11 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
             if p != myid() || np == 1
                 @async begin
                     while true
-                        exists,step_obj = get_next_branch_node!(tree)
+                        exists,step_obj = get_next_branch_node!(tree, p, np, counter)
 
                         while !exists && still_running
                             sleep(0.1)
-                            exists,step_obj = get_next_branch_node!(tree)
+                            exists,step_obj = get_next_branch_node!(tree, p, np, counter)
                             exists && break
                         end
                         if !still_running
@@ -499,9 +536,16 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         counter += 1
                         run_counter += 1
                         mu = tree.options.gain_mu
-                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
-                        tree.m.nnodes += 2 # two nodes explored per branch
+                        step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
                         run_counter -= 1
+                        p_counter[p] += 1
+                        if p > 2 && p_counter[p] == 1 # just a dummy solve for speed up...
+                            counter -= 1
+                            continue
+                        end
+                        
+                        tree.m.nnodes += 2 # two nodes explored per branch
+                        
                         !still_running && break
                     
                         bbreak = upd_tree_obj!(tree,step_obj,time_obj)

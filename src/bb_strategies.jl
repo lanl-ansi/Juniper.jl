@@ -136,8 +136,8 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            gain_l = sigma_minus(node,l_nd,m.solution[node.var_idx])
-            gain_r = sigma_plus(node,r_nd,m.solution[node.var_idx])
+            gain_l = sigma_minus(node,l_nd,node.solution[node.var_idx])
+            gain_r = sigma_plus(node,r_nd,node.solution[node.var_idx])
             gain = (gain_l+gain_r)/2
             if gain > max_gain
                 max_gain = gain
@@ -179,7 +179,7 @@ end
 function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
     # use the one with highest obj_gain which is currently continous
     idx = 0
-    sort_idx = sorted_score_idx(m.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx,mu)
+    sort_idx = sorted_score_idx(node.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx,mu)
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
         if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])
