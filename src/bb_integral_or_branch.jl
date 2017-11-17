@@ -41,9 +41,7 @@ end
 Push a node to the list of branch nodes if better than incumbent
 """
 function push_to_branch_list!(tree,leaf)
-    if tree.incumbent == nothing || tree.obj_fac*leaf.best_bound >= tree.obj_fac*tree.incumbent.objval
-        # tree.incumbent != nothing && println("Inc", tree.incumbent.objval)
-        # println("Push to list: ", leaf.best_bound)
+    if tree.options.all_solutions || tree.incumbent == nothing || tree.obj_fac*leaf.best_bound >= tree.obj_fac*tree.incumbent.objval
         push!(tree.branch_nodes, leaf)
     end
 end
