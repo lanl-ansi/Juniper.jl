@@ -37,6 +37,7 @@ type BnBTreeObj
     nsolutions  :: Int64
     branch_nodes:: Vector{BnBNode}
     best_bound  :: Float64
+    mutex_get_node :: Bool # false => open, true => block
 end
 
 # the object holds information for the current step
@@ -131,6 +132,7 @@ function solve_leaf!(m,step_obj,leaf,temp)
         JuMP.setlowerbound(m.x[i], leaf.l_var[i])    
         JuMP.setupperbound(m.x[i], leaf.u_var[i])
     end
+    setvalue(m.x[1:m.num_var],step_obj.node.solution)
 
     status = JuMP.solve(m.model)
     objval = getobjectivevalue(m.model)
@@ -170,11 +172,13 @@ function branch!(m,opts,step_obj,counter;temp=false)
         return step_obj.l_nd,step_obj.r_nd
     end
     
-    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,node.u_var,node.solution)
-    r_nd = new_default_node(node.idx*2+1,node.level+1,node.l_var,node.u_var,node.solution)
+    l_nd_u_var = copy(node.u_var)
+    r_nd_l_var = copy(node.l_var)
+    l_nd_u_var[vidx] = floor(node.solution[vidx])
+    r_nd_l_var[vidx] = ceil(node.solution[vidx])
+    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,l_nd_u_var,node.solution)
+    r_nd = new_default_node(node.idx*2+1,node.level+1,r_nd_l_var,node.u_var,node.solution)
 
-    l_nd.u_var[vidx] = floor(node.solution[vidx])
-    r_nd.l_var[vidx] = ceil(node.solution[vidx])
 
     # save that this node branches on this particular variable
     node.var_idx = vidx
@@ -182,9 +186,9 @@ function branch!(m,opts,step_obj,counter;temp=false)
     check_print(ps,[:All,:FuncCall]) && println("branch")
     
     if !temp
-        node.state = :Done
         step_obj.l_nd = l_nd
         step_obj.r_nd = r_nd
+        node.state = :Done
     end
 
     start_leaf = time()
@@ -311,26 +315,33 @@ function get_next_branch_node!(tree, p, np, counter)
         end
         return true,new_default_step_obj(tree.m,node)
     end
+    if !tree.mutex_get_node 
+        tree.mutex_get_node = true
+        if length(tree.branch_nodes) == 0
+            tree.mutex_get_node = false
+            return false,nothing
+        end
+        bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
 
-    if length(tree.branch_nodes) == 0
+        trav_strat = tree.options.traverse_strategy
+        if trav_strat == :DFS || (trav_strat == :DBFS && tree.incumbent == nothing)
+            _value, nidx = findmax([n.level for n in tree.branch_nodes])
+        end
+
+        node = tree.branch_nodes[nidx]
+        deleteat!(tree.branch_nodes,nidx)
+
+        tree.best_bound = tree.obj_fac*bvalue
+        bbreak = isbreak_mip_gap(tree)
+        if bbreak 
+            tree.mutex_get_node = false
+            return false,nothing
+        end
+        tree.mutex_get_node = false
+        return true,new_default_step_obj(tree.m,node)
+    else
         return false,nothing
     end
-    bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-
-    trav_strat = tree.options.traverse_strategy
-    if trav_strat == :DFS || (trav_strat == :DBFS && tree.incumbent == nothing)
-        _value, nidx = findmax([n.level for n in tree.branch_nodes])
-    end
-
-    node = tree.branch_nodes[nidx]
-    deleteat!(tree.branch_nodes,nidx)
-
-    tree.best_bound = tree.obj_fac*bvalue
-    bbreak = isbreak_mip_gap(tree)
-    if bbreak 
-        return false,nothing
-    end
-    return true,new_default_step_obj(tree.m,node)
 end
 
 
@@ -503,7 +514,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     run_counter = 0
     counter = 0
 
-    for p=1:np
+    for p=2:np
         remotecall_fetch(srand, p, 1)
         sendto(p, m=tree.m)
     end

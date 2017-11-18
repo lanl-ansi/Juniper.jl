@@ -39,6 +39,7 @@ end
     push_to_branch_list!(tree,leaf)
 
 Push a node to the list of branch nodes if better than incumbent
+or if all solutions are wanted
 """
 function push_to_branch_list!(tree,leaf)
     if tree.options.all_solutions || tree.incumbent == nothing || tree.obj_fac*leaf.best_bound >= tree.obj_fac*tree.incumbent.objval

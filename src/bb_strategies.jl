@@ -139,6 +139,9 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
             gain_l = sigma_minus(node,l_nd,node.solution[node.var_idx])
             gain_r = sigma_plus(node,r_nd,node.solution[node.var_idx])
             gain = (gain_l+gain_r)/2
+            if isnan(gain)
+                gain = Inf
+            end
             if gain > max_gain
                 max_gain = gain
                 max_gain_var = var_idx
@@ -146,7 +149,7 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                 right_node = r_nd
                 # gain is set to inf if Integral or Infeasible
                 # TODO: Might be reasonable to use something different
-                if gain == Inf
+                if isinf(gain)
                     break
                 end
             end
