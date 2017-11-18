@@ -306,15 +306,6 @@ Return true,step_obj if there is a branch node and
 false, nothing otherwise
 """
 function get_next_branch_node!(tree, p, np, counter)
-    if counter == 0
-        println("p: ", p)
-        if p != np
-            node = tree.branch_nodes[1]
-        else
-            node = pop!(tree.branch_nodes)
-        end
-        return true,new_default_step_obj(tree.m,node)
-    end
     if !tree.mutex_get_node 
         tree.mutex_get_node = true
         if length(tree.branch_nodes) == 0
@@ -393,10 +384,6 @@ function upd_time_obj!(time_obj, step_obj)
     time_obj.branch += step_obj.branch_time
     time_obj.get_idx += step_obj.idx_time
     time_obj.upd_gains += step_obj.upd_gains_time
-end
-
-function init_time_obj()
-    return TimeObj(0.0,0.0,0.0,0.0,0.0)
 end
 
 """
@@ -491,6 +478,11 @@ function sendto(p::Int; args...)
     end
 end
 
+function dummysolve()
+    global m
+    solve(m.model)
+end
+
 """
     pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
         fields, field_chars, time_obj)
@@ -517,6 +509,10 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     for p=2:np
         remotecall_fetch(srand, p, 1)
         sendto(p, m=tree.m)
+    end
+
+    for p=3:np
+        remotecall(dummysolve, p)
     end
 
     p_counter = zeros(np)
@@ -550,10 +546,6 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
                         run_counter -= 1
                         p_counter[p] += 1
-                        if p > 2 && p_counter[p] == 1 # just a dummy solve for speed up...
-                            counter -= 1
-                            continue
-                        end
                         
                         tree.m.nnodes += 2 # two nodes explored per branch
                         
@@ -570,6 +562,10 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         end
 
                         if check_print(ps,[:Table]) 
+                            if length(tree.branch_nodes) > 0
+                                bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+                                tree.best_bound = tree.obj_fac*bvalue
+                            end
                             last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
                         end
 
