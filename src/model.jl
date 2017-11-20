@@ -12,12 +12,11 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     objval          :: Float64
     best_bound      :: Float64
 
-    x               
+    x               :: Vector{JuMP.Variable}
     num_constr      :: Int64
     num_nl_constr   :: Int64
     num_l_constr    :: Int64
     num_var         :: Int64
-    obj_expr        
     l_var           :: Vector{Float64}
     u_var           :: Vector{Float64}
     l_constr        :: Vector{Float64}
@@ -31,11 +30,11 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     num_int_bin_var :: Int64
 
     solution        :: Vector{Float64}
-    nsolutions      :: Int64
 
     soltime         :: Float64
     options         :: SolverOptions
     solutions       :: Vector{SolutionObj}
+    nsolutions      :: Int64
 
     # Info
     nintvars        :: Int64

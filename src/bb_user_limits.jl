@@ -5,7 +5,8 @@ function isbreak_mip_gap(tree)
         f = incu.objval
         gap_perc = abs(b-f)/abs(f)*100
         if gap_perc <= tree.options.mip_gap
-            if tree.options.mip_gap > 1e-2 # bigger than default 
+            default_opts = get_default_options()
+            if tree.options.mip_gap > default_opts.mip_gap
                 tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
             else
                 tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:Optimal,tree.best_bound)

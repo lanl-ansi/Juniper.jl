@@ -22,7 +22,7 @@ function get_default_options()
     obj_epsilon                 = 0
     # :UserLimit
     time_limit                  = Inf  
-    mip_gap                     = 1e-2 # in % used in bb_user_limits (#TODO)
+    mip_gap                     = 1e-2
     best_obj_stop               = NaN
     solution_limit              = 0
     all_solutions               = false
