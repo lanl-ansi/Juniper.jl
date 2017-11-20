@@ -108,7 +108,7 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess,:ExprGraph])
+    MathProgBase.initialize(m.d, [:ExprGraph])
 end
 
 #=
