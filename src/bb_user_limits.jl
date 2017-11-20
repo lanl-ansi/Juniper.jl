@@ -1,10 +1,10 @@
 function isbreak_mip_gap(tree)
-    if typeof(tree.incumbent) != Void && !tree.options.all_solutions
+    if isdefined(tree, :incumbent) && !tree.options.all_solutions
+        incu = tree.incumbent
         b = tree.best_bound
-        f = tree.incumbent.objval
+        f = incu.objval
         gap_perc = abs(b-f)/abs(f)*100
         if gap_perc <= tree.options.mip_gap
-            incu = tree.incumbent
             if tree.options.mip_gap > 1e-2 # bigger than default 
                 tree.incumbent = IncumbentSolution(incu.objval,incu.solution,:UserLimit,tree.best_bound)
             else
@@ -43,7 +43,7 @@ Check if time limit is reached and  set or update the IncumbentSolution
 """
 function isbreak_time_limit!(tree)
     if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
-        if tree.incumbent == nothing
+        if !isdefined(tree,:incumbent)
             tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:UserLimit,tree.best_bound)
             return true
         else

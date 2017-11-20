@@ -76,13 +76,19 @@ function get_table_line(p,tree,node,step_obj,start_time,fields,field_chars,count
         elseif f == "#ONodes"
             val = string(length(tree.branch_nodes))
         elseif f == "Incumbent"
-            val = tree.incumbent != nothing ? string(round(tree.incumbent.objval,2)) : "-"
+            if isdefined(tree,:incumbent) 
+                incu = tree.incumbent
+                val = string(round(incu.objval,2))
+            else 
+                val = "-"
+            end
         elseif f == "Best Bound"
             val = string(round(tree.best_bound,2))
         elseif f == "Gap"
-            if tree.incumbent != nothing
+            if isdefined(tree,:incumbent)
                 b = tree.best_bound
-                f = tree.incumbent.objval
+                incu = tree.incumbent
+                f = incu.objval
                 val = string(round(abs(b-f)/abs(f)*100,1))*"%"
             else
                 val = "-"

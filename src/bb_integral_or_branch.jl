@@ -1,19 +1,19 @@
 """
-    push_integral_or_branch!(m,step_obj,leaf,temp)
+    push_integral_or_branch!(m,step_obj,cnode,int2var_idx,temp)
 
 Add integral or branch node to step_obj
 """
-function push_integral_or_branch!(m,step_obj,leaf,temp)
+function push_integral_or_branch!(m,step_obj,cnode,int2var_idx,temp)
     # check if all int vars are int
-    if are_type_correct(leaf.solution,m.var_type)
-        leaf.state = :Integral
+    if are_type_correct(cnode.solution,m.var_type,int2var_idx)
+        cnode.state = :Integral
         if !temp
-            push!(step_obj.integral, leaf)
+            push!(step_obj.integral, cnode)
         end
     else
-        leaf.state = :Branch
+        cnode.state = :Branch
         if !temp
-            push!(step_obj.branch, leaf)
+            push!(step_obj.branch, cnode)
         end
     end
 end
@@ -36,13 +36,14 @@ function new_integral!(tree,node)
 end
 
 """
-    push_to_branch_list!(tree,leaf)
+    push_to_branch_list!(tree,node)
 
 Push a node to the list of branch nodes if better than incumbent
 """
-function push_to_branch_list!(tree,leaf)
-    if tree.options.all_solutions || tree.incumbent == nothing || tree.obj_fac*leaf.best_bound >= tree.obj_fac*tree.incumbent.objval
-        push!(tree.branch_nodes, leaf)
+function push_to_branch_list!(tree,node)
+    incu = isdefined(tree,:incumbent) ? tree.incumbent : false
+    if tree.options.all_solutions || !isdefined(tree,:incumbent) || tree.obj_fac*node.best_bound >= tree.obj_fac*incu.objval
+        push!(tree.branch_nodes, node)
     end
 end
 

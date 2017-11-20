@@ -6,7 +6,7 @@ end
 type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     nl_solver       :: MathProgBase.AbstractMathProgSolver
    
-    model           :: Union{Void,JuMP.Model}
+    model           :: JuMP.Model
         
     status          :: Symbol
     objval          :: Float64
@@ -203,7 +203,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
-    m.model = Model(solver=m.nl_solver) 
+    m.model = Model(solver=m.nl_solver)
     lb = [m.l_var; -1e6]
     ub = [m.u_var; 1e6]
     # all continuous we solve relaxation first

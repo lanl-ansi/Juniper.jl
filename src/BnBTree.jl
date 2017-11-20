@@ -12,7 +12,7 @@ type BnBNode
     var_idx             :: Int64
     state               :: Symbol
     relaxation_state    :: Symbol
-    best_bound          :: Union{Void,Float64}
+    best_bound          :: Float64
 end
 
 type IncumbentSolution
@@ -24,7 +24,7 @@ end
 
 type BnBTreeObj
     m           :: MINLPBnB.MINLPBnBModel
-    incumbent   :: Union{Void,IncumbentSolution}
+    incumbent   :: IncumbentSolution
     obj_gain_m  :: Vector{Float64} # gain of objective per variable on left node
     obj_gain_p  :: Vector{Float64} # gain of objective per variable on right node
     obj_gain_mc :: Vector{Float64} # obj_gain_m / obj_gain_mc => average gain on left node
@@ -37,30 +37,34 @@ type BnBTreeObj
     nsolutions  :: Int64
     branch_nodes:: Vector{BnBNode}
     best_bound  :: Float64
+
+    BnBTreeObj() = new()
 end
 
 # the object holds information for the current step
 type StepObj
-    node        :: BnBNode # current branch node
-    var_idx     :: Int64   # variable to branch on
-    state       :: Symbol  # if infeasible => break (might be set by strong branching)
-    nrestarts   :: Int64 
-    gain_gap    :: Float64
-    gains_m       :: Vector{Float64}
-    gains_mc      :: Vector{Float64}
-    gains_p       :: Vector{Float64}
-    gains_pc      :: Vector{Float64}
-    strong_int_vars :: Vector{Int64}
-    idx_time    :: Float64
-    leaf_idx_time :: Float64
-    upd_gains_time :: Float64
-    leaf_branch_time :: Float64
-    branch_time     :: Float64
-    integral       :: Vector{BnBNode}
-    branch       :: Vector{BnBNode}
-    l_nd        :: Union{Void,BnBNode}
-    r_nd        :: Union{Void,BnBNode}
-    counter     :: Int64
+    node                :: BnBNode # current branch node
+    var_idx             :: Int64   # variable to branch on
+    state               :: Symbol  # if infeasible => break (might be set by strong branching)
+    nrestarts           :: Int64 
+    gain_gap            :: Float64
+    gains_m             :: Vector{Float64}
+    gains_mc            :: Vector{Float64}
+    gains_p             :: Vector{Float64}
+    gains_pc            :: Vector{Float64}
+    strong_int_vars     :: Vector{Int64}
+    idx_time            :: Float64
+    node_idx_time       :: Float64
+    upd_gains_time      :: Float64
+    node_branch_time    :: Float64
+    branch_time         :: Float64
+    integral            :: Vector{BnBNode}
+    branch              :: Vector{BnBNode}
+    l_nd                :: BnBNode
+    r_nd                :: BnBNode
+    counter             :: Int64
+
+    StepObj() = new()
 end
 
 type TimeObj
@@ -100,10 +104,10 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_p
     branch_strat = opts.branch_strategy
     status = :Normal
     if branch_strat == :MostInfeasible
-        idx = branch_mostinfeasible(m,node)
+        idx = branch_mostinfeasible(m,node,int2var_idx)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
-            idx = branch_mostinfeasible(m,node)
+            idx = branch_mostinfeasible(m,node,int2var_idx)
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m,opts,int2var_idx,step_obj,counter)
         else
@@ -118,43 +122,42 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_p
 end
 
 """
-    solve_leaf!(tree,leaf)
+    process_node!(tree,cnode)
 
-Solve a leaf by relaxation leaf is just a node.
+Solve a child node `cnode`` by relaxation.
 Set the state and best_bound property
 Update incumbent if new and add node to branch list if :Branch
 Return state
 """
-function solve_leaf!(m,step_obj,leaf,temp)
+function process_node!(m,step_obj,cnode,int2_var_idx,temp)
      # set bounds
     for i=1:m.num_var
-        JuMP.setlowerbound(m.x[i], leaf.l_var[i])    
-        JuMP.setupperbound(m.x[i], leaf.u_var[i])
+        JuMP.setlowerbound(m.x[i], cnode.l_var[i])    
+        JuMP.setupperbound(m.x[i], cnode.u_var[i])
     end
 
     status = JuMP.solve(m.model)
     objval = getobjectivevalue(m.model)
-    leaf.solution = getvalue(m.x)
-    status = status
-    leaf.relaxation_state = status
+    cnode.solution = getvalue(m.x)
+    cnode.relaxation_state = status
     if status == :Error
-        leaf.state = :Error
+        cnode.state = :Error
     elseif status == :Optimal
-        leaf.best_bound = objval
-        push_integral_or_branch!(m,step_obj,leaf,temp)
+        cnode.best_bound = objval
+        push_integral_or_branch!(m,step_obj,cnode,int2_var_idx,temp)
     else
-        leaf.state = :Infeasible
+        cnode.state = :Infeasible
     end
-    return leaf.state
+    return cnode.state
 end
 
 """
-    branch!(tree,step_obj,counter)
+    branch!(tree,step_obj,counter,int2var_idx;temp=false)
 
 Branch a node by using x[idx] <= floor(x[idx]) and x[idx] >= ceil(x[idx])
 Solve both nodes and set current node state to done.
 """
-function branch!(m,opts,step_obj,counter;temp=false)
+function branch!(m,opts,step_obj,counter,int2var_idx;temp=false)
     ps = opts.log_levels
     node = step_obj.node
     vidx = step_obj.var_idx
@@ -162,9 +165,9 @@ function branch!(m,opts,step_obj,counter;temp=false)
     start = time()
     # it might be already branched on
     if node.state != :Branch
-        for leaf in [step_obj.l_nd,step_obj.r_nd]
-            if leaf.state == :Branch || leaf.state == :Integral
-                push_integral_or_branch!(m,step_obj,leaf,false)
+        for cnode in [step_obj.l_nd,step_obj.r_nd]
+            if cnode.state == :Branch || cnode.state == :Integral
+                push_integral_or_branch!(m,step_obj,cnode,int2var_idx,false)
             end
         end
         return step_obj.l_nd,step_obj.r_nd
@@ -187,22 +190,22 @@ function branch!(m,opts,step_obj,counter;temp=false)
         step_obj.r_nd = r_nd
     end
 
-    start_leaf = time()
-    l_state = solve_leaf!(m,step_obj,l_nd,temp)
-    r_state = solve_leaf!(m,step_obj,r_nd,temp)
-    leaf_time = time() - start_leaf
+    start_process = time()
+    l_state = process_node!(m,step_obj,l_nd,int2var_idx,temp)
+    r_state = process_node!(m,step_obj,r_nd,int2var_idx,temp)
+    node_time = time() - start_process
 
     if temp
-        step_obj.leaf_idx_time += leaf_time
+        step_obj.node_idx_time += node_time
     else
-        step_obj.leaf_branch_time += leaf_time
+        step_obj.node_branch_time += node_time
     end
 
     branch_strat = opts.branch_strategy
 
     if check_print(ps,[:All])
-        println("State of left leaf: ", l_state)
-        println("State of right leaf: ", r_state)
+        println("State of left node: ", l_state)
+        println("State of right node: ", r_state)
         println("l sol: ", l_nd.solution)
         println("r sol: ", r_nd.solution)
     end
@@ -225,7 +228,7 @@ function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
     check_print(ps,[:All,:FuncCall]) && println("update_incumbent")
 
     factor = tree.obj_fac
-    if tree.incumbent == nothing || factor*node.best_bound > factor*tree.incumbent.objval
+    if !isdefined(tree,:incumbent) || factor*node.best_bound > factor*tree.incumbent.objval
         objval = node.best_bound
         solution = copy(node.solution)
         status = :Optimal
@@ -308,7 +311,7 @@ function get_next_branch_node!(tree)
     bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
 
     trav_strat = tree.options.traverse_strategy
-    if trav_strat == :DFS || (trav_strat == :DBFS && tree.incumbent == nothing)
+    if trav_strat == :DFS || (trav_strat == :DBFS && !isdefined(tree,:incumbent))
         _value, nidx = findmax([n.level for n in tree.branch_nodes])
     end
 
@@ -338,7 +341,7 @@ function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus
     upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
     if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
         # branch
-        branch!(m,opts,step_obj,counter)
+        branch!(m,opts,step_obj,counter,int2var_idx)
     end
     return step_obj
 end
@@ -349,8 +352,8 @@ end
 Add step_obj times to time_obj
 """
 function upd_time_obj!(time_obj, step_obj)
-    time_obj.solve_leaves_get_idx += step_obj.leaf_idx_time
-    time_obj.solve_leaves_branch += step_obj.leaf_branch_time
+    time_obj.solve_leaves_get_idx += step_obj.node_idx_time
+    time_obj.solve_leaves_branch += step_obj.node_branch_time
     time_obj.branch += step_obj.branch_time
     time_obj.get_idx += step_obj.idx_time
     time_obj.upd_gains += step_obj.upd_gains_time
@@ -544,7 +547,7 @@ function solvemip(tree::BnBTreeObj)
     ps = tree.options.log_levels
 
     # check if already integral
-    if are_type_correct(tree.m.solution,tree.m.var_type)
+    if are_type_correct(tree.m.solution,tree.m.var_type,tree.int2var_idx)
         tree.nsolutions = 1
         objval = getobjectivevalue(tree.m.model)
         sol = getvalue(tree.m.x)
@@ -588,7 +591,7 @@ function solvemip(tree::BnBTreeObj)
     end
     counter -= 1 # to have the correct number of branches
 
-    if tree.incumbent == nothing
+    if !isdefined(tree,:incumbent)
         # infeasible
         tree.incumbent = IncumbentSolution(NaN, zeros(tree.m.num_var), :Infeasible, tree.best_bound)
     end
@@ -623,9 +626,9 @@ function solvemip(tree::BnBTreeObj)
     (:Info in tree.options.log_levels) && println("#branches: ", counter)
     if :Timing in tree.options.log_levels
         println("BnB time: ", round(time_bnb_solve,2))
-        println("% leaf time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
-        println("Solve leaf time get idx: ", round(time_obj.solve_leaves_get_idx,2))
-        println("Solve leaf time branch: ", round(time_obj.solve_leaves_branch,2))
+        println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
+        println("Solve node time get idx: ", round(time_obj.solve_leaves_get_idx,2))
+        println("Solve node time branch: ", round(time_obj.solve_leaves_branch,2))
         println("Branch time: ", round(time_obj.branch,2))
         println("Get idx time: ", round(time_obj.get_idx,2))
         println("Upd gains time: ", round(time_obj.upd_gains,2))

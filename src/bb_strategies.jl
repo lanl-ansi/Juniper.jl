@@ -1,20 +1,18 @@
 """
-branch_mostinfeasible(num_var,var_type,node)
+branch_mostinfeasible(m,node,int2var_idx)
 
 Get the index of an integer variable which is currently continuous which is most unintegral.
 (nearest to *.5)
 """
-function branch_mostinfeasible(m,node)
+function branch_mostinfeasible(m,node,int2var_idx)
     x = node.solution
     idx = 0
     max_diff = 0
-    for i=1:m.num_var
-        if m.var_type[i] != :Cont
-            diff = abs(x[i]-round(x[i]))
-            if diff > max_diff
-                idx = i
-                max_diff = diff
-            end
+    for i in int2var_idx
+        diff = abs(x[i]-round(x[i]))
+        if diff > max_diff
+            idx = i
+            max_diff = diff
         end
     end
     return idx
@@ -117,7 +115,7 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                 continue
             end
             # branch on the current variable and get the corresponding children
-            l_nd,r_nd = branch!(m,opts,step_obj,counter;temp=true)
+            l_nd,r_nd = branch!(m,opts,step_obj,counter,int2var_idx;temp=true)
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
                 # TODO: Might be Error instead of infeasible
                 status = :GlobalInfeasible
@@ -212,9 +210,9 @@ function score(q_m,q_p,mu)
     return (1-mu)*minq+mu*maxq
 end
 
-function diff_obj(node,leaf)
-    if leaf.relaxation_state == :Optimal
-        return abs(node.best_bound - leaf.best_bound)
+function diff_obj(node,cnode)
+    if cnode.relaxation_state == :Optimal
+        return abs(node.best_bound - cnode.best_bound)
     else
         return Inf
     end
