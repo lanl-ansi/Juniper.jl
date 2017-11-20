@@ -50,6 +50,15 @@ end
         f = string(fields[i])
         @test fc >= length(f)
     end
+    # Test with incumbent
+    tree.incumbent = MINLPBnB.IncumbentSolution(42,[0,0,0,0,1],:UserLimit,65)
+    tab_ln, tab_arr = MINLPBnB.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
+    @test length(fields) == length(field_chars)
+    for i in 1:length(fields)
+        fc = field_chars[i]
+        f = string(fields[i])
+        @test fc >= length(f)
+    end
     @test length(fields) == length(tab_arr)
     @test length(tab_ln) == sum(field_chars)
 end

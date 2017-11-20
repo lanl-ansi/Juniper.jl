@@ -259,7 +259,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     return m.status
 end
 
-MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = fill(0.0, length(x))
+MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = x
 
 """
     MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol}) 
