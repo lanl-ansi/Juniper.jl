@@ -20,7 +20,8 @@ include("basic/gamsworld.jl")
 
     @objective(m, Min, x[1])
 
-    @constraint(m, x[1] == 1)
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
     @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
     @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
     @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
@@ -52,10 +53,10 @@ end
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
-
     @objective(m, Min, x[1])
 
-    @constraint(m, x[1] == 1)
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
     @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
     @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
     @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
