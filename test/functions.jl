@@ -42,8 +42,8 @@ end
     tree = MINLPBnB.init(start_time,m)
     node = MINLPBnB.new_default_node(1,1,zeros(Int64,5),ones(Int64,5),zeros(Int64,5))
     step_obj = MINLPBnB.new_default_step_obj(m,node)
-    counter = 1
-    tab_ln, tab_arr = MINLPBnB.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
+    step_obj.counter = 1
+    tab_ln, tab_arr = MINLPBnB.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     @test length(fields) == length(field_chars)
     for i in 1:length(fields)
         fc = field_chars[i]
@@ -52,7 +52,7 @@ end
     end
     # Test with incumbent
     tree.incumbent = MINLPBnB.IncumbentSolution(42,[0,0,0,0,1],:UserLimit,65)
-    tab_ln, tab_arr = MINLPBnB.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
+    tab_ln, tab_arr = MINLPBnB.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     @test length(fields) == length(field_chars)
     for i in 1:length(fields)
         fc = field_chars[i]

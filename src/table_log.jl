@@ -51,15 +51,16 @@ function is_table_diff(fields, last_arr, new_arr)
     return false 
 end
 
-function print_table(p, tree, node, step_obj, start_time, fields, field_chars, counter; last_arr=[])
-    table_line, table_arr = get_table_line(p, tree, node, step_obj, start_time, fields, field_chars, counter;
+function print_table(p, tree, node, step_obj, start_time, fields, field_chars; last_arr=[])
+    table_line, table_arr = get_table_line(p, tree, node, step_obj, start_time, fields, field_chars;
                                            last_arr=[])    
     is_table_diff(fields, last_arr,table_arr) && println(table_line)
     return table_arr
 end
 
-function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars, counter; last_arr=[])
+function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars; last_arr=[])
     gain_gap = step_obj.gain_gap
+    counter = step_obj.counter
     if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
         step_obj.nrestarts = -1 # will be displayed as -
     end

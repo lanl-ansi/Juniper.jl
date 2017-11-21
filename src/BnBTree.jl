@@ -444,12 +444,13 @@ function solve_sequential(tree,
     m = tree.m
     opts = tree.options
     int2var_idx = tree.int2var_idx
-    counter = 1
+    counter = 0
     ps = tree.options.log_levels
     while true
         exists, step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
+        counter += 1
         if isdefined(tree,:incumbent) 
             step_obj = one_branch_step!(m, tree.incumbent, opts, step_obj, int2var_idx, tree.obj_gain, counter)
         else 
@@ -467,7 +468,6 @@ function solve_sequential(tree,
         if bbreak 
             break
         end
-        counter += 1
     end
     return counter
 end
@@ -504,7 +504,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     ps = tree.options.log_levels
     still_running = true
     run_counter = 0
-    counter = 1
+    counter = 0
 
     for p=2:np
         remotecall_fetch(srand, p, 1)
@@ -542,6 +542,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         
                         run_counter += 1
+                        counter += 1
                         if isdefined(tree,:incumbent) 
                             step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj,
                                                         tree.int2var_idx, tree.obj_gain, counter)
@@ -550,7 +551,6 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                             tree.int2var_idx, tree.obj_gain, counter)
                         end
                         tree.m.nnodes += 2 # two nodes explored per branch
-                        counter += 1
                         run_counter -= 1
                         p_counter[p] += 1
                         
@@ -571,7 +571,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                                 bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
                                 tree.best_bound = tree.obj_fac*bvalue
                             end
-                            last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
+                            last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
                         end
 
                         if !still_running
