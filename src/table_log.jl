@@ -35,7 +35,7 @@ function print_table_header(fields, field_chars)
     println(repeat("=", sum(field_chars)))
 end
 
-function is_table_diff(fields,last_arr,new_arr)
+function is_table_diff(fields, last_arr, new_arr)
     if length(last_arr) != length(new_arr)
         return true
     end    
@@ -51,13 +51,14 @@ function is_table_diff(fields,last_arr,new_arr)
     return false 
 end
 
-function print_table(p,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
-    table_line, table_arr = get_table_line(p,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])    
+function print_table(p, tree, node, step_obj, start_time, fields, field_chars, counter; last_arr=[])
+    table_line, table_arr = get_table_line(p, tree, node, step_obj, start_time, fields, field_chars, counter;
+                                           last_arr=[])    
     is_table_diff(fields, last_arr,table_arr) && println(table_line)
     return table_arr
 end
 
-function get_table_line(p,tree,node,step_obj,start_time,fields,field_chars,counter;last_arr=[])
+function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars, counter; last_arr=[])
     gain_gap = step_obj.gain_gap
     if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
         step_obj.nrestarts = -1 # will be displayed as -

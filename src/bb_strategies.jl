@@ -1,10 +1,10 @@
 """
-branch_mostinfeasible(m,node,int2var_idx)
+branch_mostinfeasible(m, node, int2var_idx)
 
 Get the index of an integer variable which is currently continuous which is most unintegral.
 (nearest to *.5)
 """
-function branch_mostinfeasible(m,node,int2var_idx)
+function branch_mostinfeasible(m, node, int2var_idx)
     x = node.solution
     idx = 0
     max_diff = 0
@@ -23,7 +23,8 @@ init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
-function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
+                                reasonable_int_vars, infeasible_int_vars)
     restart = false
 
     # set the bounds directly for the node
@@ -38,7 +39,7 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
         node.solution = l_nd.solution
     end
 
-    push!(infeasible_int_vars,int_var_idx)
+    push!(infeasible_int_vars, int_var_idx)
 
     if length(reasonable_int_vars) == length(infeasible_int_vars)
         # basically branching on the last infeasible variable 
@@ -53,12 +54,12 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
 end
 
 """
-branch_strong!(m,opts,int2var_idx,step_obj,counter)
+branch_strong!(m, opts, int2var_idx, step_obj, counter)
 
 Try to branch on a few different variables and choose the one with highest obj_gain.
 Update obj_gain for the variables tried and average the other ones.
 """
-function branch_strong!(m,opts,int2var_idx,step_obj,counter)
+function branch_strong!(m, opts, int2var_idx, step_obj, counter)
     function init_variables()
         max_gain = -Inf # then one is definitely better
         max_gain_var = 0
@@ -82,7 +83,7 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
         idx = int2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
-        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
+        if isapprox(u_b, l_b, atol=atol) || is_type_correct(node.solution[idx], m.var_type[idx])
             continue
         end
         push!(reasonable_int_vars,i)
@@ -115,7 +116,7 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                 continue
             end
             # branch on the current variable and get the corresponding children
-            l_nd,r_nd = branch!(m,opts,step_obj,counter,int2var_idx;temp=true)
+            l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
                 # TODO: Might be Error instead of infeasible
                 status = :GlobalInfeasible
@@ -134,8 +135,8 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            gain_l = sigma_minus(node,l_nd,m.solution[node.var_idx])
-            gain_r = sigma_plus(node,r_nd,m.solution[node.var_idx])
+            gain_l = sigma_minus(node, l_nd, m.solution[node.var_idx])
+            gain_r = sigma_plus(node,  r_nd, m.solution[node.var_idx])
             gain = (gain_l+gain_r)/2
             if gain > max_gain
                 max_gain = gain
@@ -174,17 +175,17 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     return status, max_gain_var, strong_restarts
 end
 
-function branch_pseudo(m,node,int2var_idx,obj_gain,mu)
+function branch_pseudo(m, node, int2var_idx, obj_gain, mu)
     # use the one with highest obj_gain which is currently continous
     idx = 0
-    sort_idx = sorted_score_idx(m.solution,obj_gain,int2var_idx,mu)
+    sort_idx = sorted_score_idx(m.solution, obj_gain, int2var_idx, mu)
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
-        if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])
+        if !is_type_correct(node.solution[var_idx], m.var_type[var_idx])
             u_b = node.u_var[var_idx]
             l_b = node.l_var[var_idx]
             # if the upper bound is the lower bound => no reason to branch
-            if isapprox(u_b,l_b,atol=atol)
+            if isapprox(u_b, l_b, atol=atol)
                 continue
             end
             idx = var_idx
@@ -194,7 +195,7 @@ function branch_pseudo(m,node,int2var_idx,obj_gain,mu)
     return idx
 end
 
-function sorted_score_idx(x,gains,i2v,mu)
+function sorted_score_idx(x, gains, i2v, mu)
     g_minus, g_minus_c = gains.minus, gains.minus_counter
     g_plus, g_plus_c = gains.plus, gains.plus_counter
     scores = [score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i],mu) for i=1:length(g_minus)]
@@ -206,13 +207,13 @@ end
     Score function from 
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
 """
-function score(q_m,q_p,mu) 
+function score(q_m, q_p, mu) 
     minq = q_m < q_p ? q_m : q_p
     maxq = q_m < q_p ? q_p : q_m
     return (1-mu)*minq+mu*maxq
 end
 
-function diff_obj(node,cnode)
+function diff_obj(node, cnode)
     if cnode.relaxation_state == :Optimal
         return abs(node.best_bound - cnode.best_bound)
     else

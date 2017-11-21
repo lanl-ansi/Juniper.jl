@@ -84,7 +84,7 @@ include("bb_type_correct.jl")
 include("bb_integral_or_branch.jl")
 include("bb_gains.jl")
 
-function Base.:+(a::GainObj,b::GainObj)
+function Base.:+(a::GainObj, b::GainObj)
     new_minus = a.minus + b.minus
     new_plus = a.plus + b.plus 
     new_minus_counter = a.minus_counter + b.minus_counter 
@@ -102,11 +102,11 @@ function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
 end
 
 """
-    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter::Int64=1)    
+    upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::Int64=1)    
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter::Int64=1)  
+function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::Int64=1)  
     start = time()
     node = step_obj.node
     idx = 0
@@ -114,14 +114,14 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter::Int64=
     branch_strat = opts.branch_strategy
     status = :Normal
     if branch_strat == :MostInfeasible
-        idx = branch_mostinfeasible(m,node,int2var_idx)
+        idx = branch_mostinfeasible(m, node, int2var_idx)
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
-            idx = branch_mostinfeasible(m,node,int2var_idx)
+            idx = branch_mostinfeasible(m, node, int2var_idx)
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
-            status, idx, strong_restarts = branch_strong!(m,opts,int2var_idx,step_obj,counter)
+            status, idx, strong_restarts = branch_strong!(m, opts, int2var_idx, step_obj, counter)
         else
-            idx = branch_pseudo(m,node,int2var_idx,gains,opts.gain_mu)
+            idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu)
         end
     end
     step_obj.state = status
@@ -132,14 +132,14 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter::Int64=
 end
 
 """
-    process_node!(tree,cnode)
+    process_node!(m, step_obj, cnode, int2_var_idx, temp)
 
-Solve a child node `cnode`` by relaxation.
-Set the state and best_bound property
-Update incumbent if new and add node to branch list if :Branch
+Solve a child node `cnode` by relaxation.
+Set the state and best_bound property.
+Push integrals and new branch nodes to the step object
 Return state
 """
-function process_node!(m,step_obj,cnode,int2_var_idx,temp)
+function process_node!(m, step_obj, cnode, int2_var_idx, temp)
      # set bounds
     for i=1:m.num_var
         JuMP.setlowerbound(m.x[i], cnode.l_var[i])    
@@ -154,7 +154,7 @@ function process_node!(m,step_obj,cnode,int2_var_idx,temp)
         cnode.state = :Error
     elseif status == :Optimal
         cnode.best_bound = objval
-        push_integral_or_branch!(m,step_obj,cnode,int2_var_idx,temp)
+        push_integral_or_branch!(m, step_obj, cnode, int2_var_idx, temp)
     else
         cnode.state = :Infeasible
     end
@@ -162,12 +162,12 @@ function process_node!(m,step_obj,cnode,int2_var_idx,temp)
 end
 
 """
-    branch!(tree,step_obj,counter,int2var_idx;temp=false)
+    branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
 
 Branch a node by using x[idx] <= floor(x[idx]) and x[idx] >= ceil(x[idx])
 Solve both nodes and set current node state to done.
 """
-function branch!(m,opts,step_obj,counter,int2var_idx;temp=false)
+function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     ps = opts.log_levels
     node = step_obj.node
     vidx = step_obj.var_idx
@@ -177,14 +177,14 @@ function branch!(m,opts,step_obj,counter,int2var_idx;temp=false)
     if node.state != :Branch
         for cnode in [step_obj.l_nd,step_obj.r_nd]
             if cnode.state == :Branch || cnode.state == :Integral
-                push_integral_or_branch!(m,step_obj,cnode,int2var_idx,false)
+                push_integral_or_branch!(m, step_obj, cnode, int2var_idx, false)
             end
         end
         return step_obj.l_nd,step_obj.r_nd
     end
     
-    l_nd = new_default_node(node.idx*2,node.level+1,node.l_var,node.u_var,node.solution)
-    r_nd = new_default_node(node.idx*2+1,node.level+1,node.l_var,node.u_var,node.solution)
+    l_nd = new_default_node(node.idx*2,   node.level+1, node.l_var, node.u_var, node.solution)
+    r_nd = new_default_node(node.idx*2+1, node.level+1, node.l_var, node.u_var, node.solution)
 
     l_nd.u_var[vidx] = floor(node.solution[vidx])
     r_nd.l_var[vidx] = ceil(node.solution[vidx])
@@ -201,8 +201,8 @@ function branch!(m,opts,step_obj,counter,int2var_idx;temp=false)
     end
 
     start_process = time()
-    l_state = process_node!(m,step_obj,l_nd,int2var_idx,temp)
-    r_state = process_node!(m,step_obj,r_nd,int2var_idx,temp)
+    l_state = process_node!(m, step_obj, l_nd, int2var_idx, temp)
+    r_state = process_node!(m, step_obj, r_nd, int2var_idx, temp)
     node_time = time() - start_process
 
     if temp
@@ -228,12 +228,12 @@ function branch!(m,opts,step_obj,counter,int2var_idx;temp=false)
 end
 
 """
-    update_incumbent!(tree::BnBTreeObj,node::BnBNode)
+    update_incumbent!(tree::BnBTreeObj, node::BnBNode)
 
 Get's called if new integral solution was found. 
 Check whether it's a new incumbent and update if necessary
 """
-function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
+function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
     ps = tree.options.log_levels
     check_print(ps,[:All,:FuncCall]) && println("update_incumbent")
 
@@ -242,7 +242,7 @@ function update_incumbent!(tree::BnBTreeObj,node::BnBNode)
         objval = node.best_bound
         solution = copy(node.solution)
         status = :Optimal
-        tree.incumbent = IncumbentSolution(objval,solution,status,tree.best_bound)
+        tree.incumbent = IncumbentSolution(objval, solution, status, tree.best_bound)
         if !tree.options.all_solutions 
             bound!(tree)
         end
@@ -262,7 +262,7 @@ function bound!(tree::BnBTreeObj)
     end
     incumbent_val = tree.incumbent.objval
     f = tree.obj_fac
-    filter!(isbetter,tree.branch_nodes)
+    filter!(isbetter, tree.branch_nodes)
 end
 
 """
@@ -326,7 +326,7 @@ function get_next_branch_node!(tree)
     end
 
     node = tree.branch_nodes[nidx]
-    deleteat!(tree.branch_nodes,nidx)
+    deleteat!(tree.branch_nodes, nidx)
 
     tree.best_bound = tree.obj_fac*bvalue
     bbreak = isbreak_mip_gap(tree)
@@ -338,12 +338,12 @@ end
 
 
 """
-    one_branch_step!(m, opts, step_obj,int2var_idx,gains,counter)
+    one_branch_step!(m, opts, step_obj, int2var_idx, gains, counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m, opts, step_obj,int2var_idx,gains, counter)
+function one_branch_step!(m, opts, step_obj, int2var_idx, gains, counter)
     node = step_obj.node
     step_obj.counter = counter
 
@@ -374,12 +374,12 @@ function init_time_obj()
 end
 
 """
-    upd_tree_obj!(tree,step_obj,time_obj)
+    upd_tree_obj!(tree, step_obj, time_obj)
 
 Update the tree obj like new incumbent or new branch nodes using the step_obj
 Return false if it's the end of the algorithm (checking different break rules)
 """
-function upd_tree_obj!(tree,step_obj,time_obj)
+function upd_tree_obj!(tree, step_obj, time_obj)
     node = step_obj.node
     still_running = true
 
@@ -388,20 +388,20 @@ function upd_tree_obj!(tree,step_obj,time_obj)
     end
 
     if step_obj.state == :GlobalInfeasible
-        tree.incumbent = IncumbentSolution(NaN,zeros(tree.m.num_var),:Infeasible, NaN)
+        tree.incumbent = IncumbentSolution(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
         still_running = false 
     end
    
     if still_running
-        upd_gains_step!(tree,step_obj)
+        upd_gains_step!(tree, step_obj)
     end
 
-    bbreak = upd_integral_branch!(tree,step_obj)
+    bbreak = upd_integral_branch!(tree, step_obj)
     if bbreak 
         still_running = false 
     end
 
-    upd_time_obj!(time_obj,step_obj)
+    upd_time_obj!(time_obj, step_obj)
     if still_running
         return false
     else

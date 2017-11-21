@@ -34,14 +34,13 @@ function init(start_time, m)
     return bnbTree
 end
 
-function new_default_node(idx,level,l_var,u_var,solution;
-                            var_idx=0,
-                            state=:Solve,relaxation_state=:Solve,best_bound=NaN)
+function new_default_node(idx, level, l_var, u_var, solution;
+                            var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN)
 
     l_var = copy(l_var)
     u_var = copy(u_var)
     solution = copy(solution)
-    return BnBNode(idx,level,l_var,u_var,solution,var_idx,state,relaxation_state,best_bound)
+    return BnBNode(idx, level, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound)
 end
 
 function new_default_step_obj(m,node)

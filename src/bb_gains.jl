@@ -1,12 +1,12 @@
 """
-    update_gains!(tree::BnBTreeObj,node::BnBNode)
+    update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
 
 Update the objective gains for the branch variable used for node
 """
-function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
+function update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
     
-    gain_l = sigma_minus(parent,l_nd,tree.m.solution[parent.var_idx])
-    gain_r = sigma_plus(parent,r_nd,tree.m.solution[parent.var_idx])
+    gain_l = sigma_minus(parent, l_nd, tree.m.solution[parent.var_idx])
+    gain_r = sigma_plus(parent,  r_nd, tree.m.solution[parent.var_idx])
     idx = tree.var2int_idx[parent.var_idx]
 
     gain = 0.0
@@ -32,11 +32,11 @@ function update_gains!(tree::BnBTreeObj,parent::BnBNode,l_nd,r_nd)
 end
 
 """
-    upd_gains_step!(tree,step_obj)
+    upd_gains_step!(tree, step_obj)
 
 Update the gains using the step_obj if using StrongPseudoCost or PseudoCost
 """
-function upd_gains_step!(tree,step_obj)
+function upd_gains_step!(tree, step_obj)
     branch_strat = tree.options.branch_strategy
     opts = tree.options
     if branch_strat == :StrongPseudoCost && step_obj.counter <= opts.strong_branching_nsteps
@@ -54,8 +54,8 @@ function upd_gains_step!(tree,step_obj)
         end
     elseif branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && step_obj.counter > opts.strong_branching_nsteps)
         upd_start = time()
-        guess_gain_val = guess_gain(tree,step_obj)
-        gain = update_gains!(tree,step_obj.node,step_obj.l_nd,step_obj.r_nd)    
+        guess_gain_val = guess_gain(tree, step_obj)
+        gain = update_gains!(tree, step_obj.node, step_obj.l_nd, step_obj.r_nd)    
         step_obj.gain_gap = abs(guess_gain_val-gain)/abs(gain)
         if isnan(step_obj.gain_gap) # 0/0
             step_obj.gain_gap = 0.0
@@ -64,7 +64,7 @@ function upd_gains_step!(tree,step_obj)
     end
 end
 
-function guess_gain(tree,step_obj)
+function guess_gain(tree, step_obj)
     i = step_obj.var_idx
     inti = tree.var2int_idx[i]
     x = tree.m.solution

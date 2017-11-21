@@ -1,11 +1,11 @@
 """
-    push_integral_or_branch!(m,step_obj,cnode,int2var_idx,temp)
+    push_integral_or_branch!(m, step_obj, cnode, int2var_idx, temp)
 
 Add integral or branch node to step_obj
 """
-function push_integral_or_branch!(m,step_obj,cnode,int2var_idx,temp)
+function push_integral_or_branch!(m, step_obj, cnode, int2var_idx, temp)
     # check if all int vars are int
-    if are_type_correct(cnode.solution,m.var_type,int2var_idx)
+    if are_type_correct(cnode.solution, m.var_type, int2var_idx)
         cnode.state = :Integral
         if !temp
             push!(step_obj.integral, cnode)
@@ -19,28 +19,28 @@ function push_integral_or_branch!(m,step_obj,cnode,int2var_idx,temp)
 end
 
 """
-    new_integral!(tree,node)
+    new_integral!(tree, node)
 
 Update the incumbent and add obj constr if in options
 Add to solutions if list_of_solutions in options
 """
-function new_integral!(tree,node)
+function new_integral!(tree, node)
     # node.best_bound is the objective for integral values
     tree.nsolutions += 1
     if tree.options.list_of_solutions
-        push!(tree.m.solutions, MINLPBnB.SolutionObj(node.solution,node.best_bound))
+        push!(tree.m.solutions, MINLPBnB.SolutionObj(node.solution, node.best_bound))
     end
-    if update_incumbent!(tree,node) # returns if new 
+    if update_incumbent!(tree, node) # returns if new 
         add_incumbent_constr(tree)
     end
 end
 
 """
-    push_to_branch_list!(tree,node)
+    push_to_branch_list!(tree, node)
 
 Push a node to the list of branch nodes if better than incumbent
 """
-function push_to_branch_list!(tree,node)
+function push_to_branch_list!(tree, node)
     incu = isdefined(tree,:incumbent) ? tree.incumbent : false
     if tree.options.all_solutions || !isdefined(tree,:incumbent) || tree.obj_fac*node.best_bound >= tree.obj_fac*incu.objval
         push!(tree.branch_nodes, node)
@@ -48,12 +48,12 @@ function push_to_branch_list!(tree,node)
 end
 
 """
-    upd_integral_branch!(tree,step_obj)
+    upd_integral_branch!(tree, step_obj)
 
 Update the list of integral and branch nodes using the new step_obj
 Return true if break
 """
-function upd_integral_branch!(tree,step_obj)
+function upd_integral_branch!(tree, step_obj)
     for integral_node in step_obj.integral
         new_integral!(tree,integral_node)
         if isbreak_new_incumbent_limits(tree)
@@ -62,7 +62,7 @@ function upd_integral_branch!(tree,step_obj)
     end
 
     for branch_node in step_obj.branch
-        push_to_branch_list!(tree,branch_node)
+        push_to_branch_list!(tree, branch_node)
     end
     return false
 end
