@@ -22,7 +22,7 @@ function get_default_options()
     obj_epsilon                 = 0
     # :UserLimit
     time_limit                  = Inf  
-    mip_gap                     = 1e-2 # in % used in bb_user_limits (#TODO)
+    mip_gap                     = 1e-2
     best_obj_stop               = NaN
     solution_limit              = 0
     all_solutions               = false
@@ -41,18 +41,18 @@ function combine_options(options)
     for kv in options
         options_dict[kv[1]] = kv[2]
     end
-    if haskey(options_dict,:log_levels)
+    if haskey(options_dict, :log_levels)
         if length(options_dict[:log_levels]) == 0
             options_dict[:log_levels] = Symbol[]
         end
     end
     defaults = get_default_options()
     for fname in fieldnames(SolverOptions)
-        if haskey(options_dict,fname)
-            if fieldtype(SolverOptions,fname) != typeof(options_dict[fname])
-                options_dict[fname] = convert(fieldtype(SolverOptions,fname),options_dict[fname])
+        if haskey(options_dict, fname)
+            if fieldtype(SolverOptions, fname) != typeof(options_dict[fname])
+                options_dict[fname] = convert(fieldtype(SolverOptions,fname), options_dict[fname])
             end
-            setfield!(defaults,fname,options_dict[fname])
+            setfield!(defaults, fname, options_dict[fname])
         end
     end
     return defaults

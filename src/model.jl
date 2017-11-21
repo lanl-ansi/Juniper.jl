@@ -6,18 +6,17 @@ end
 type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     nl_solver       :: MathProgBase.AbstractMathProgSolver
    
-    model           :: Union{Void,JuMP.Model}
+    model           :: JuMP.Model
         
     status          :: Symbol
     objval          :: Float64
     best_bound      :: Float64
 
-    x               
+    x               :: Vector{JuMP.Variable}
     num_constr      :: Int64
     num_nl_constr   :: Int64
     num_l_constr    :: Int64
     num_var         :: Int64
-    obj_expr        
     l_var           :: Vector{Float64}
     u_var           :: Vector{Float64}
     l_constr        :: Vector{Float64}
@@ -31,11 +30,11 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     num_int_bin_var :: Int64
 
     solution        :: Vector{Float64}
-    nsolutions      :: Int64
 
     soltime         :: Float64
     options         :: SolverOptions
     solutions       :: Vector{SolutionObj}
+    nsolutions      :: Int64
 
     # Info
     nintvars        :: Int64
@@ -109,7 +108,7 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    MathProgBase.initialize(m.d, [:Grad,:Jac,:Hess,:ExprGraph])
+    MathProgBase.initialize(m.d, [:ExprGraph])
 end
 
 #=
@@ -203,7 +202,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
-    m.model = Model(solver=m.nl_solver) 
+    m.model = Model(solver=m.nl_solver)
     lb = [m.l_var; -1e6]
     ub = [m.u_var; 1e6]
     # all continuous we solve relaxation first
@@ -260,7 +259,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     return m.status
 end
 
-MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = fill(0.0, length(x))
+MathProgBase.setwarmstart!(m::MINLPBnBModel, x) = x
 
 """
     MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol}) 
