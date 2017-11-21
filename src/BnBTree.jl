@@ -531,12 +531,12 @@ function sendto(p::Int; args...)
 end
 
 """
-    pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
+    pmap(f, tree, last_table_arr, time_bnb_solve_start,
         fields, field_chars, time_obj)
 
 Run the solving steps on several processors
 """
-function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
+function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     fields, field_chars, time_obj)
     np = nprocs()  # determine the number of processes available
     if np < tree.options.processors
@@ -551,7 +551,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     ps = tree.options.log_levels
     still_running = true
     run_counter = 0
-    counter = 0
+    counter = 1
 
     for p=2:np
         remotecall_fetch(srand, p, 1)
@@ -584,11 +584,12 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                             break
                         end
                         
-                        counter += 1
+                        
                         run_counter += 1
                         mu = tree.options.gain_mu
                         ptime = time()
                         step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
+                        counter += 1
                         run_counter -= 1
                         proc_counter[p] += 1
                         if p > 2 && proc_counter[p] == 1 # that's just a dummy run
@@ -670,7 +671,6 @@ function solvemip(tree::BnBTreeObj)
     # use pmap if more then one processor
     if tree.options.processors > 1
         counter = pmap(MINLPBnB.one_branch_step!,tree,
-            counter,
             last_table_arr,
             time_bnb_solve_start,
             fields,
@@ -684,7 +684,6 @@ function solvemip(tree::BnBTreeObj)
             field_chars,
             time_obj)
     end
-    counter -= 1 # to have the correct number of branches
 
     if tree.incumbent == nothing
         # infeasible
