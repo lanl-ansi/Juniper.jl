@@ -257,24 +257,20 @@ function bound!(tree::BnBTreeObj)
 end
 
 """
-    add_incumbent_constr(tree)
+    add_incumbent_constr(m, incumbent)
 
 Add a constraint >=/<= incumbent 
 """
-function add_incumbent_constr(tree)
-    # add constr for objval
-    if tree.options.incumbent_constr
-        obj_expr = MathProgBase.obj_expr(tree.m.d)
-        if tree.m.obj_sense == :Min
-            obj_constr = Expr(:call, :<=, obj_expr, tree.incumbent.objval)
-        else
-            obj_constr = Expr(:call, :>=, obj_expr, tree.incumbent.objval)
-        end
-        MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
-        # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
-        JuMP.addNLconstraint(tree.m.model, obj_constr)
-        tree.m.ncuts += 1
+function add_incumbent_constr(m, incumbent)
+    obj_expr = MathProgBase.obj_expr(m.d)
+    if m.obj_sense == :Min
+        obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
+    else
+        obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
     end
+    MINLPBnB.expr_dereferencing!(obj_constr, m.model)            
+    # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
+    JuMP.addNLconstraint(m.model, obj_constr)
 end
 
 """
@@ -345,17 +341,10 @@ using that variable. Return the new updated step_obj
 function one_branch_step!(m1, incumbent, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu, counter)
     if m1 == nothing
         global m
-        if opts.incumbent_constr && incumbent != nothing
-            obj_expr = MathProgBase.obj_expr(m.d)
-            if m.obj_sense == :Min
-                obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
-            else
-                obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
-            end
-            MINLPBnB.expr_dereferencing!(obj_constr, m.model)            
-            # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
-            JuMP.addNLconstraint(m.model, obj_constr)
-            m.ncuts += 1
+        global is_newincumbent
+        if opts.incumbent_constr && incumbent != nothing && is_newincumbent
+            is_newincumbent = false
+            add_incumbent_constr(m, incumbent)
         end
     else 
         m = m1
@@ -509,6 +498,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
     for p=2:np
         remotecall_fetch(srand, p, 1)
         sendto(p, m=tree.m)
+        sendto(p, is_newincumbent=false)
     end
 
     for p=3:np

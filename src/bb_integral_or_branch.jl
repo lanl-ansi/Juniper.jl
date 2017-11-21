@@ -31,7 +31,15 @@ function new_integral!(tree,node)
         push!(tree.m.solutions, MINLPBnB.SolutionObj(node.solution,node.best_bound))
     end
     if update_incumbent!(tree,node) # returns if new 
-        add_incumbent_constr(tree)
+        if tree.options.incumbent_constr
+            if tree.options.processors > 1
+                for p=2:tree.options.processors
+                    sendto(p, is_newincumbent=true)
+                end
+            end
+            add_incumbent_constr(tree.m, tree.incumbent)
+            tree.m.ncuts += 1
+        end
     end
 end
 
