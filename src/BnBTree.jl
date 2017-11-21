@@ -542,14 +542,17 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         
                         run_counter += 1
-                        step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj,
-                                                    tree.int2var_idx,tree.obj_gain, counter)
+                        if isdefined(tree,:incumbent) 
+                            step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj,
+                                                        tree.int2var_idx, tree.obj_gain, counter)
+                        else
+                            step_obj = remotecall_fetch(f, p, nothing, nothing, tree.options, step_obj,
+                            tree.int2var_idx, tree.obj_gain, counter)
+                        end
                         tree.m.nnodes += 2 # two nodes explored per branch
                         counter += 1
                         run_counter -= 1
                         p_counter[p] += 1
-                        
-                        tree.m.nnodes += 2 # two nodes explored per branch
                         
                         !still_running && break
                     
