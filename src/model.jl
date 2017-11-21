@@ -304,3 +304,4 @@ end
 
 getnsolutions(m::MINLPBnBModel) = m.nsolutions
 getsolutions(m::MINLPBnBModel) = m.solutions
+getnbranches(m::MINLPBnBModel) = m.nbranches
