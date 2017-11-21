@@ -92,11 +92,11 @@ function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
 end
 
 """
-    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter::Int64=1)    
+    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter::Int64=1)    
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter::Int64=1)  
+function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter::Int64=1)  
     start = time()
     node = step_obj.node
     idx = 0
@@ -111,7 +111,7 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_p
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m,opts,int2var_idx,step_obj,counter)
         else
-            idx = branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
+            idx = branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,opts.gain_mu)
         end
     end
     step_obj.state = status
@@ -328,17 +328,17 @@ end
 
 
 """
-    one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
+    one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu, counter)
+function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c, counter)
     node = step_obj.node
     step_obj.counter = counter
 
 # get branch variable    
-    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu,counter)
+    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter)
     if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
         # branch
         branch!(m,opts,step_obj,counter,int2var_idx)
@@ -426,12 +426,11 @@ function solve_sequential(tree,
         gain_mc = tree.obj_gain_mc
         gain_p = tree.obj_gain_p
         gain_pc = tree.obj_gain_pc
-        mu = tree.options.gain_mu
 
         exists,step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
-        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc,mu, counter)
+        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc, counter)
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
@@ -501,8 +500,7 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         
                         counter += 1
                         run_counter += 1
-                        mu = tree.options.gain_mu
-                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc,mu, counter)
+                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc, counter)
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
                         !still_running && break
