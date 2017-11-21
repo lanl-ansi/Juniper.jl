@@ -149,13 +149,13 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
                 end
             end
             if !isinf(gain_l)
-                step_obj.gains_m[int_var_idx] = gain_l
-                step_obj.gains_mc[int_var_idx] += 1
+                step_obj.obj_gain.minus[int_var_idx] = gain_l
+                step_obj.obj_gain.minus_counter[int_var_idx] += 1
             end
 
             if !isinf(gain_r)
-                step_obj.gains_p[int_var_idx] = gain_r
-                step_obj.gains_pc[int_var_idx] += 1
+                step_obj.obj_gain.plus[int_var_idx] = gain_r
+                step_obj.obj_gain.plus_counter[int_var_idx] += 1
             end
         end
     end
@@ -174,10 +174,10 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     return status, max_gain_var, strong_restarts
 end
 
-function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
+function branch_pseudo(m,node,int2var_idx,obj_gain,mu)
     # use the one with highest obj_gain which is currently continous
     idx = 0
-    sort_idx = sorted_score_idx(m.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx,mu)
+    sort_idx = sorted_score_idx(m.solution,obj_gain,int2var_idx,mu)
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
         if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])
@@ -194,7 +194,9 @@ function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
     return idx
 end
 
-function sorted_score_idx(x,g_minus,g_minus_c,g_plus,g_plus_c,i2v,mu)
+function sorted_score_idx(x,gains,i2v,mu)
+    g_minus, g_minus_c = gains.minus, gains.minus_counter
+    g_plus, g_plus_c = gains.plus, gains.plus_counter
     scores = [score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i],mu) for i=1:length(g_minus)]
     sortedidx = sortperm(scores; rev=true)
     return sortedidx

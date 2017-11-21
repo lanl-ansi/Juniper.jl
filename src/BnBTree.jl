@@ -1,4 +1,5 @@
 include("table_log.jl")
+importall Base.Operators
 
 rtol = 1e-6
 atol = 1e-6
@@ -22,13 +23,17 @@ type IncumbentSolution
     best_bound  :: Float64
 end
 
+type GainObj
+    minus           :: Vector{Float64} # gain of objective per variable on left node
+    plus            :: Vector{Float64} # gain of objective per variable on right node
+    minus_counter   :: Vector{Float64} # obj_gain_m / obj_gain_mc => average gain on left node
+    plus_counter    :: Vector{Float64} # obj_gain_p / obj_gain_pc => average gain on right node
+end
+
 type BnBTreeObj
     m           :: MINLPBnB.MINLPBnBModel
     incumbent   :: IncumbentSolution
-    obj_gain_m  :: Vector{Float64} # gain of objective per variable on left node
-    obj_gain_p  :: Vector{Float64} # gain of objective per variable on right node
-    obj_gain_mc :: Vector{Float64} # obj_gain_m / obj_gain_mc => average gain on left node
-    obj_gain_pc :: Vector{Float64} # obj_gain_p / obj_gain_pc => average gain on right node
+    obj_gain    :: GainObj
     int2var_idx :: Vector{Int64}
     var2int_idx :: Vector{Int64}
     options     :: MINLPBnB.SolverOptions
@@ -48,10 +53,7 @@ type StepObj
     state               :: Symbol  # if infeasible => break (might be set by strong branching)
     nrestarts           :: Int64 
     gain_gap            :: Float64
-    gains_m             :: Vector{Float64}
-    gains_mc            :: Vector{Float64}
-    gains_p             :: Vector{Float64}
-    gains_pc            :: Vector{Float64}
+    obj_gain            :: GainObj
     strong_int_vars     :: Vector{Int64}
     idx_time            :: Float64
     node_idx_time       :: Float64
@@ -82,6 +84,14 @@ include("bb_type_correct.jl")
 include("bb_integral_or_branch.jl")
 include("bb_gains.jl")
 
+function Base.:+(a::GainObj,b::GainObj)
+    new_minus = a.minus + b.minus
+    new_plus = a.plus + b.plus 
+    new_minus_counter = a.minus_counter + b.minus_counter 
+    new_plus_counter = a.plus_counter + b.plus_counter 
+    return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter)
+end
+
 function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
     for v in vec
         if v in ps
@@ -92,11 +102,11 @@ function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
 end
 
 """
-    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter::Int64=1)    
+    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter::Int64=1)    
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter::Int64=1)  
+function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter::Int64=1)  
     start = time()
     node = step_obj.node
     idx = 0
@@ -111,7 +121,7 @@ function upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_p
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m,opts,int2var_idx,step_obj,counter)
         else
-            idx = branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,opts.gain_mu)
+            idx = branch_pseudo(m,node,int2var_idx,gains,opts.gain_mu)
         end
     end
     step_obj.state = status
@@ -328,17 +338,17 @@ end
 
 
 """
-    one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter)
+    one_branch_step!(m, opts, step_obj,int2var_idx,gains,counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m, opts, step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c, counter)
+function one_branch_step!(m, opts, step_obj,int2var_idx,gains, counter)
     node = step_obj.node
     step_obj.counter = counter
 
 # get branch variable    
-    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,counter)
+    upd_int_variable_idx!(m,step_obj,opts,int2var_idx,gains,counter)
     if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
         # branch
         branch!(m,opts,step_obj,counter,int2var_idx)
@@ -422,15 +432,10 @@ function solve_sequential(tree,
     counter = 1
     ps = tree.options.log_levels
     while true
-        gain_m = tree.obj_gain_m
-        gain_mc = tree.obj_gain_mc
-        gain_p = tree.obj_gain_p
-        gain_pc = tree.obj_gain_pc
-
-        exists,step_obj = get_next_branch_node!(tree)
+        exists, step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
-        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,gain_m,gain_mc,gain_p,gain_pc, counter)
+        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,tree.obj_gain, counter)
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
@@ -500,7 +505,8 @@ function pmap(f, tree, counter, last_table_arr, time_bnb_solve_start,
                         
                         counter += 1
                         run_counter += 1
-                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj, tree.int2var_idx,tree.obj_gain_m,tree.obj_gain_mc,tree.obj_gain_p,tree.obj_gain_pc, counter)
+                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj,
+                                                    tree.int2var_idx,tree.obj_gain, counter)
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
                         !still_running && break

@@ -1,10 +1,11 @@
 function init(start_time, m)
     srand(1)
-    node = BnBNode(1,1,m.l_var,m.u_var,m.solution,0,:Branch,:Optimal,m.objval)
+    node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)
-    obj_gain_mc = ones(Int64,m.num_int_bin_var)
-    obj_gain_pc = ones(Int64,m.num_int_bin_var)
+    obj_gain_mc = ones(Int64, m.num_int_bin_var)
+    obj_gain_pc = ones(Int64, m.num_int_bin_var)
+    obj_gain = GainObj(obj_gain_m, obj_gain_p, obj_gain_mc, obj_gain_pc)
     int2var_idx = zeros(m.num_int_bin_var)
     var2int_idx = zeros(m.num_var)
     int_i = 1
@@ -21,10 +22,7 @@ function init(start_time, m)
     end
     bnbTree = BnBTreeObj()
     bnbTree.m           = m
-    bnbTree.obj_gain_m  = obj_gain_m
-    bnbTree.obj_gain_p  = obj_gain_p
-    bnbTree.obj_gain_mc = obj_gain_mc
-    bnbTree.obj_gain_pc = obj_gain_pc
+    bnbTree.obj_gain    = obj_gain
     bnbTree.int2var_idx = int2var_idx
     bnbTree.var2int_idx = var2int_idx
     bnbTree.options     = m.options
@@ -48,9 +46,10 @@ end
 
 function new_default_step_obj(m,node)
     gains_m = zeros(m.num_int_bin_var)
-    gains_mc = ones(Int64,m.num_int_bin_var)
+    gains_mc = ones(Int64, m.num_int_bin_var)
     gains_p = zeros(m.num_int_bin_var)
-    gains_pc = ones(Int64,m.num_int_bin_var)
+    gains_pc = ones(Int64, m.num_int_bin_var)
+    gains = GainObj(gains_m, gains_p, gains_mc, gains_pc)
     idx_time = 0.0
     node_idx_time = 0.0
     upd_gains_time = 0.0
@@ -62,10 +61,7 @@ function new_default_step_obj(m,node)
     step_obj.state            = :None   
     step_obj.nrestarts        = 0   
     step_obj.gain_gap         = 0.0   
-    step_obj.gains_m          = gains_m 
-    step_obj.gains_mc         = gains_mc   
-    step_obj.gains_p          = gains_p    
-    step_obj.gains_pc         = gains_pc   
+    step_obj.obj_gain         = gains
     step_obj.strong_int_vars  = zeros(Int64,0)    
     step_obj.idx_time         = idx_time   
     step_obj.node_idx_time    = node_idx_time   
