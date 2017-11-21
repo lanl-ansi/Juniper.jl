@@ -462,7 +462,7 @@ function solve_sequential(tree,
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
         
         if check_print(ps,[:Table]) 
-            last_table_arr = print_table(1,tree,node,step_obj,time_bnb_solve_start,fields,field_chars,counter;last_arr=last_table_arr)
+            last_table_arr = print_table(1,tree,node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
         end
 
         if bbreak 
