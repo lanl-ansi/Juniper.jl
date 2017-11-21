@@ -346,12 +346,12 @@ end
 
 
 """
-    one_branch_step!(m1, opts, step_obj, int2var_idx, gains, counter)
+    one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, counter)
 
 Get a branch variable using the specified strategy and branch on the node in step_obj 
 using that variable. Return the new updated step_obj
 """
-function one_branch_step!(m1, opts, step_obj, int2var_idx, gains, counter)
+function one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, counter)
     if m1 == nothing
         global m
         global is_newincumbent
@@ -450,7 +450,11 @@ function solve_sequential(tree,
         exists, step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
-        step_obj = one_branch_step!(m, opts, step_obj,int2var_idx,tree.obj_gain, counter)
+        if isdefined(tree,:incumbent) 
+            step_obj = one_branch_step!(m, tree.incumbent, opts, step_obj, int2var_idx, tree.obj_gain, counter)
+        else 
+            step_obj = one_branch_step!(m, nothing, opts, step_obj, int2var_idx, tree.obj_gain, counter)
+        end
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
@@ -538,7 +542,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         
                         run_counter += 1
-                        step_obj = remotecall_fetch(f, p, tree.m, tree.options, step_obj,
+                        step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj,
                                                     tree.int2var_idx,tree.obj_gain, counter)
                         tree.m.nnodes += 2 # two nodes explored per branch
                         counter += 1
