@@ -44,7 +44,6 @@ w = [12,45,12,22,21]
 @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
 status = solve(m)
-
 ```
 
 This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.

@@ -1,20 +1,18 @@
 """
-branch_mostinfeasible(num_var,var_type,node)
+branch_mostinfeasible(m, node, int2var_idx)
 
 Get the index of an integer variable which is currently continuous which is most unintegral.
 (nearest to *.5)
 """
-function branch_mostinfeasible(m,node)
+function branch_mostinfeasible(m, node, int2var_idx)
     x = node.solution
     idx = 0
     max_diff = 0
-    for i=1:m.num_var
-        if m.var_type[i] != :Cont
-            diff = abs(x[i]-round(x[i]))
-            if diff > max_diff
-                idx = i
-                max_diff = diff
-            end
+    for i in int2var_idx
+        diff = abs(x[i]-round(x[i]))
+        if diff > max_diff
+            idx = i
+            max_diff = diff
         end
     end
     return idx
@@ -25,7 +23,8 @@ init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
-function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
+                                reasonable_int_vars, infeasible_int_vars)
     restart = false
 
     # set the bounds directly for the node
@@ -40,7 +39,7 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
         node.solution = l_nd.solution
     end
 
-    push!(infeasible_int_vars,int_var_idx)
+    push!(infeasible_int_vars, int_var_idx)
 
     if length(reasonable_int_vars) == length(infeasible_int_vars)
         # basically branching on the last infeasible variable 
@@ -54,8 +53,48 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable
     return restart, infeasible_int_vars, max_gain_var, strong_int_vars
 end
 
-function branch_strong_on(m,opts,step_obj,
-        reasonable_int_vars, int2var_idx, strong_restart, counter)
+"""
+    branch_strong!(m, opts, int2var_idx, step_obj, counter)
+
+Try to branch on a few different variables and choose the one with highest obj_gain.
+Update obj_gain for the variables tried and average the other ones.
+"""
+function branch_strong!(m, opts, int2var_idx, step_obj, counter)
+    function init_variables()
+        max_gain = -Inf # then one is definitely better
+        max_gain_var = 0
+        strong_int_vars = zeros(Int64,0)
+        return max_gain, max_gain_var, strong_int_vars
+    end
+
+    node = step_obj.node
+
+    strong_restarts = -1 
+
+    # generate an of variables to branch on
+    num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_int_bin_var))
+    # if smaller than 2 it doesn't make sense
+    num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
+
+    # get reasonable candidates (not type correct and not already perfectly bounded)
+    int_vars = m.num_int_bin_var
+    reasonable_int_vars = zeros(Int64,0)
+    for i=1:int_vars
+        idx = int2var_idx[i]
+        u_b = node.u_var[idx]
+        l_b = node.l_var[idx]
+        if isapprox(u_b, l_b, atol=atol) || is_type_correct(node.solution[idx], m.var_type[idx])
+            continue
+        end
+        push!(reasonable_int_vars,i)
+    end
+    shuffle!(reasonable_int_vars)
+    reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
+
+    # compute the gain for each reasonable candidate and choose the highest
+    max_gain, max_gain_var, strong_int_vars = init_variables()
+    left_node = nothing
+    right_node = nothing
 
     max_gain = -Inf # then one is definitely better
     max_gain_var = 0
@@ -88,7 +127,7 @@ function branch_strong_on(m,opts,step_obj,
                 continue
             end
             # branch on the current variable and get the corresponding children
-            l_nd,r_nd = branch!(m,opts,step_obj,counter;temp=true)
+            l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
                 # TODO: Might be Error instead of infeasible
                 status = :GlobalInfeasible
@@ -107,8 +146,8 @@ function branch_strong_on(m,opts,step_obj,
                     restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
                 end
             end
-            gain_l = sigma_minus(node,l_nd,m.solution[node.var_idx])
-            gain_r = sigma_plus(node,r_nd,m.solution[node.var_idx])
+            gain_l = sigma_minus(node, l_nd, node.solution[node.var_idx])
+            gain_r = sigma_plus(node,  r_nd, node.solution[node.var_idx])
             gain = (gain_l+gain_r)/2
             if isnan(gain)
                 gain = Inf
@@ -120,19 +159,18 @@ function branch_strong_on(m,opts,step_obj,
                 right_node = r_nd
                 # gain is set to inf if Integral or Infeasible
                 # TODO: Might be reasonable to use something different
-                # (should still break on restart then)
                 if isinf(gain)
                     break
                 end
             end
             if !isinf(gain_l)
-                gains_m[int_var_idx] = gain_l
-                gains_mc[int_var_idx] = 1
+                step_obj.obj_gain.minus[int_var_idx] = gain_l
+                step_obj.obj_gain.minus_counter[int_var_idx] += 1
             end
 
             if !isinf(gain_r)
-                gains_p[int_var_idx] = gain_r
-                gains_pc[int_var_idx] = 1
+                step_obj.obj_gain.plus[int_var_idx] = gain_r
+                step_obj.obj_gain.plus_counter[int_var_idx] += 1
             end
         end
     end
@@ -226,7 +264,6 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
         num_reasonable = num_strong_var < length(reasonable_int_vars) ? num_strong_var : length(reasonable_int_vars)
         reasonable_int_vars = reasonable_int_vars[1:num_reasonable]
         
-        @assert are_type_correct(node.solution,m.var_type) == false
         status, max_gain_var,  left_node, right_node, gains, strong_restarts, strong_int_vars = branch_strong_on(m,opts,step_obj,
             reasonable_int_vars, int2var_idx, opts.strong_restart, counter)
         gains_m, gains_mc, gains_p, gains_pc = gains
@@ -265,17 +302,17 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,g_minus,g_minus_c,g_plus,g
     return idx, strong_restarts
 end
 
-function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
+function branch_pseudo(m, node, int2var_idx, obj_gain, mu)
     # use the one with highest obj_gain which is currently continous
     idx = 0
-    scores, sort_idx = sorted_score_idx(m.solution,g_minus,g_minus_c,g_plus,g_plus_c,int2var_idx,mu)
+    sort_idx = sorted_score_idx(node.solution, obj_gain, int2var_idx, mu)
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
-        if !is_type_correct(node.solution[var_idx],m.var_type[var_idx])
+        if !is_type_correct(node.solution[var_idx], m.var_type[var_idx])
             u_b = node.u_var[var_idx]
             l_b = node.l_var[var_idx]
             # if the upper bound is the lower bound => no reason to branch
-            if isapprox(u_b,l_b,atol=atol)
+            if isapprox(u_b, l_b, atol=atol)
                 continue
             end
             idx = var_idx
@@ -285,7 +322,9 @@ function branch_pseudo(m,node,int2var_idx,g_minus,g_minus_c,g_plus,g_plus_c,mu)
     return idx
 end
 
-function sorted_score_idx(x,g_minus,g_minus_c,g_plus,g_plus_c,i2v,mu)
+function sorted_score_idx(x, gains, i2v, mu)
+    g_minus, g_minus_c = gains.minus, gains.minus_counter
+    g_plus, g_plus_c = gains.plus, gains.plus_counter
     scores = [score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i],mu) for i=1:length(g_minus)]
     sortedidx = sortperm(scores; rev=true)
     return scores,sortedidx
@@ -295,15 +334,15 @@ end
     Score function from 
     http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
 """
-function score(q_m,q_p,mu) 
+function score(q_m, q_p, mu) 
     minq = q_m < q_p ? q_m : q_p
     maxq = q_m < q_p ? q_p : q_m
     return (1-mu)*minq+mu*maxq
 end
 
-function diff_obj(node,leaf)
-    if leaf.relaxation_state == :Optimal
-        return abs(node.best_bound - leaf.best_bound)
+function diff_obj(node, cnode)
+    if cnode.relaxation_state == :Optimal
+        return abs(node.best_bound - cnode.best_bound)
     else
         return Inf
     end
