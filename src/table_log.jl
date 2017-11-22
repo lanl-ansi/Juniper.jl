@@ -20,9 +20,15 @@ function get_table_config(opts)
 end
 
 function print_table_header(fields, field_chars)
+    println("")
+    ln = get_table_header_line(fields, field_chars)
+    println(ln)
+    println(repeat("=", sum(field_chars)))
+end
+
+function get_table_header_line(fields, field_chars) 
     ln = ""
     i = 1
-    println("")
     for f in fields
         f = string(f)
         padding = field_chars[i]-length(f)
@@ -31,8 +37,7 @@ function print_table_header(fields, field_chars)
         ln *= repeat(" ",trunc(Int, ceil(padding/2)))
         i += 1
     end
-    println(ln)
-    println(repeat("=", sum(field_chars)))
+    return ln
 end
 
 function is_table_diff(fields, last_arr, new_arr)

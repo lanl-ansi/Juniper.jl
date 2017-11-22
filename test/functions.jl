@@ -38,6 +38,9 @@ end
     options = m.options
 
     fields, field_chars = MINLPBnB.get_table_config(options)
+    ln = MINLPBnB.get_table_header_line(fields, field_chars)
+    @test length(ln) == sum(field_chars)
+        
     start_time = time()
     tree = MINLPBnB.init(start_time,m)
     node = MINLPBnB.new_default_node(1,1,zeros(Int64,5),ones(Int64,5),zeros(Int64,5))
@@ -61,6 +64,28 @@ end
     end
     @test length(fields) == length(tab_arr)
     @test length(tab_ln) == sum(field_chars)
+
+    # test for diff
+    tab_arr_new = copy(tab_arr)
+    tab_arr_new[1] = 100
+    @test MINLPBnB.is_table_diff(field_chars, tab_arr, tab_arr_new) == true
+    @test MINLPBnB.is_table_diff(field_chars, tab_arr, tab_arr) == false
+    
+    # test if :Time not exists
+    i = 0
+    for f in fields
+        if f == :Time
+            deleteat!(fields,i)
+            deleteat!(field_chars,i)
+        end
+        i+= 1
+    end
+    tab_ln, tab_arr = MINLPBnB.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
+    tab_arr_new = copy(tab_arr)
+    tab_arr_new[1] = 100
+    @test MINLPBnB.is_table_diff(field_chars, tab_arr, tab_arr_new) == true
+    @test MINLPBnB.is_table_diff(field_chars, tab_arr, tab_arr) == false
+
 end
 
 end
