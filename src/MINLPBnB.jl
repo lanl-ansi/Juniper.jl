@@ -32,8 +32,8 @@ function Base.show(io::IO, opts::SolverOptions)
     end
 end
 
-include(Pkg.dir("MINLPBnB")*"/src/solver.jl")
-include(Pkg.dir("MINLPBnB")*"/src/model.jl")
-include(Pkg.dir("MINLPBnB")*"/src/BnBTree.jl")
+include("solver.jl")
+include("model.jl")
+include("BnBTree.jl")
 
 end
