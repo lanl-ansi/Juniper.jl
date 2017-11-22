@@ -99,6 +99,51 @@ end
     @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "bruteforce 2 vs 1" begin
+    println("==================================")
+    println("Bruteforce 2 vs 1")
+    println("==================================")
+    minlpbnb_all_solutions = DefaultTestSolver(
+        branch_strategy=:PseudoCost,
+        all_solutions = true,
+        list_of_solutions = true,
+        strong_restart = false,
+        processors = 1
+    )
+
+    minlpbnb_all_solutions_p2 = DefaultTestSolver(
+        branch_strategy=:PseudoCost,
+        all_solutions = true,
+        list_of_solutions = true,
+        strong_restart = false,
+        processors = 2
+    )
+
+    m = Model(solver=minlpbnb_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+    nbranches = MINLPBnB.getnbranches(internalmodel(m))
+
+    setsolver(m, minlpbnb_all_solutions_p2)
+
+    status = solve(m)
+    @test MINLPBnB.getnbranches(internalmodel(m)) == nbranches
+end
+
+
 @testset "bruteforce PseudoCost" begin
     println("==================================")
     println("Bruteforce PseudoCost")
