@@ -7,9 +7,9 @@ function isbreak_mip_gap(tree)
         if gap_perc <= tree.options.mip_gap
             default_opts = get_default_options()
             if tree.options.mip_gap > default_opts.mip_gap
-                tree.incumbent = IncumbentSolution(incu.objval, incu.solution, :UserLimit, tree.best_bound)
+                tree.incumbent = Incumbent(incu.objval, incu.solution, :UserLimit, tree.best_bound)
             else
-                tree.incumbent = IncumbentSolution(incu.objval, incu.solution, :Optimal, tree.best_bound)
+                tree.incumbent = Incumbent(incu.objval, incu.solution, :Optimal, tree.best_bound)
             end
             return true
         end
@@ -29,7 +29,7 @@ function isbreak_new_incumbent_limits(tree)
         sense = tree.m.obj_sense
         if (sense == :Min && inc_val <= bos) || (sense == :Max && inc_val >= bos) 
             incu = tree.incumbent
-            tree.incumbent = IncumbentSolution(incu.objval, incu.solution, :UserLimit, tree.best_bound)
+            tree.incumbent = Incumbent(incu.objval, incu.solution, :UserLimit, tree.best_bound)
             return true
         end
     end
@@ -40,12 +40,12 @@ end
 """
     isbreak_time_limit!(tree)
 
-Check if time limit is reached and  set or update the IncumbentSolution
+Check if time limit is reached and  set or update the Incumbent
 """
 function isbreak_time_limit!(tree)
     if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
         if !isdefined(tree,:incumbent)
-            tree.incumbent = IncumbentSolution(NaN, zeros(tree.m.num_var), :UserLimit, tree.best_bound)
+            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :UserLimit, tree.best_bound)
             return true
         else
             tree.incumbent.status = :UserLimit

@@ -16,7 +16,7 @@ type BnBNode
     best_bound          :: Float64
 end
 
-type IncumbentSolution
+type Incumbent
     objval      :: Float64
     solution    :: Vector{Float64}
     status      :: Symbol
@@ -32,7 +32,7 @@ end
 
 type BnBTreeObj
     m               :: MINLPBnB.MINLPBnBModel
-    incumbent       :: IncumbentSolution
+    incumbent       :: Incumbent
     obj_gain        :: GainObj
     int2var_idx     :: Vector{Int64}
     var2int_idx     :: Vector{Int64}
@@ -246,7 +246,7 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
         objval = node.best_bound
         solution = copy(node.solution)
         status = :Optimal
-        tree.incumbent = IncumbentSolution(objval, solution, status, tree.best_bound)
+        tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
         if !tree.options.all_solutions 
             bound!(tree)
         end
@@ -403,7 +403,7 @@ function upd_tree_obj!(tree, step_obj, time_obj)
     end
 
     if step_obj.state == :GlobalInfeasible
-        tree.incumbent = IncumbentSolution(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
+        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
         still_running = false 
     end
    
@@ -605,7 +605,7 @@ function solvemip(tree::BnBTreeObj)
         objval = getobjectivevalue(tree.m.model)
         sol = getvalue(tree.m.x)
         bbound = getobjectivebound(tree.m.model)
-        return IncumbentSolution(objval,sol,:Optimal,bbound)
+        return Incumbent(objval,sol,:Optimal,bbound)
     end
 
     last_table_arr = []
@@ -643,7 +643,7 @@ function solvemip(tree::BnBTreeObj)
 
     if !isdefined(tree,:incumbent)
         # infeasible
-        tree.incumbent = IncumbentSolution(NaN, zeros(tree.m.num_var), :Infeasible, tree.best_bound)
+        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, tree.best_bound)
     end
 
     # update best bound in incumbent
