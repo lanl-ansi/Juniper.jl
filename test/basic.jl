@@ -73,6 +73,39 @@ end
     @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "bruteforce Reliability" begin
+    println("==================================")
+    println("Bruteforce Reliability")
+    println("==================================")
+    minlpbnb_all_solutions = DefaultTestSolver(
+        branch_strategy=:Reliability,
+        all_solutions = true,
+        list_of_solutions = true,
+    )
+
+    m = Model(solver=minlpbnb_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+    println("Status: ", status)
+    list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
+
+    @test status == :Optimal
+    @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
+end
 
 
 @testset "infeasible cos" begin
