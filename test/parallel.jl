@@ -31,6 +31,34 @@ include("POD_experiment/blend029.jl")
     @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
+@testset "Knapsack 100% limit" begin
+    println("==================================")
+    println("KNAPSACK 100%")
+    println("==================================")
+
+    m = Model(solver=DefaultTestSolver(;processors=3,traverse_strategy=:DBFS,mip_gap=100))
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    status = solve(m)
+    objval = getobjectivevalue(m)
+    println("Obj: ", objval)
+    best_bound_val = getobjbound(m)
+    gap_val = getobjgap(m)
+    println("bb: ", getobjbound(m))
+
+    @test status == :UserLimit
+
+    @test best_bound_val >= objval
+    @test 0.01 <= gap_val <= 1
+end
+
 @testset "blend029" begin
     println("==================================")
     println("blend029")
