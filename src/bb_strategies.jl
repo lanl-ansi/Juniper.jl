@@ -54,7 +54,7 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
 end
 
 """
-    branch_strong!(m,opts,step_obj,reasonable_int_vars, int2var_idx, strong_restart, counter)
+    branch_strong_on!(m,opts,step_obj,reasonable_int_vars, int2var_idx, strong_restart, counter)
 
 Try to branch on a few different variables and choose the one with highest obj_gain.
 Update obj_gain for the variables tried and average the other ones.
@@ -166,11 +166,11 @@ function branch_strong_on!(m,opts,step_obj,
             end
             if !isinf(gain_l)
                 gains_m[int_var_idx] = gain_l
-                gains_mc[int_var_idx] = 1
+                gains_mc[int_var_idx] += 1
             end
             if !isinf(gain_r)
                 gains_p[int_var_idx] = gain_r
-                gains_pc[int_var_idx] = 1
+                gains_pc[int_var_idx] += 1
             end
         end
     end
