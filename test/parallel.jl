@@ -64,7 +64,8 @@ end
     println("KNAPSACK 100%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;processors=3,traverse_strategy=:DBFS,mip_gap=100))
+    m = Model(solver=DefaultTestSolver(;processors=3,traverse_strategy=:DBFS,mip_gap=100,
+    branch_strategy=:MostInfeasible, log_levels=[:Table]))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
