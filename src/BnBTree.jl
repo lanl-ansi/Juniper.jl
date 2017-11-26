@@ -322,7 +322,7 @@ function get_next_branch_node!(tree)
         tree.mutex_get_node = true
         if length(tree.branch_nodes) == 0
             tree.mutex_get_node = false
-            return false,nothing
+            return false, false, nothing
         end
         bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
 
@@ -331,19 +331,20 @@ function get_next_branch_node!(tree)
             _value, nidx = findmax([n.level for n in tree.branch_nodes])
         end
 
-        node = tree.branch_nodes[nidx]
-        deleteat!(tree.branch_nodes, nidx)
-
         tree.best_bound = tree.obj_fac*bvalue
         bbreak = isbreak_mip_gap(tree)
         if bbreak 
             tree.mutex_get_node = false
-            return false,nothing
+            return false, true, nothing
         end
+
+        node = tree.branch_nodes[nidx]
+        deleteat!(tree.branch_nodes, nidx)
+
         tree.mutex_get_node = false
-        return true,new_default_step_obj(tree.m,node)
+        return true, false, new_default_step_obj(tree.m,node)
     else
-        return false,nothing
+        return false, false, nothing
     end
 end
 
@@ -454,7 +455,8 @@ function solve_sequential(tree,
     counter = 0
     ps = tree.options.log_levels
     while true
-        exists, step_obj = get_next_branch_node!(tree)
+        # the _ is only needed for parallel
+        exists, _, step_obj = get_next_branch_node!(tree)
         !exists && break
         isbreak_after_step!(tree) && break
         counter += 1
@@ -532,12 +534,20 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
             if p != myid() || np == 1
                 @async begin
                     while true
-                        exists,step_obj = get_next_branch_node!(tree)
+                        exists, bbreak, step_obj = get_next_branch_node!(tree)
+                        if bbreak
+                            still_running = false
+                            break
+                        end
 
                         while !exists && still_running
                             sleep(0.1)
-                            exists,step_obj = get_next_branch_node!(tree)
+                            exists, bbreak, step_obj = get_next_branch_node!(tree)
                             exists && break
+                            if bbreak
+                                still_running = false
+                                break
+                            end
                         end
                         if !still_running
                             break
