@@ -97,8 +97,19 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
         elseif f == :Gap
             if isdefined(tree,:incumbent)
                 b = tree.best_bound
-                f = tree.incumbent.objval
-                val = string(round(abs(b-f)/abs(f)*100,2))*"%"
+                o = tree.incumbent.objval
+                val = round(abs(b-o)/abs(o)*100,2)
+                if length(string(val)) > field_chars[i]
+                    if val > 0 && val < tree.options.mip_gap
+                        val = "< "*tree.options.mip_gap*"%"
+                    elseif val > 1000
+                        val = ">>"
+                    else
+                        val = string(val)*"%"
+                    end
+                else
+                    val = string(val)*"%"
+                end
             else
                 val = "-"
             end
@@ -124,6 +135,12 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
                 val = ">>"
             end
         end
+        if length(val) > field_chars[i]
+            # too long to display shouldn't happen normally but is better than error
+            # if it happens
+            val = "t.l." 
+        end
+
         padding = field_chars[i]-length(val)
         ln *= repeat(" ",trunc(Int, floor(padding/2)))
         ln *= val
