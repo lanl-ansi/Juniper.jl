@@ -46,10 +46,10 @@ function upd_gains_step!(tree, step_obj)
             med_gain_m = median(tree.obj_gain.minus[strong_int_vars])
             med_gain_p = median(tree.obj_gain.plus[strong_int_vars])
             rest = filter(i->!(i in strong_int_vars),1:tree.m.num_int_bin_var)
-            tree.obj_gain.minus[rest] += med_gain_m
-            tree.obj_gain.plus[rest] += med_gain_p
-            tree.obj_gain.minus_counter[rest] += 1
-            tree.obj_gain.plus_counter[rest] += 1
+            tree.obj_gain.minus[rest] = med_gain_m
+            tree.obj_gain.plus[rest] = med_gain_p
+            tree.obj_gain.minus_counter[rest] = 1
+            tree.obj_gain.plus_counter[rest] = 1
         end
     elseif step_obj.upd_gains == :GuessAndUpdate || branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && step_obj.counter > opts.strong_branching_nsteps)
         upd_start = time()
@@ -69,6 +69,8 @@ function guess_gain(tree, step_obj)
     x = step_obj.node.solution
     g_minus, g_minus_c = tree.obj_gain.minus,tree.obj_gain.minus_counter
     g_plus, g_plus_c = tree.obj_gain.plus,tree.obj_gain.plus_counter
+    g_minus_c += map(i -> (i == 0) && (i = 1), g_minus_c)
+    g_plus_c += map(i -> (i == 0) && (i = 1), g_plus_c)
     mu = tree.options.gain_mu
     return score(f_minus(x[i])*g_minus[inti]/g_minus_c[inti],f_plus(x[i])*g_plus[inti]/g_plus_c[inti],mu)
 end

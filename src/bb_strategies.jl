@@ -72,26 +72,6 @@ function branch_strong_on!(m,opts,step_obj,
 
     strong_restarts = -1 
 
-    # generate an of variables to branch on
-    num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_int_bin_var))
-    # if smaller than 2 it doesn't make sense
-    num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
-
-    # get reasonable candidates (not type correct and not already perfectly bounded)
-    int_vars = m.num_int_bin_var
-    reasonable_int_vars = zeros(Int64,0)
-    for i=1:int_vars
-        idx = int2var_idx[i]
-        u_b = node.u_var[idx]
-        l_b = node.l_var[idx]
-        if isapprox(u_b, l_b, atol=atol) || is_type_correct(node.solution[idx], m.var_type[idx])
-            continue
-        end
-        push!(reasonable_int_vars,i)
-    end
-    shuffle!(reasonable_int_vars)
-    reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
-
     # compute the gain for each reasonable candidate and choose the highest
     max_gain, max_gain_var, strong_int_vars = init_variables()
     left_node = nothing
@@ -166,11 +146,11 @@ function branch_strong_on!(m,opts,step_obj,
             end
             if !isinf(gain_l)
                 gains_m[int_var_idx] = gain_l
-                gains_mc[int_var_idx] += 1
+                gains_mc[int_var_idx] = 1
             end
             if !isinf(gain_r)
                 gains_p[int_var_idx] = gain_r
-                gains_pc[int_var_idx] += 1
+                gains_pc[int_var_idx] = 1
             end
         end
     end
@@ -308,6 +288,8 @@ end
 function sorted_score_idx(x, gains, i2v, mu)
     g_minus, g_minus_c = gains.minus, gains.minus_counter
     g_plus, g_plus_c = gains.plus, gains.plus_counter
+    g_minus_c += map(i -> (i == 0) && (i = 1), g_minus_c)
+    g_plus_c += map(i -> (i == 0) && (i = 1), g_plus_c)
     scores = [score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i],mu) for i=1:length(g_minus)]
     sortedidx = sortperm(scores; rev=true)
     return scores,sortedidx
