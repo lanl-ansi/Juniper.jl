@@ -42,8 +42,21 @@ function get_default_options()
 end
 
 function combine_options(options)
+    branch_strategies = Dict{Symbol,Bool}()
+    branch_strategies[:StrongPseudoCost] = true
+    branch_strategies[:PseudoCost] = true
+    branch_strategies[:MostInfeasible] = true
+
+    traverse_strategies = Dict{Symbol,Bool}()
+    traverse_strategies[:BFS] = true
+    traverse_strategies[:DFS] = true
+    traverse_strategies[:DBFS] = true
+
     options_dict = Dict{Symbol,Any}()
     for kv in options
+        if !in(kv[1], fieldnames(SolverOptions))
+            warn("Option "*string(kv[1])*" is not available")
+        end
         options_dict[kv[1]] = kv[2]
     end
     if haskey(options_dict, :log_levels)
@@ -54,6 +67,20 @@ function combine_options(options)
     defaults = get_default_options()
     for fname in fieldnames(SolverOptions)
         if haskey(options_dict, fname)
+            # check branch strategy
+            if fname == :branch_strategy 
+                if !haskey(branch_strategies, options_dict[fname])
+                    error("Branching strategy "*string(options_dict[fname])* " is not supported")
+                end
+            end
+
+             # check traverse strategy
+             if fname == :traverse_strategy 
+                if !haskey(traverse_strategies, options_dict[fname])
+                    error("Traverse strategy "*string(options_dict[fname])* " is not supported")
+                end
+            end
+
             if fieldtype(SolverOptions, fname) != typeof(options_dict[fname])
                 options_dict[fname] = convert(fieldtype(SolverOptions,fname), options_dict[fname])
             end
