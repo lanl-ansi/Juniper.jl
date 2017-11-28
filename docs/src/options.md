@@ -120,6 +120,14 @@ Determines whether or not the feasibility pump should be used to get a feasible 
 This has to be set to a mip solver if the feasibility pump should be used.
 A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
 
+If you want to use [GLPK](https://www.gnu.org/software/glpk/)
+you would need to use
+
+```
+using GLPKMathProgInterface
+```
+and set the option with `mip_solver=GLPKSolverMIP()`
+
 ### feasibility_pump_time_limit::Int64 [10]s
 
 The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
