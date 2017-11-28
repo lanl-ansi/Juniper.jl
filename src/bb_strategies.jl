@@ -218,7 +218,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     idx = 0
     node = step_obj.node
     mu = opts.gain_mu
-    reliability_param = opts.reliability_branching_threshold+1 # counter for gains starts with 1
+    reliability_param = opts.reliability_branching_threshold
     reliability_perc = opts.reliability_branching_perc
     num_strong_var = Int(round((reliability_perc/100)*m.num_int_bin_var))
     # if smaller than 2 it doesn't make sense
@@ -226,7 +226,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
 
     gmc_r = gains.minus_counter .< reliability_param
     gpc_r = gains.plus_counter  .< reliability_param
-    
+
     strong_restarts = 0
     reasonable_int_vars = []
     for i=1:length(gmc_r)
@@ -241,12 +241,14 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
         end
     end
     if length(reasonable_int_vars) > 0
-        shuffle!(reasonable_int_vars)
+        unrealiable_idx = sortperm(gains.minus_counter[reasonable_int_vars])
+        reasonable_int_vars = reasonable_int_vars[unrealiable_idx]
         num_reasonable = num_strong_var < length(reasonable_int_vars) ? num_strong_var : length(reasonable_int_vars)
         reasonable_int_vars = reasonable_int_vars[1:num_reasonable]
         
         status, max_gain_var,  left_node, right_node, gains, strong_restarts, strong_int_vars = branch_strong_on!(m,opts,step_obj,
             reasonable_int_vars, int2var_idx, opts.strong_restart, counter)
+        
         gains_m, gains_mc, gains_p, gains_pc = gains
         step_obj.obj_gain.minus += gains_m
         step_obj.obj_gain.minus_counter += gains_mc
