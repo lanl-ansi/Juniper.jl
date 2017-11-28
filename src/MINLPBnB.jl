@@ -22,6 +22,7 @@ type SolverOptions
     processors                  :: Int64
     traverse_strategy           :: Symbol
     feasibility_pump            :: Bool
+    feasibility_pump_time_limit :: Int64
     mip_solver                  :: Union{Void,MathProgBase.AbstractMathProgSolver} # TODO: Maybe not union?
 end
 
