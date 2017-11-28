@@ -9,7 +9,7 @@ type Aff
 end
 include("util.jl")
 
-function generate_mip(m,nlp_sol)
+function generate_mip(m,nlp_sol;fix=false)
     println("=========================================")
     println("generate_mip")
     println("=========================================")
@@ -26,6 +26,15 @@ function generate_mip(m,nlp_sol)
             setcategory(mx[i], :Bin)
         end
     end
+    if fix
+        iv = rand(1:m.num_int_bin_var)
+        idx = m.int2var_idx[iv]
+        l = ceil(lb[idx])
+        u = floor(ub[idx])
+        val = rand(l:u)
+        JuMP.fix(mx[idx], val)
+    end
+
     """
         Example:
         Min x+y
@@ -42,7 +51,6 @@ function generate_mip(m,nlp_sol)
     g = zeros(m.num_constr)
     MathProgBase.eval_g(m.d,g,nlp_sol)
 
-
     # println("g: ",g)
 
     """
@@ -51,6 +59,8 @@ function generate_mip(m,nlp_sol)
         ([1,1,2,2],[1,2,1,2])
     """
     js = MathProgBase.jac_structure(m.d)
+
+    # println("js: ", js)
 
     """
         Gives the result of the derivate of g(x) at the solution
@@ -63,6 +73,8 @@ function generate_mip(m,nlp_sol)
     """
     jg = zeros(length(js[1]))
     MathProgBase.eval_jac_g(m.d, jg, nlp_sol)
+
+    # println("jg: ", jg)
 
     # Construct the data structure for our affine constraints
     aff = Vector{Aff}(m.num_constr)
@@ -89,10 +101,11 @@ function generate_mip(m,nlp_sol)
         idx += 1
     end
 
-    # for c in aff
-        # println(c)
-    # end
-
+    #=
+    for c in aff
+        println(c)
+    end
+    =#
     
     counter = 1
     for c in aff
@@ -107,8 +120,6 @@ function generate_mip(m,nlp_sol)
             @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) <= c.rhs)
         elseif c.sense == :(==)
             @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) == c.rhs)
-        else
-            error(c.sense*" is not supported")
         end
         counter += 1
     end
@@ -130,7 +141,7 @@ function generate_mip(m,nlp_sol)
     println("Obj: ", getobjectivevalue(mip_model))
     println("values: ", getvalue(mx))
     
-    return getvalue(mx)
+    return status, getvalue(mx)
 end
 
 function generate_nlp(m, mip_sol)
@@ -165,24 +176,83 @@ function generate_nlp(m, mip_sol)
     println("Status: ", status)
     println("Obj: ", getobjectivevalue(nlp_model))
     println("values: ", getvalue(nx))
-    return getvalue(nx), getobjectivevalue(nlp_model)
+    return status, getvalue(nx), getobjectivevalue(nlp_model)
 end
 
+
+function generate_real_nlp(m,sol)
+    println("=========================================")
+    println("generate_real_nlp")
+    println("=========================================")
+
+    rmodel = Model(solver=m.nl_solver)
+    lb = [m.l_var; -1e6]
+    ub = [m.u_var; 1e6]
+    # all continuous we solve relaxation first
+    @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
+    for ni=1:m.num_int_bin_var
+        i = m.int2var_idx[ni]
+        JuMP.fix(rx[i], sol[i])
+    end
+
+    # define the objective function
+    obj_expr = MathProgBase.obj_expr(m.d)
+    expr_dereferencing!(obj_expr, rmodel)
+    JuMP.setNLobjective(rmodel, m.obj_sense, obj_expr)
+
+    # add all constraints
+    for i=1:m.num_constr
+        constr_expr = MathProgBase.constr_expr(m.d,i)
+        expr_dereferencing!(constr_expr, rmodel)
+        JuMP.addNLconstraint(rmodel, constr_expr)
+    end
+
+    status = solve(rmodel)
+    return status, getvalue(rx), getobjectivevalue(rmodel)
+end
 
 function fpump(m)
     nlp_sol = m.solution
     nlp_obj = 1
     c = 0
+    nlp_sols = Dict{UInt64,Bool}()
+    fix = false
+    nlp_status = :Error
+    iscorrect = false
     while !isapprox(nlp_obj,0.0, atol=atol) 
-        mip_sol = generate_mip(m, nlp_sol) 
-        nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
+        mip_status, mip_sol = generate_mip(m, nlp_sol; fix=fix) 
+        while mip_status != :Optimal
+            mip_status, mip_sol = generate_mip(m, nlp_sol; fix=fix) 
+        end
+        nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
+        if isapprox(nlp_obj,0.0, atol=1e-4) && nlp_status == :Optimal && !isapprox(nlp_obj,0.0, atol=atol)
+            real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
+            if real_status == :Optimal
+                nlp_obj = real_obj
+                nlp_sol = real_sol
+                iscorrect = true
+                break
+            end
+        end
+        if haskey(nlp_sols, hash(nlp_sol))
+            fix = true
+            println("fix value")
+        else
+            fix = false
+        end
+        nlp_sols[hash(nlp_sol)] = true
+        println(nlp_sols)
         c += 1
         println("c: ", c)
     end
     
-    if isapprox(nlp_obj,0.0, atol=atol)
+    if iscorrect || (isapprox(nlp_obj,0.0, atol=atol) && nlp_status == :Optimal)
         println("here?")
         obj = MathProgBase.eval_f(m.d, nlp_sol)
+        println("obj: ", obj)
+        for ni=1:m.num_int_bin_var
+            i = m.int2var_idx[ni]
+        end
         return nlp_sol, obj
     end
     return nothing, nothing
