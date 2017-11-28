@@ -21,6 +21,23 @@
     @test length(nd_options[:log_levels]) == 0
 end
 
+function option_not_available_t()
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5))
+end
+function option_not_available_b()
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5))
+end
+function option_not_available()
+    m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5))
+end
+
+
+@testset ":Option not available" begin
+    @test_throws ErrorException option_not_available_t()
+    @test_throws ErrorException option_not_available_b()
+    @test !isa(try option_not_available() catch ex ex end, Exception) 
+end
+
 @testset "Table config" begin
     m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
                                         strong_restart=true))
