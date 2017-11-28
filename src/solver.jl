@@ -43,9 +43,9 @@ end
 
 function combine_options(options)
     branch_strategies = Dict{Symbol,Bool}()
-    branch_strategies[:StrongPseudoCost] = true
-    branch_strategies[:PseudoCost] = true
-    branch_strategies[:MostInfeasible] = true
+    for strat in [:StrongPseudoCost,:PseudoCost,:Reliability,:MostInfeasible]
+        branch_strategies[strat] = true
+    end
 
     traverse_strategies = Dict{Symbol,Bool}()
     traverse_strategies[:BFS] = true

@@ -64,7 +64,7 @@ end
     println("KNAPSACK 100%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;processors=3,traverse_strategy=:DBFS,mip_gap=100,
+    m = Model(solver=DefaultTestSolver(;processors=2,traverse_strategy=:DBFS,mip_gap=100,
               branch_strategy=:MostInfeasible))
 
     v = [10,20,12,23,42]
@@ -85,7 +85,7 @@ end
     @test status == :UserLimit
 
     @test best_bound_val >= objval
-    @test 0.01 <= gap_val <= 1
+    @test 0.01 <= gap_val <= 1 || MINLPBnB.getnsolutions(internalmodel(m)) == 1
 end
 
 @testset "blend029" begin
