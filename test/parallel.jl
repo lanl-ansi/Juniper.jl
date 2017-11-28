@@ -66,7 +66,7 @@ end
 
     m = Model(solver=DefaultTestSolver(;processors=2,traverse_strategy=:DBFS,mip_gap=100,
               branch_strategy=:MostInfeasible))
-
+    
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     @variable(m, x[1:5], Bin)
