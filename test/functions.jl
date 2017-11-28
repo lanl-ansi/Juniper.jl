@@ -30,11 +30,14 @@ end
 function option_not_available()
     m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5))
 end
-
+function option_no_mip_solver()
+    m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true))
+end
 
 @testset ":Option not available" begin
     @test_throws ErrorException option_not_available_t()
     @test_throws ErrorException option_not_available_b()
+    @test_throws ErrorException option_no_mip_solver()
     @test !isa(try option_not_available() catch ex ex end, Exception) 
 end
 
