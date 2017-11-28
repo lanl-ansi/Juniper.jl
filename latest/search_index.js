@@ -177,11 +177,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#mip_gap::Float64-[0.01]%-1",
+    "location": "options.html#mip_gap::Float64-[0.0001]-1",
     "page": "Options",
-    "title": "mip_gap::Float64 [0.01]%",
+    "title": "mip_gap::Float64 [0.0001]",
     "category": "section",
-    "text": "Stops the solver if the gap is smaller than mip_gap. This is a percentage value."
+    "text": "Stops the solver if the gap is smaller than mip_gap. The default is 0.01%."
 },
 
 {
