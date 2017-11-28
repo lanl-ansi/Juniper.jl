@@ -38,6 +38,7 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
         
         if m.options.incumbent_constr
             add_incumbent_constr(m,bnbTree.incumbent)
+            bnbTree.nsolutions += 1
             m.ncuts += 1
         end
     end

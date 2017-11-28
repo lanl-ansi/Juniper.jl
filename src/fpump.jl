@@ -108,17 +108,21 @@ function generate_mip(m,nlp_sol;fix=false)
     =#
     
     counter = 1
+    linear = false
     for c in aff
         if m.isconstrlinear[counter]
             # construct affine constraint 
             constr_expr = MathProgBase.constr_expr(m.d, counter)
             c = expr_linear_to_affine(constr_expr)
+            linear = true
+        else
+            linear = false
         end
         if c.sense == :(>=)
             @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) >= c.rhs)
         elseif c.sense == :(<=)
             @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) <= c.rhs)
-        elseif c.sense == :(==)
+        elseif c.sense == :(==) && linear
             @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) == c.rhs)
         end
         counter += 1
@@ -221,8 +225,13 @@ function fpump(m)
     iscorrect = false
     while !isapprox(nlp_obj,0.0, atol=atol) 
         mip_status, mip_sol = generate_mip(m, nlp_sol; fix=fix) 
-        while mip_status != :Optimal
+        mip_counter = 0
+        while mip_status != :Optimal && mip_counter <= 10
             mip_status, mip_sol = generate_mip(m, nlp_sol; fix=fix) 
+            mip_counter += 1
+        end
+        if mip_status != :Optimal
+            break
         end
         nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
         if isapprox(nlp_obj,0.0, atol=1e-4) && nlp_status == :Optimal && !isapprox(nlp_obj,0.0, atol=atol)
