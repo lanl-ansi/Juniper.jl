@@ -36,7 +36,8 @@ Possible values:
 * `:PseudoCost`
     * Use `:MostInfeasible` first and then [Pseudo Cost Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies).
 * `:StrongPseudoCost`
-    * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`.
+    * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`
+    * More options for strong branching are described [here](#Options-for-strong-branching-1)
 
 ### traverse_strategy::Symbol [:BFS]
 
@@ -105,6 +106,24 @@ Then you have to specify the number of processor as an option.
 
 The number of processors used for the branch and bound part. **Attention:** Even if you start julia using
 `julia -p P` you still have to define the number of processors using this option.
+
+## Feasibility Pump
+
+MINLPBnB has the option to find a feasible solution before the branch and bound part starts. The following options to use the feasibility pump are described below.
+
+### feasibility_pump::Bool [False]
+
+Determines whether or not the feasibility pump should be used to get a feasible solution. **Attention**: If set to `true` you need to also set the `mip_solver` option.
+
+### mip_solver::MathProgBase.AbstractMathProgSolver [nothing]
+
+This has to be set to a mip solver if the feasibility pump should be used.
+A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
+
+### feasibility_pump_time_limit::Int64 [10]s
+
+The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
+
 
 ## User Limits
 
