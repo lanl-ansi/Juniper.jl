@@ -21,6 +21,7 @@ println("Workers:", nworkers())
 using JuMP
 
 using Ipopt
+using GLPKMathProgInterface
 using PowerModels
 
 using MINLPBnB
@@ -72,6 +73,7 @@ include("functions.jl")
 include("basic.jl")
 include("user_limits.jl")
 include("parallel.jl")
+include("fpump.jl")
 include("pod.jl")
 include("power_models_acp.jl")
 include("power_models_socwr.jl")

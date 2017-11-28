@@ -65,14 +65,14 @@ function combine_options(options)
     end
     defaults = get_default_options()
     for fname in fieldnames(SolverOptions)
-        # check that mip_solver is defined
-        if fname == :feasibility_pump
-            if options_dict[:mip_solver] == nothing
-                error("If you want to use the feasibility pump you need to provide a mip_solver")
-            end
-        end
-
         if haskey(options_dict, fname)
+            # check that mip_solver is defined if feasibile pump should be used
+            if fname == :feasibility_pump && options_dict[:feasibility_pump] == true
+                if !haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing
+                    error("If you want to use the feasibility pump you need to provide a mip_solver")
+                end
+            end
+
             # check branch strategy
             if fname == :branch_strategy 
                 if !haskey(branch_strategies, options_dict[fname])
