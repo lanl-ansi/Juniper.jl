@@ -216,6 +216,7 @@ function generate_real_nlp(m,sol)
 end
 
 function fpump(m)
+    srand(1)
     nlp_sol = m.solution
     nlp_obj = 1
     c = 0

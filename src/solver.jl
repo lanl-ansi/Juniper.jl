@@ -32,10 +32,11 @@ function get_default_options()
     # Traversing
     traverse_strategy           = :BFS
     # Feasibility Pump
+    feasibility_pump            = false
     mip_solver                  = nothing
     return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
-        list_of_solutions,processors,traverse_strategy,mip_solver)
+        list_of_solutions,processors,traverse_strategy,feasibility_pump,mip_solver)
 end
 
 function combine_options(options)
@@ -50,6 +51,13 @@ function combine_options(options)
     end
     defaults = get_default_options()
     for fname in fieldnames(SolverOptions)
+        # check that mip_solver is defined
+        if fname == :feasibility_pump
+            if options_dict[:mip_solver] == nothing
+                error("If you want to use the feasibility pump you need to provide a mip_solver")
+            end
+        end
+
         if haskey(options_dict, fname)
             if fieldtype(SolverOptions, fname) != typeof(options_dict[fname])
                 options_dict[fname] = convert(fieldtype(SolverOptions,fname), options_dict[fname])

@@ -247,8 +247,11 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
+    inc_sol, inc_obj = nothing, nothing
     if m.num_int_bin_var > 0
-        inc_sol, inc_obj = fpump(m)
+        if m.options.feasibility_pump 
+            inc_sol, inc_obj = fpump(m)
+        end
         bnbtree = init(start, m; inc_sol = inc_sol, inc_obj = inc_obj)
         best_known = solvemip(bnbtree)
 
