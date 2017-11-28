@@ -7,7 +7,7 @@ include("POD_experiment/blend029.jl")
     println("KNAPSACK 10%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=10))
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=0.1))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
