@@ -1,3 +1,5 @@
+include("fpump.jl")
+
 type SolutionObj
     solution    :: Vector{Float64}
     objval      :: Float64
@@ -22,8 +24,10 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     l_constr        :: Vector{Float64}
     u_constr        :: Vector{Float64}
 
+    int2var_idx     :: Vector{Int64}
+    var2int_idx     :: Vector{Int64}
+
     var_type        :: Vector{Symbol}
-    constr_type     :: Vector{Symbol}
     isconstrlinear  :: Vector{Bool}
     obj_sense       :: Symbol
     d               :: MathProgBase.AbstractNLPEvaluator
@@ -36,6 +40,8 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
     solutions       :: Vector{SolutionObj}
     nsolutions      :: Int64
 
+    mip_solver      :: MathProgBase.AbstractMathProgSolver
+
     # Info
     nintvars        :: Int64
     nbinvars        :: Int64
@@ -46,7 +52,6 @@ type MINLPBnBModel <: MathProgBase.AbstractNonlinearModel
 
     MINLPBnBModel() = new()
 end
-
 
 """
     MathProgBase.NonlinearModel(s::MINLPBnBSolverObj)
@@ -80,6 +85,9 @@ function MINLPBnBNonlinearModel(s::MINLPBnBSolverObj)
     m.ncuts = 0
     m.nbranches = 0
     m.nlevels = 1
+    if m.options.mip_solver != nothing
+        m.mip_solver = m.options.mip_solver
+    end
 
     return m
 end
@@ -108,7 +116,7 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    MathProgBase.initialize(m.d, [:ExprGraph])
+    MathProgBase.initialize(m.d, [:ExprGraph,:Jac,:Grad])
 end
 
 #=
@@ -239,8 +247,10 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
+    inc_sol, inc_obj = fpump(m)
+
     if m.num_int_bin_var > 0
-        bnbtree = init(start,m)
+        bnbtree = init(start, m; inc_sol = inc_sol, inc_obj = inc_obj)
         best_known = solvemip(bnbtree)
 
         replace_solution!(m, best_known)
@@ -276,6 +286,16 @@ function MathProgBase.setvartype!(m::MINLPBnBModel, v::Vector{Symbol})
         if s==:Bin
             m.l_var[i] = 0
             m.u_var[i] = 1
+        end
+    end
+    m.int2var_idx = zeros(m.num_int_bin_var)
+    m.var2int_idx = zeros(m.num_var)
+    int_i = 1
+    for i=1:m.num_var
+        if m.var_type[i] != :Cont
+            m.int2var_idx[int_i] = i
+            m.var2int_idx[i] = int_i
+            int_i += 1
         end
     end
 end

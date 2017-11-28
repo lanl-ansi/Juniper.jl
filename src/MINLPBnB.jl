@@ -21,6 +21,7 @@ type SolverOptions
     list_of_solutions           :: Bool
     processors                  :: Int64
     traverse_strategy           :: Symbol
+    mip_solver                  :: Union{Void,MathProgBase.AbstractMathProgSolver} # TODO: Maybe not union?
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

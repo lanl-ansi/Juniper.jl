@@ -31,9 +31,11 @@ function get_default_options()
     processors                  = 1
     # Traversing
     traverse_strategy           = :BFS
+    # Feasibility Pump
+    mip_solver                  = nothing
     return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
-        list_of_solutions,processors,traverse_strategy)
+        list_of_solutions,processors,traverse_strategy,mip_solver)
 end
 
 function combine_options(options)
