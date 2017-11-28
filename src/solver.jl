@@ -25,7 +25,7 @@ function get_default_options()
     obj_epsilon                     = 0
     # :UserLimit    
     time_limit                      = Inf  
-    mip_gap                         = 1e-2 # in % used in bb_user_limits (#TODO)
+    mip_gap                         = 1e-4
     best_obj_stop                   = NaN
     solution_limit                  = 0
     all_solutions                   = false
@@ -34,10 +34,8 @@ function get_default_options()
     processors                      = 1
     # Traversing    
     traverse_strategy               = :BFS
-    return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,
-        strong_branching_nsteps,strong_restart,reliability_branching_threshold,
-        reliability_branching_perc,incumbent_constr,obj_epsilon,
-        time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
+    return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
+        incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy)
 end
 
