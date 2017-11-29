@@ -74,6 +74,11 @@ function generate_mip(m,nlp_sol)
     end
     @objective(mip_model, Min, sum(mx_p[i]+mx_m[i] for i=1:m.num_int_bin_var))
 
+    try 
+        MathProgBase.setparameters!(m.mip_solver, TimeLimit=m.options.feasibility_pump_time_limit)
+    catch
+        println("Set parameters is not supported")
+    end
     status = solve(mip_model)
     println("status: ", status)
     println("Obj: ", getobjectivevalue(mip_model))
