@@ -22,18 +22,18 @@ addons:
 
 before_install:
     # don't keep an old version of the code in the cache
-  - julia -e 'if "MINLPBnB" in keys(Pkg.installed()) Pkg.rm("MINLPBnB"); Pkg.rm("MINLPBnB") end'
+  - julia -e 'if "Juniper" in keys(Pkg.installed()) Pkg.rm("Juniper"); Pkg.rm("Juniper") end'
   - julia -e 'Pkg.update()' #make sure we get the latest version of METADATA
   - julia -e 'if !("Coverage" in keys(Pkg.installed())) Pkg.add("Coverage") end'
   - julia -e 'if !("Documenter" in keys(Pkg.installed())) Pkg.add("Documenter") end'
 
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("MINLPBnB"); Pkg.test("MINLPBnB"; coverage=true)'
+  - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("Juniper"); Pkg.test("Juniper"; coverage=true)'
 
 after_success:
   - echo $TRAVIS_JULIA_VERSION
 
-  - julia -e 'using Coverage; cd(Pkg.dir("MINLPBnB")); Codecov.submit(process_folder("."));'
+  - julia -e 'using Coverage; cd(Pkg.dir("Juniper")); Codecov.submit(process_folder("."));'
 
-  - julia -e 'cd(Pkg.dir("MINLPBnB")); include(joinpath("docs", "make.jl"));'
+  - julia -e 'cd(Pkg.dir("Juniper")); include(joinpath("docs", "make.jl"));'
