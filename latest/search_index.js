@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "branch_strategy::Symbol [:StrongPseudoCost]",
     "category": "section",
-    "text": "Possible values::MostInfeasible\nBranch on variables closest to 0.5\n:PseudoCost\nUse :MostInfeasible first and then Pseudo Cost Branching.\n:StrongPseudoCost\nUse Strong Branching first and then :PseudoCost."
+    "text": "Possible values::MostInfeasible\nBranch on variables closest to 0.5\n:PseudoCost\nUse :MostInfeasible first and then Pseudo Cost Branching.\n:StrongPseudoCost\nUse Strong Branching first and then :PseudoCost.\n:Reliability\nUse Reliability Branching in a slightly different version."
 },
 
 {
@@ -109,7 +109,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "strong_branching_perc::Float64 [25]",
     "category": "section",
-    "text": "Defines the percentage of variables to consider for strong branching.  If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
+    "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren't considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
 },
 
 {
@@ -125,7 +125,39 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "strong_restart::Bool [true]",
     "category": "section",
-    "text": "If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)"
+    "text": "If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once) This option is also used in reliablity branching."
+},
+
+{
+    "location": "options.html#Options-for-reliablity-branching-1",
+    "page": "Options",
+    "title": "Options for reliablity branching",
+    "category": "section",
+    "text": "The implemented version of reliablity branching uses the gain score as in pseudo cost branching  and if some branching variables aren't reliable in a sense that strong branching wasn't performed  at least reliablility_branching_threshold times then strong branching is performed on those. Afterwards it will be branched on the variable with the highest gain score."
+},
+
+{
+    "location": "options.html#reliablility_branching_perc::Float64-[25]-1",
+    "page": "Options",
+    "title": "reliablility_branching_perc::Float64 [25]",
+    "category": "section",
+    "text": "Defines the percentage of variables to consider for the strong branching part of reliablity branching. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
+},
+
+{
+    "location": "options.html#reliablility_branching_threshold::Int64-[5]-1",
+    "page": "Options",
+    "title": "reliablility_branching_threshold::Int64 [5]",
+    "category": "section",
+    "text": "Defines whether strong branching is used to improve the reliability of the gain score. If a variable was used less than reliablility_branching_threshold times for strong branching then strong branching is performed on some of those candidates. The amount of candidates used is calculated by reliablility_branching_perc."
+},
+
+{
+    "location": "options.html#strong_restart::Bool-[true]-2",
+    "page": "Options",
+    "title": "strong_restart::Bool [true]",
+    "category": "section",
+    "text": "This option is explained in strong branching but is also used for reliability branching."
 },
 
 {
