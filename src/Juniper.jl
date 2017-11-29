@@ -1,4 +1,4 @@
-module MINLPBnB
+module Juniper
 
 using MathProgBase
 using JuMP

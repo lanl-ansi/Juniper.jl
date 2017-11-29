@@ -1,12 +1,12 @@
-export MINLPBnBSolver
+export JuniperSolver
 
 """
 A solver for MINLP problems using a NLP solver and Branch and Bound
 """
 
-type MINLPBnBSolverObj <: MathProgBase.AbstractMathProgSolver
+type JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
     nl_solver   :: MathProgBase.AbstractMathProgSolver
-    options     :: MINLPBnB.SolverOptions
+    options     :: Juniper.SolverOptions
 end
 
 function get_default_options()
@@ -88,7 +88,7 @@ function combine_options(options)
     return defaults
 end
 
-function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;options...)
+function JuniperSolver(nl_solver::MathProgBase.AbstractMathProgSolver;options...)
     options_obj = combine_options(options)
-    return MINLPBnBSolverObj(nl_solver,options_obj)
+    return JuniperSolverObj(nl_solver,options_obj)
 end

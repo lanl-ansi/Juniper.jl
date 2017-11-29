@@ -1,22 +1,23 @@
-# MINLPBnB
+# Juniper
 
-MINLPBnB is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia.
-MINLPBnB solves these kind of problems using a NLP solver and then branch and bound.
+Juniper (Jump Non linear Integer Program solver) is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia.
+Juniper solves these kind of problems using a NLP solver and then branch and bound. If the NLP solver isn't global optimal then Juniper is a heuristic. 
+You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.jl)
 
 # Why?
-You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part? => Use MINLPBnB
+You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part? => Use Juniper
 
-You have a really good solver for the relaxation and just want to solve problems with discrete variables as well? Just combine your solver with MINLPBnB.
+You have a really good solver for the relaxation and just want to solve problems with discrete variables as well? Just combine your solver with Juniper.
 
 # Basic usage
 
 It is currently not registered therefore you have to clone the package to be able to use it.
 
-`Pkg.clone("http://github.com/Wikunia/MINLPBnB")`
+`Pkg.clone("http://github.com/Wikunia/Juniper")`
 
 Then adding it to your project by
 
-`using MINLPBnB`
+`using Juniper`
 
 You also have to import your NLP solver i.e.
 
@@ -24,10 +25,10 @@ You also have to import your NLP solver i.e.
 
 as well as [JuMP](http://www.juliaopt.org/JuMP.jl)
 
-Define `MINLPBnBSolver` as your solver:
+Define `JuniperSolver` as your solver:
 
 ```
-solver = MINLPBnBSolver(IpoptSolver(print_level=0))
+solver = JuniperSolver(IpoptSolver(print_level=0))
 ```
 
 And give it a go:

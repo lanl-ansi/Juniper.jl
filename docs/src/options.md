@@ -1,7 +1,7 @@
 ## General
 
 ```
-MINLPBnBSolver(IpoptSolver(print_level=0))
+JuniperSolver(IpoptSolver(print_level=0))
 ```
 
 This is the most basic configuration of the solver.
@@ -13,7 +13,7 @@ A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0
 You can add options doing the following:
 
 ```
-minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
+juniper = JuniperSolver(IpoptSolver(print_level=0);
     branch_strategy=:StrongPseudoCost
 )
 ```
@@ -123,7 +123,7 @@ The parameter is used and a bit described in this [paper](http://citeseerx.ist.p
 
 ## Parallel
 
-MINLPBnB can be run in parallel to speed up the algorithm.
+Juniper can be run in parallel to speed up the algorithm.
 You have to start julia with `julia -p P` where `P` is the number of processors available or at least the number of processors you want to use.
 
 Then you have to specify the number of processor as an option.
