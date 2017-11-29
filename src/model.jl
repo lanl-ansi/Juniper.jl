@@ -166,6 +166,8 @@ function print_info(m::MINLPBnBModel)
     println("#Variables: ", m.num_var)
     println("#IntBinVar: ", m.num_int_bin_var)
     println("#Constraints: ", m.num_constr)
+    println("#Linear Constraints: ", m.num_l_constr)
+    println("#NonLinear Constraints: ", m.num_nl_constr)
     println("Obj Sense: ", m.obj_sense)
 end
 
@@ -206,7 +208,6 @@ Optimize by creating a model based on the variables saved in MINLPBnBModel.
 """
 function MathProgBase.optimize!(m::MINLPBnBModel)
     ps = m.options.log_levels
-    (:All in ps || :Info in ps) && print_info(m)
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
@@ -222,6 +223,7 @@ function MathProgBase.optimize!(m::MINLPBnBModel)
     JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
 
     divide_nl_l_constr(m)
+    (:All in ps || :Info in ps) && print_info(m)
 
     # add all constraints
     for i=1:m.num_constr
