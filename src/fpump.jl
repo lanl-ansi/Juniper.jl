@@ -1,4 +1,3 @@
-
 type Aff
     sense     :: Symbol
     var_idx   :: Vector{Int64}
@@ -75,8 +74,6 @@ function generate_mip(m,nlp_sol)
     end
     @objective(mip_model, Min, sum(mx_p[i]+mx_m[i] for i=1:m.num_int_bin_var))
 
-    # print(mip_model)
-    setsolver(mip_model, m.mip_solver)
     status = solve(mip_model)
     println("status: ", status)
     println("Obj: ", getobjectivevalue(mip_model))
@@ -148,6 +145,7 @@ end
 
 function fpump(m)
     srand(1)
+
     start_fpump = time()
     nlp_sol = m.solution
     nlp_obj = 1
@@ -157,9 +155,18 @@ function fpump(m)
     nlp_status = :Error
     iscorrect = false
     tl = m.options.feasibility_pump_time_limit
-    
     while !isapprox(nlp_obj,0.0, atol=atol) && time()-start_fpump < tl 
-        mip_status, mip_sol = generate_mip(m, nlp_sol) 
+        if m.num_l_constr > 0
+            mip_status, mip_sol = generate_mip(m, nlp_sol) 
+        else
+            # if no linear constraints just round the discrete variables
+            mip_sol = copy(nlp_sol)
+            mip_status = :Optimal
+            for vi=1:m.num_int_bin_var
+                vidx = m.int2var_idx[vi]
+                mip_sol[vidx] = round(mip_sol[vidx])
+            end
+        end
         if mip_status != :Optimal
             break
         end
