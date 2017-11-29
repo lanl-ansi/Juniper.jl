@@ -133,19 +133,26 @@ If `0` the option gets ignored.
 
 ## Logging
 
-### log_levels::Vector{Symbol} [[:Table,:Info]]
+### log_levels::Vector{Symbol} [[:Table,:Info,:Options]]
 
 You can change the option `log_levels` to define what kind of logs you want to see.
 
-The default is `[:Table,:Info]` which outputs something like this:
+The output for `[:Table,:Info]` looks something like this:
 
 ![default-logging](https://user-images.githubusercontent.com/4931746/32625934-07b7db3c-c58e-11e7-922d-18a0a8776437.png)
+
+:Options
+
+includes something like this before the info is printed:
+
+```
+time_limit               : 10.0
+strong_branching_nsteps  : 5
+```
 
 Possible symbols which can be added to the vector are:
 
 - :Timing
     - Provides some more timing informations
-- :Options
-    - prints all options that differ from default
 - :AllOptions
     - prints all options 

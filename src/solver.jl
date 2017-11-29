@@ -10,7 +10,7 @@ type MINLPBnBSolverObj <: MathProgBase.AbstractMathProgSolver
 end
 
 function get_default_options()
-    log_levels                  = [:Table,:Info]
+    log_levels                  = [:Options,:Table,:Info]
     branch_strategy             = :StrongPseudoCost
     gain_mu                     = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
     # Strong branching
