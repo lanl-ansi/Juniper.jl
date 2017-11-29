@@ -46,6 +46,13 @@ minlpbnb_strong_restart_2 = DefaultTestSolver(
             strong_branching_nsteps = 2,
             strong_restart = true
             )
+        
+minlpbnb_reliable_restart = DefaultTestSolver(
+            branch_strategy=:Reliability,
+            reliability_branching_perc = 25,
+            reliability_branching_threshold = 2,
+            strong_restart = true
+            )
 
 minlpbnb_strong_restart = DefaultTestSolver(
                 branch_strategy=:StrongPseudoCost,

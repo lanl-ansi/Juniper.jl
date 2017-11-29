@@ -2,12 +2,12 @@ include("POD_experiment/blend029.jl")
 
 @testset "User limit testing" begin
 
-@testset "Knapsack 10% limit" begin
+@testset "Knapsack 50% limit" begin
     println("==================================")
-    println("KNAPSACK 10%")
+    println("KNAPSACK 50%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=0.1))
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=0.5))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -26,7 +26,7 @@ include("POD_experiment/blend029.jl")
     @test status == :UserLimit
 
     @test best_bound_val >= objval
-    @test 0.01 <= gap_val <= 0.1
+    @test 0.1 <= gap_val <= 0.5
 end
 
 @testset "blend029 10s limit" begin

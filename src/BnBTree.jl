@@ -66,6 +66,7 @@ type StepObj
     l_nd                :: BnBNode
     r_nd                :: BnBNode
     counter             :: Int64
+    upd_gains           :: Symbol
 
     StepObj() = new()
 end
@@ -124,6 +125,8 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
         else
             idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu)
         end
+    elseif branch_strat == :Reliability 
+        idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     end
     step_obj.state = status
     step_obj.var_idx = idx
@@ -369,9 +372,13 @@ function one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, cou
 
 # get branch variable    
     upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter)
-    if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
-        # branch
-        branch!(m, opts, step_obj, counter, int2var_idx)
+    if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, int2var_idx)
+        push!(step_obj.integral, node)
+    else         
+        if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
+            @assert step_obj.var_idx != 0
+            branch!(m, opts, step_obj, counter, int2var_idx)
+        end
     end
     return step_obj
 end
