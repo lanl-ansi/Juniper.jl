@@ -3,8 +3,8 @@ function init(start_time, m)
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)
-    obj_gain_mc = ones(Int64, m.num_int_bin_var)
-    obj_gain_pc = ones(Int64, m.num_int_bin_var)
+    obj_gain_mc = zeros(Int64, m.num_int_bin_var)
+    obj_gain_pc = zeros(Int64, m.num_int_bin_var)
     obj_gain = GainObj(obj_gain_m, obj_gain_p, obj_gain_mc, obj_gain_pc)
     int2var_idx = zeros(m.num_int_bin_var)
     var2int_idx = zeros(m.num_var)
@@ -50,9 +50,9 @@ end
 
 function new_default_step_obj(m,node)
     gains_m = zeros(m.num_int_bin_var)
-    gains_mc = ones(Int64, m.num_int_bin_var)
+    gains_mc = zeros(Int64, m.num_int_bin_var)
     gains_p = zeros(m.num_int_bin_var)
-    gains_pc = ones(Int64, m.num_int_bin_var)
+    gains_pc = zeros(Int64, m.num_int_bin_var)
     gains = GainObj(gains_m, gains_p, gains_mc, gains_pc)
     idx_time = 0.0
     node_idx_time = 0.0
@@ -75,5 +75,6 @@ function new_default_step_obj(m,node)
     step_obj.integral         = []   
     step_obj.branch           = []   
     step_obj.counter          = 0   
+    step_obj.upd_gains        = :None
     return step_obj
 end

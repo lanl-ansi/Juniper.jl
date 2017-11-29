@@ -73,6 +73,39 @@ end
     @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "bruteforce Reliability" begin
+    println("==================================")
+    println("Bruteforce Reliability")
+    println("==================================")
+    minlpbnb_all_solutions = DefaultTestSolver(
+        branch_strategy=:Reliability,
+        all_solutions = true,
+        list_of_solutions = true,
+    )
+
+    m = Model(solver=minlpbnb_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+    println("Status: ", status)
+    list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
+
+    @test status == :Optimal
+    @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
+end
 
 
 @testset "infeasible cos" begin
@@ -150,6 +183,33 @@ end
     println("Status: ", status)
 
     @test status == :Infeasible
+end
+
+@testset "One Integer small Reliable" begin
+    println("==================================")
+    println("One Integer small Reliable")
+    println("==================================")
+    m = Model(solver=minlpbnb_reliable_restart)
+
+    @variable(m, x >= 0, Int)
+    @variable(m, y >= 0)
+    @variable(m, 0 <= u <= 10, Int)
+    @variable(m, w == 1)
+
+    @objective(m, Min, -3x - y)
+
+    @constraint(m, 3x + 10 <= 20)
+    @NLconstraint(m, y^2 <= u*w)
+
+    status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+    println("x: ", getvalue(x))
+    println("y: ", getvalue(x))
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
+    @test isapprox(getvalue(x), 3, atol=sol_atol)
+    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
 end
 
 @testset "One Integer small Strong" begin
@@ -333,6 +393,31 @@ end
     @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
     @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
 end
+
+@testset "Knapsack Max Reliable" begin
+    println("==================================")
+    println("KNAPSACK Reliable no restart")
+    println("==================================")
+
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:Reliability,strong_restart=false))
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
+    @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
+    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+end
+
 
 @testset "Integer at root" begin
     println("==================================")

@@ -1,8 +1,9 @@
 function get_table_config(opts)
     fields = [:ONodes,:CLevel,:Incumbent,:BestBound,:Gap,:Time]
     field_chars = [9,8,28,28,7,8]
+    opbs = opts.branch_strategy
 
-    if opts.branch_strategy == :StrongPseudoCost && opts.strong_restart
+    if (opbs == :StrongPseudoCost || opbs == :Reliability) && opts.strong_restart
         push!(fields,:Restarts)
         push!(field_chars,10)
     end
@@ -12,7 +13,7 @@ function get_table_config(opts)
         unshift!(field_chars, 3)
     end
 
-    if opts.branch_strategy == :StrongPseudoCost || opts.branch_strategy == :PseudoCost
+    if opbs == :StrongPseudoCost || opbs == :PseudoCost || opbs == :Reliability
         push!(fields, :GainGap)
         push!(field_chars, 10)
     end
@@ -65,11 +66,12 @@ end
 
 function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars; last_arr=[])
     gain_gap = step_obj.gain_gap
+    opbs = tree.options.branch_strategy
     counter = step_obj.counter
-    if tree.options.branch_strategy != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps
+    if (opbs != :StrongPseudoCost || counter > tree.options.strong_branching_nsteps) && step_obj.upd_gains != :GainsToTree
         step_obj.nrestarts = -1 # will be displayed as -
     end
-    if counter <= tree.options.strong_branching_nsteps
+    if counter <= tree.options.strong_branching_nsteps || step_obj.upd_gains == :GainsToTree
         gain_gap = -1.0 # will be displayed as -
     end
 
@@ -95,9 +97,19 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
         elseif f == :Gap
             if isdefined(tree,:incumbent)
                 b = tree.best_bound
-                incu = tree.incumbent
-                f = incu.objval
-                val = string(round(abs(b-f)/abs(f)*100,1))*"%"
+                o = tree.incumbent.objval
+                val = round(abs(b-o)/abs(o)*100,2)
+                if length(string(val)) > field_chars[i]
+                    if val > 0 && val < tree.options.mip_gap
+                        val = "< "*tree.options.mip_gap*"%"
+                    elseif val > 1000
+                        val = ">>"
+                    else
+                        val = string(val)*"%"
+                    end
+                else
+                    val = string(val)*"%"
+                end
             else
                 val = "-"
             end
@@ -123,6 +135,12 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
                 val = ">>"
             end
         end
+        if length(val) > field_chars[i]
+            # too long to display shouldn't happen normally but is better than error
+            # if it happens
+            val = "t.l." 
+        end
+
         padding = field_chars[i]-length(val)
         ln *= repeat(" ",trunc(Int, floor(padding/2)))
         ln *= val

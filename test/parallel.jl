@@ -3,6 +3,34 @@ include("POD_experiment/blend029.jl")
 
 @testset "parallel tests" begin
 
+@testset "Batch.mod reliable parallel" begin
+    println("==================================")
+    println("BATCH.MOD reliable")
+    println("==================================")
+
+    m = batch_problem()
+
+    minlpbnb = DefaultTestSolver(
+        branch_strategy=:Reliability,
+        strong_restart = false,
+        processors = 4
+    ) 
+
+    setsolver(m, minlpbnb)
+    status = solve(m)
+    @test status == :Optimal
+
+    minlpbnb_val = getobjectivevalue(m)
+    minlpbnb_bb = getobjbound(m)
+
+    println("Solution by MINLPBnb")
+    println("obj: ", minlpbnb_val)
+    println("bound: ", minlpbnb_bb)
+
+
+    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
 @testset "Batch.mod no restart parallel" begin
     println("==================================")
     println("BATCH.MOD NO RESTART")
@@ -36,8 +64,9 @@ end
     println("KNAPSACK 100%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;processors=2,traverse_strategy=:DBFS,mip_gap=1))
-
+    m = Model(solver=DefaultTestSolver(;processors=2,traverse_strategy=:DBFS,mip_gap=100,
+              branch_strategy=:MostInfeasible))
+    
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     @variable(m, x[1:5], Bin)
