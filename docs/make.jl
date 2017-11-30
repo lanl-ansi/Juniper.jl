@@ -17,6 +17,6 @@ deploydocs(
     deps = nothing,
     make = nothing,
     target = "build",
-    repo = "github.com/Wikunia/Juniper.git",
+    repo = "github.com/lanl-ansi/Juniper.git",
     julia = "0.6"
 )
