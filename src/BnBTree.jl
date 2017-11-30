@@ -31,12 +31,12 @@ type GainObj
 end
 
 type BnBTreeObj
-    m               :: MINLPBnB.MINLPBnBModel
+    m               :: Juniper.JuniperModel
     incumbent       :: Incumbent
     obj_gain        :: GainObj
     int2var_idx     :: Vector{Int64}
     var2int_idx     :: Vector{Int64}
-    options         :: MINLPBnB.SolverOptions
+    options         :: Juniper.SolverOptions
     obj_fac         :: Int64 # factor for objective 1 if max -1 if min
     start_time      :: Float64 
     nsolutions      :: Int64
@@ -284,7 +284,7 @@ function add_incumbent_constr(m, incumbent)
     else
         obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
     end
-    MINLPBnB.expr_dereferencing!(obj_constr, m.model)            
+    Juniper.expr_dereferencing!(obj_constr, m.model)            
     # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
     JuMP.addNLconstraint(m.model, obj_constr)
 end
@@ -304,7 +304,7 @@ function add_obj_epsilon_constr(tree)
         else
             obj_constr = Expr(:call, :>=, obj_expr, (1-ϵ)*tree.m.objval)
         end
-        MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
+        Juniper.expr_dereferencing!(obj_constr, tree.m.model)            
         JuMP.addNLconstraint(tree.m.model, obj_constr)
         tree.m.ncuts += 1
     end
@@ -483,7 +483,7 @@ end
 
 function sendto(p::Int; args...)
     for (nm, val) in args
-        @spawnat(p, eval(MINLPBnB, Expr(:(=), nm, val)))
+        @spawnat(p, eval(Juniper, Expr(:(=), nm, val)))
     end
 end
 
@@ -643,7 +643,7 @@ function solvemip(tree::BnBTreeObj)
 
     # use pmap if more then one processor
     if tree.options.processors > 1
-        counter = pmap(MINLPBnB.one_branch_step!,tree,
+        counter = pmap(Juniper.one_branch_step!,tree,
             last_table_arr,
             time_bnb_solve_start,
             fields,

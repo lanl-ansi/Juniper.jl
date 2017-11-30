@@ -28,7 +28,7 @@ function new_integral!(tree, node)
     # node.best_bound is the objective for integral values
     tree.nsolutions += 1
     if tree.options.list_of_solutions
-        push!(tree.m.solutions, MINLPBnB.SolutionObj(node.solution, node.best_bound))
+        push!(tree.m.solutions, Juniper.SolutionObj(node.solution, node.best_bound))
     end
     if update_incumbent!(tree,node) # returns if new 
         if tree.options.incumbent_constr

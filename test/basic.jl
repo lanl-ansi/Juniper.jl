@@ -6,14 +6,14 @@ include("basic/gamsworld.jl")
     println("==================================")
     println("Bruteforce")
     println("==================================")
-    minlpbnb_all_solutions = DefaultTestSolver(
+    juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
     )
 
-    m = Model(solver=minlpbnb_all_solutions)
+    m = Model(solver=juniper_all_solutions)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -31,25 +31,25 @@ include("basic/gamsworld.jl")
 
     status = solve(m)
 
-    list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
-    @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
     @test status == :Optimal
-    @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
 @testset "bruteforce PseudoCost" begin
     println("==================================")
     println("Bruteforce PseudoCost")
     println("==================================")
-    minlpbnb_all_solutions = DefaultTestSolver(
+    juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:PseudoCost,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
     )
 
-    m = Model(solver=minlpbnb_all_solutions)
+    m = Model(solver=juniper_all_solutions)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -66,24 +66,24 @@ end
 
     status = solve(m)
     println("Status: ", status)
-    list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
-    @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
     @test status == :Optimal
-    @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
 @testset "bruteforce Reliability" begin
     println("==================================")
     println("Bruteforce Reliability")
     println("==================================")
-    minlpbnb_all_solutions = DefaultTestSolver(
+    juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:Reliability,
         all_solutions = true,
         list_of_solutions = true,
     )
 
-    m = Model(solver=minlpbnb_all_solutions)
+    m = Model(solver=juniper_all_solutions)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -100,11 +100,11 @@ end
 
     status = solve(m)
     println("Status: ", status)
-    list_of_solutions = MINLPBnB.getsolutions(internalmodel(m))
-    @test length(unique(list_of_solutions)) == MINLPBnB.getnsolutions(internalmodel(m))
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
     @test status == :Optimal
-    @test MINLPBnB.getnsolutions(internalmodel(m)) == 24
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
 
@@ -112,7 +112,7 @@ end
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_restart)
+    m = Model(solver=juniper_strong_restart)
 
     @variable(m, 1 <= x <= 5, Int)
     @variable(m, -2 <= y <= 2, Int)
@@ -131,7 +131,7 @@ end
     println("==================================")
     println("Infeasible relaxation")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=juniper_strong_no_restart)
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -150,7 +150,7 @@ end
     println("==================================")
     println("Infeasible integer")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=juniper_strong_no_restart)
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -170,7 +170,7 @@ end
     println("==================================")
     println("Infeasible in strong")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=juniper_strong_no_restart)
 
     @variable(m, 0 <= x[1:5] <= 2, Int)
 
@@ -189,7 +189,7 @@ end
     println("==================================")
     println("One Integer small Reliable")
     println("==================================")
-    m = Model(solver=minlpbnb_reliable_restart)
+    m = Model(solver=juniper_reliable_restart)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -216,7 +216,7 @@ end
     println("==================================")
     println("One Integer small Strong")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=juniper_strong_no_restart)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -243,7 +243,7 @@ end
     println("==================================")
     println("One Integer small MostInfeasible")
     println("==================================")
-    m = Model(solver=minlpbnb_mosti)
+    m = Model(solver=juniper_mosti)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -270,7 +270,7 @@ end
     println("==================================")
     println("One Integer small PseudoCost")
     println("==================================")
-    m = Model(solver=minlpbnb_pseudo)
+    m = Model(solver=juniper_pseudo)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -297,7 +297,7 @@ end
     println("==================================")
     println("Three Integers Small Strong")
     println("==================================")
-    m = Model(solver=minlpbnb_strong_no_restart)
+    m = Model(solver=juniper_strong_no_restart)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -323,7 +323,7 @@ end
     println("Three Integers Small MostInfeasible")
     println("==================================")
 
-    m = Model(solver=minlpbnb_mosti)
+    m = Model(solver=juniper_mosti)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -349,7 +349,7 @@ end
     println("Three Integers Small PseudoCost")
     println("==================================")
 
-    m = Model(solver=minlpbnb_pseudo)
+    m = Model(solver=juniper_pseudo)
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -485,16 +485,16 @@ end
 
     m = batch_problem()
 
-    setsolver(m, minlpbnb_strong_restart)
+    setsolver(m, juniper_strong_restart)
     status = solve(m)
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
 @testset "Batch.mod Restart 2 Levels" begin
@@ -504,16 +504,16 @@ end
 
     m = batch_problem()
 
-    setsolver(m, minlpbnb_strong_restart_2)
+    setsolver(m, juniper_strong_restart_2)
     status = solve(m)
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
 
@@ -524,16 +524,16 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    setsolver(m, minlpbnb_strong_restart)
+    setsolver(m, juniper_strong_restart)
     status = solve(m)
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
+    @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
 end
 
 @testset "cvxnonsep_nsig20r.mod no restart" begin
@@ -543,16 +543,16 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    setsolver(m, minlpbnb_strong_no_restart)
+    setsolver(m, juniper_strong_no_restart)
     status = solve(m)
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
+    @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
 end
 
 end

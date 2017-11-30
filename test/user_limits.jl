@@ -44,12 +44,12 @@ end
 
     @test status == :UserLimit
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
 
@@ -77,12 +77,12 @@ end
     status = solve(m)
 
     @test status == :UserLimit
-    nsolutions = MINLPBnB.getnsolutions(internalmodel(m))
+    nsolutions = Juniper.getnsolutions(internalmodel(m))
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
     @test nsolutions == 1 || nsolutions == 2 # if last branch has two integral solutions
 end
@@ -108,14 +108,14 @@ end
     status = solve(m)
 
     @test status == :UserLimit
-    nsolutions = MINLPBnB.getnsolutions(internalmodel(m))
+    nsolutions = Juniper.getnsolutions(internalmodel(m))
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test minlpbnb_val <= best_obj_stop
+    @test juniper_val <= best_obj_stop
 end
 
 end
