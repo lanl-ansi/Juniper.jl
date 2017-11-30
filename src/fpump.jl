@@ -16,7 +16,7 @@ type TabuList
 end
 
 
-function generate_mip(m, nlp_sol, incycle, tabu_list)
+function generate_mip(m, nlp_sol, tabu_list)
     mip_model = Model(solver=m.mip_solver)
     lb = [m.l_var; -1e6]
     ub = [m.u_var; 1e6]
@@ -81,53 +81,65 @@ function generate_mip(m, nlp_sol, incycle, tabu_list)
         vi = m.int2var_idx[i]
         @constraint(mip_model, mx[vi] == nlp_sol[vi]+mx_p[i]-mx_m[i])
     end
-    @objective(mip_model, Min, sum(mx_p[i]+mx_m[i] for i=1:m.num_int_bin_var))
-
-    if incycle
-        println("in cycle")
-        #=
-            For all discrete i
-            x_{i} => mx[i]
-            |x|   => m.num_int_bin_var
-            x'_{ik} => solution for x[i] in tabu list (pointer -> k)
-            j => the discrete index of i
-            M(1-B_{jk}) ≧ x_{i}-x'_{ik}
-            M(1-B_{jk}) ≧ -x_{i}+x'_{ik} 
-            ∑ B ≦ |x|-1 ∀ k
-            j
-        =#
-        
-        num_sols = 0
-        for i=1:tabu_list.length
-            if !isnan(tabu_list.sols[i][1]) 
-                num_sols += 1
-            else 
-                break
-            end
+    
+    #=
+        For all discrete i
+        x_{i} => mx[i]
+        |x|   => m.num_int_bin_var
+        x'_{ik} => solution for x[i] in tabu list (pointer -> k)
+        j => the discrete index of i
+        M(1-B_{jk}) ≧ x_{i}-x'_{ik}
+        -M(1-B_{jk}) ≦ x_{i}-x'_{ik} 
+        ∑ B ≦ |x|-1 ∀ k
+        j
+    =#
+    
+    
+    num_sols = 0
+    for i=1:tabu_list.length
+        if !isnan(tabu_list.sols[i][1]) 
+            num_sols += 1
+        else 
+            break
         end
+    end
 
+    if num_sols > 0
         M = 100
         @variable(mip_model, B[j=1:m.num_int_bin_var,k=1:num_sols], Bin)
         for k=1:num_sols, j=1:m.num_int_bin_var
             i = m.int2var_idx[j] 
-            @constraint(mip_model, M*(1-B[j,k]) >= mx[i]-tabu_list.sols[k][i])
-            @constraint(mip_model, M*(1-B[j,k]) >= -mx[i]+tabu_list.sols[k][i])
+            @constraint(mip_model, M*(1-B[j,k])  >= mx[i]-tabu_list.sols[k][i])
+            @constraint(mip_model, -M*(1-B[j,k]) <= mx[i]-tabu_list.sols[k][i])
         end
         for k=1:num_sols
             @constraint(mip_model, sum(B[j,k] for j=1:m.num_int_bin_var) <= m.num_int_bin_var-1)
         end
+        print(mip_model)
     end
-    
-    # print(mip_model)
 
+    @objective(mip_model, Min, sum(mx_p[i]+mx_m[i] for i=1:m.num_int_bin_var))
+    
     try 
         MathProgBase.setparameters!(m.mip_solver, TimeLimit=m.options.feasibility_pump_time_limit)
     catch
         println("Set parameters is not supported")
     end
+    
     status = solve(mip_model)
     println("status: ", status)
     println("Obj: ", getobjectivevalue(mip_model))
+
+    if num_sols > 0
+        for k=1:num_sols, j=1:m.num_int_bin_var 
+            println("B[",j,",",k,"]: ", getvalue(B[j,k]))
+        end
+        for j=1:m.num_int_bin_var
+            i = m.int2var_idx[j]  
+            println("mx[",i,"]: ", getvalue(mx[i]))
+        end
+    end
+
     # round mip values
     values = getvalue(mx)
     for i=1:m.num_int_bin_var
@@ -207,13 +219,13 @@ function fpump(m)
 
     start_fpump = time()
     nlp_sol = m.solution
-    nlp_obj = 1
+    nlp_obj = 1 # should be not 0 for while
     c = 0
     tabu_list = TabuList()
-    nlp_sols = Dict{UInt64,Bool}()
+    mip_sols = Dict{UInt64,Bool}()
     tabu_list.length = 30
     tabu_list.pointer = 1
-    tabu_list.sols = [[]]
+    tabu_list.sols = []
     for i=1:tabu_list.length
         push!(tabu_list.sols, NaN*ones(length(nlp_sol))) 
     end
@@ -222,10 +234,9 @@ function fpump(m)
     nlp_status = :Error
     iscorrect = false
     tl = m.options.feasibility_pump_time_limit
-    incycle = false
     while !isapprox(nlp_obj,0.0, atol=atol) && time()-start_fpump < tl 
         if m.num_l_constr > 0
-            mip_status, mip_sol = generate_mip(m, nlp_sol, incycle, tabu_list) 
+            mip_status, mip_sol = generate_mip(m, nlp_sol, tabu_list) 
         else
             # if no linear constraints just round the discrete variables
             mip_sol = copy(nlp_sol)
@@ -238,6 +249,7 @@ function fpump(m)
         if mip_status != :Optimal
             break
         end
+        add!(tabu_list, mip_sol)
         nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
         if nlp_status != :Optimal
             break
@@ -251,19 +263,18 @@ function fpump(m)
                 break
             end
         end
-        if haskey(nlp_sols, hash(nlp_sol))
-            warn("Cycle detected => terminate FP")
-            incycle = true
-        else 
-            incycle = false
+        if haskey(mip_sols, hash(mip_sol))
+            warn("Cycle detected")
         end
-        add!(tabu_list, nlp_sol)
         for i=1:tabu_list.length
-            println(tabu_list.sols[i][1:2])
+            println([tabu_list.sols[i][m.int2var_idx[j]] for j=1:m.num_int_bin_var])
         end
-        nlp_sols[hash(nlp_sol)] = true
+        mip_sols[hash(mip_sol)] = true
         c += 1
         println("c: ", c)
+        if c >= 3
+            error("1")
+        end
     end
     
     println("It took ", time()-start_fpump, " s")
