@@ -13,7 +13,7 @@ You have a really good solver for the relaxation and just want to solve problems
 
 It is currently not registered therefore you have to clone the package to be able to use it.
 
-`Pkg.clone("http://github.com/Wikunia/Juniper")`
+`Pkg.clone("http://github.com/lanl-ansi/Juniper")`
 
 Then adding it to your project by
 
