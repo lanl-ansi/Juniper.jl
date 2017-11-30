@@ -1,7 +1,7 @@
 # Juniper
 
-Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Juniper.svg?branch=master)](https://travis-ci.org/lanl-ansi/Juniper) [![codecov](https://codecov.io/gh/lanl-ansi/Juniper/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper)
-[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Juniper/latest)
+Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Juniper.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/Juniper.jl) [![codecov](https://codecov.io/gh/lanl-ansi/Juniper.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper.jl)
+[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/latest)
 
 
 # Idea
@@ -16,7 +16,7 @@ You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.
 
 It is currently not registered therefore you have to clone the package to be able to use it.
 
-`Pkg.clone("http://github.com/lanl-ansi/Juniper")`
+`Pkg.clone("http://github.com/lanl-ansi/Juniper.jl")`
 
 Then adding it to your project by
 
