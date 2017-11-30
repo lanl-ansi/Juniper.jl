@@ -491,7 +491,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
@@ -510,7 +510,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
@@ -530,7 +530,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
@@ -549,7 +549,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)

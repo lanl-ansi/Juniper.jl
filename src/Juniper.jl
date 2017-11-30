@@ -23,6 +23,9 @@ type SolverOptions
     list_of_solutions               :: Bool
     processors                      :: Int64
     traverse_strategy               :: Symbol
+    feasibility_pump                :: Bool
+    feasibility_pump_time_limit     :: Float64
+    mip_solver                      :: Union{Void, MathProgBase.AbstractMathProgSolver} # is union bad here?
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

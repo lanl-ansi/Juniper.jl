@@ -136,7 +136,7 @@ The number of processors used for the branch and bound part. **Attention:** Even
 
 ## Feasibility Pump
 
-MINLPBnB has the option to find a feasible solution before the branch and bound part starts. The following options to use the feasibility pump are described below.
+Juniper has the option to find a feasible solution before the branch and bound part starts. The following options to use the feasibility pump are described below.
 
 ### feasibility_pump::Bool [False]
 

@@ -19,7 +19,7 @@ include("basic/gamsworld.jl")
     ))
     status = solve(m)
 
-    @test MINLPBnB.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
 @testset "FP: cvxnonsep_nsig20r_problem" begin
@@ -38,7 +38,7 @@ end
     ))
     status = solve(m)
 
-    @test MINLPBnB.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
 @testset "FP: no linear" begin
@@ -60,7 +60,7 @@ end
     ))
     status = solve(m)
 
-    @test MINLPBnB.getnsolutions(internalmodel(m)) >= 1
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
 
