@@ -3,6 +3,7 @@
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Juniper.svg?branch=master)](https://travis-ci.org/lanl-ansi/Juniper) [![codecov](https://codecov.io/gh/lanl-ansi/Juniper/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Juniper/latest)
 
+
 # Idea
 
 You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
