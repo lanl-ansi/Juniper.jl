@@ -1,50 +1,54 @@
-export MINLPBnBSolver
+export JuniperSolver
 
 """
 A solver for MINLP problems using a NLP solver and Branch and Bound
 """
 
-type MINLPBnBSolverObj <: MathProgBase.AbstractMathProgSolver
+type JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
     nl_solver   :: MathProgBase.AbstractMathProgSolver
-    options     :: MINLPBnB.SolverOptions
+    options     :: Juniper.SolverOptions
 end
 
 function get_default_options()
-    log_levels                  = [:Table,:Info]
-    branch_strategy             = :StrongPseudoCost
-    gain_mu                     = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
+    log_levels                      = [:Options,:Table,:Info]
+    branch_strategy                 = :StrongPseudoCost
+    gain_mu                         = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
     # Strong branching
-    strong_branching_perc       = 25
-    strong_branching_nsteps     = 1
-    strong_restart              = true
+    strong_branching_perc           = 25
+    strong_branching_nsteps         = 1
+    strong_restart                  = true
+    # Reliability branching 
+    reliability_branching_threshold = 5 # reliability param
+    reliability_branching_perc      = 25
     # Obj cuts
-    incumbent_constr            = true
-    obj_epsilon                 = 0
+    incumbent_constr                = true
+    obj_epsilon                     = 0
     # :UserLimit
-    time_limit                  = Inf  
-    mip_gap                     = 1e-4
-    best_obj_stop               = NaN
-    solution_limit              = 0
-    all_solutions               = false
-    list_of_solutions           = false
-    # Parallel
-    processors                  = 1
-    # Traversing
-    traverse_strategy           = :BFS
-    # Feasibility Pump
-    feasibility_pump            = false
-    feasibility_pump_time_limit = 10
-    mip_solver                  = nothing
+    time_limit                      = Inf  
+    mip_gap                         = 1e-4
+    best_obj_stop                   = NaN
+    solution_limit                  = 0
+    all_solutions                   = false
+    list_of_solutions               = false
+    # Parallel  
+    processors                      = 1
+    # Traversing    
+    traverse_strategy               = :BFS
+    # Feasibility Pump  
+    feasibility_pump                = false
+    feasibility_pump_time_limit     = 10
+    mip_solver                      = nothing
     return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
+        reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy,feasibility_pump,feasibility_pump_time_limit,mip_solver)
 end
 
 function combine_options(options)
     branch_strategies = Dict{Symbol,Bool}()
-    branch_strategies[:StrongPseudoCost] = true
-    branch_strategies[:PseudoCost] = true
-    branch_strategies[:MostInfeasible] = true
+    for strat in [:StrongPseudoCost,:PseudoCost,:Reliability,:MostInfeasible]
+        branch_strategies[strat] = true
+    end
 
     traverse_strategies = Dict{Symbol,Bool}()
     traverse_strategies[:BFS] = true
@@ -96,7 +100,7 @@ function combine_options(options)
     return defaults
 end
 
-function MINLPBnBSolver(nl_solver::MathProgBase.AbstractMathProgSolver;options...)
+function JuniperSolver(nl_solver::MathProgBase.AbstractMathProgSolver;options...)
     options_obj = combine_options(options)
-    return MINLPBnBSolverObj(nl_solver,options_obj)
+    return JuniperSolverObj(nl_solver,options_obj)
 end

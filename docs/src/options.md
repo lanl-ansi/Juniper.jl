@@ -1,7 +1,7 @@
 ## General
 
 ```
-MINLPBnBSolver(IpoptSolver(print_level=0))
+JuniperSolver(IpoptSolver(print_level=0))
 ```
 
 This is the most basic configuration of the solver.
@@ -13,7 +13,7 @@ A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0
 You can add options doing the following:
 
 ```
-minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
+juniper = JuniperSolver(IpoptSolver(print_level=0);
     branch_strategy=:StrongPseudoCost
 )
 ```
@@ -38,6 +38,8 @@ Possible values:
 * `:StrongPseudoCost`
     * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`
     * More options for strong branching are described [here](#Options-for-strong-branching-1)
+* `:Reliability`
+    * Use [Reliability Branching](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf) in a slightly different version.
 
 ### traverse_strategy::Symbol [:BFS]
 
@@ -75,6 +77,9 @@ $\text{obj } \geq (1-\epsilon)\text{UB}$
 ### strong_branching_perc::Float64 [25]
 
 Defines the percentage of variables to consider for strong branching. 
+If set to 25 it means that strong branching is performed on 25% of all discrete variables.
+Variables which are discrete in the relaxation aren't considered again but count to the number of 
+all discrete variables.
 If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
 
 ### strong_branching_nsteps::Int64 [1]
@@ -84,6 +89,28 @@ Defines the number of steps in which strong branching is used. `:PseudoCost` wil
 ### strong_restart::Bool [true]
 
 If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
+This option is also used in reliablity branching.
+
+## Options for reliablity branching
+
+The implemented version of reliablity branching uses the gain score as in pseudo cost branching 
+and if some branching variables aren't reliable in a sense that strong branching wasn't performed 
+at least `reliablility_branching_threshold` times then strong branching is performed on those.
+Afterwards it will be branched on the variable with the highest gain score.
+
+### reliablility_branching_perc::Float64 [25]
+
+Defines the percentage of variables to consider for the strong branching part of reliablity branching.
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
+
+### reliablility_branching_threshold::Int64 [5]
+
+Defines whether strong branching is used to improve the reliability of the gain score.
+If a variable was used less than `reliablility_branching_threshold` times for strong branching then strong branching is performed on some of those candidates. The amount of candidates used is calculated by `reliablility_branching_perc`.
+
+### strong_restart::Bool [true]
+
+This option is explained in strong branching but is also used for reliability branching.
 
 ## Options gain computation
 
@@ -97,7 +124,7 @@ The parameter is used and a bit described in this [paper](http://citeseerx.ist.p
 
 ## Parallel
 
-MINLPBnB can be run in parallel to speed up the algorithm.
+Juniper can be run in parallel to speed up the algorithm.
 You have to start julia with `julia -p P` where `P` is the number of processors available or at least the number of processors you want to use.
 
 Then you have to specify the number of processor as an option.
@@ -160,19 +187,26 @@ If `0` the option gets ignored.
 
 ## Logging
 
-### log_levels::Vector{Symbol} [[:Table,:Info]]
+### log_levels::Vector{Symbol} [[:Table,:Info,:Options]]
 
 You can change the option `log_levels` to define what kind of logs you want to see.
 
-The default is `[:Table,:Info]` which outputs something like this:
+The output for `[:Table,:Info]` looks something like this:
 
 ![default-logging](https://user-images.githubusercontent.com/4931746/32625934-07b7db3c-c58e-11e7-922d-18a0a8776437.png)
+
+:Options
+
+includes something like this before the info is printed:
+
+```
+time_limit               : 10.0
+strong_branching_nsteps  : 5
+```
 
 Possible symbols which can be added to the vector are:
 
 - :Timing
     - Provides some more timing informations
-- :Options
-    - prints all options that differ from default
 - :AllOptions
     - prints all options 

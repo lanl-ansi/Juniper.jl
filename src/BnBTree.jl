@@ -31,12 +31,12 @@ type GainObj
 end
 
 type BnBTreeObj
-    m               :: MINLPBnB.MINLPBnBModel
+    m               :: Juniper.JuniperModel
     incumbent       :: Incumbent
     obj_gain        :: GainObj
     int2var_idx     :: Vector{Int64}
     var2int_idx     :: Vector{Int64}
-    options         :: MINLPBnB.SolverOptions
+    options         :: Juniper.SolverOptions
     obj_fac         :: Int64 # factor for objective 1 if max -1 if min
     start_time      :: Float64 
     nsolutions      :: Int64
@@ -66,6 +66,7 @@ type StepObj
     l_nd                :: BnBNode
     r_nd                :: BnBNode
     counter             :: Int64
+    upd_gains           :: Symbol
 
     StepObj() = new()
 end
@@ -124,6 +125,8 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
         else
             idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu)
         end
+    elseif branch_strat == :Reliability 
+        idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     end
     step_obj.state = status
     step_obj.var_idx = idx
@@ -281,7 +284,7 @@ function add_incumbent_constr(m, incumbent)
     else
         obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
     end
-    MINLPBnB.expr_dereferencing!(obj_constr, m.model)            
+    Juniper.expr_dereferencing!(obj_constr, m.model)            
     # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
     JuMP.addNLconstraint(m.model, obj_constr)
 end
@@ -301,7 +304,7 @@ function add_obj_epsilon_constr(tree)
         else
             obj_constr = Expr(:call, :>=, obj_expr, (1-ϵ)*tree.m.objval)
         end
-        MINLPBnB.expr_dereferencing!(obj_constr, tree.m.model)            
+        Juniper.expr_dereferencing!(obj_constr, tree.m.model)            
         JuMP.addNLconstraint(tree.m.model, obj_constr)
         tree.m.ncuts += 1
     end
@@ -369,9 +372,13 @@ function one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, cou
 
 # get branch variable    
     upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter)
-    if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
-        # branch
-        branch!(m, opts, step_obj, counter, int2var_idx)
+    if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, int2var_idx)
+        push!(step_obj.integral, node)
+    else         
+        if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
+            @assert step_obj.var_idx != 0
+            branch!(m, opts, step_obj, counter, int2var_idx)
+        end
     end
     return step_obj
 end
@@ -476,7 +483,7 @@ end
 
 function sendto(p::Int; args...)
     for (nm, val) in args
-        @spawnat(p, eval(MINLPBnB, Expr(:(=), nm, val)))
+        @spawnat(p, eval(Juniper, Expr(:(=), nm, val)))
     end
 end
 
@@ -636,7 +643,7 @@ function solvemip(tree::BnBTreeObj)
 
     # use pmap if more then one processor
     if tree.options.processors > 1
-        counter = pmap(MINLPBnB.one_branch_step!,tree,
+        counter = pmap(Juniper.one_branch_step!,tree,
             last_table_arr,
             time_bnb_solve_start,
             fields,

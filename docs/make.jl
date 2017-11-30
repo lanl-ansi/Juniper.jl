@@ -1,9 +1,9 @@
-using Documenter, MINLPBnB
+using Documenter, Juniper
 
 makedocs(
-    modules = [MINLPBnB],
+    modules = [Juniper],
     format = :html,
-    sitename = "MINLPBnB",
+    sitename = "Juniper",
     pages = [
         "Home" => "index.md",
         "Options" => "options.md",
@@ -17,6 +17,6 @@ deploydocs(
     deps = nothing,
     make = nothing,
     target = "build",
-    repo = "github.com/Wikunia/MINLPBnB.git",
+    repo = "github.com/lanl-ansi/Juniper.git",
     julia = "0.6"
 )

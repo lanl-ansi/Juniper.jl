@@ -10,17 +10,17 @@
     @variable(m, 0 <= aeiou <= 1)
     @NLconstraint(m, aeiou^2== 1)
 
-    setsolver(m, minlpbnb_strong_no_restart)
+    setsolver(m, juniper_strong_no_restart)
     status = solve(m)
 
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+    @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
 @testset "case 5 wo inc constr" begin
@@ -44,14 +44,14 @@ end
 
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
     @test m.internalModel.options.strong_restart == false
     @test m.internalModel.options.incumbent_constr == false
-    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+    @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
 @testset "case 5 epsilon obj constr" begin
@@ -76,12 +76,12 @@ end
 
     @test status == :Optimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
     println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+    @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
 end
