@@ -9,11 +9,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#MINLPBnB-1",
+    "location": "index.html#Juniper-1",
     "page": "Home",
-    "title": "MINLPBnB",
+    "title": "Juniper",
     "category": "section",
-    "text": "MINLPBnB is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia. MINLPBnB solves these kind of problems using a NLP solver and then branch and bound."
+    "text": "Juniper (Jump Non linear Integer Program solver) is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia. Juniper solves these kind of problems using a NLP solver and then branch and bound. If the NLP solver isn't global optimal then Juniper is a heuristic.  You need the global optimum? Check out POD.jl"
 },
 
 {
@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Why?",
     "category": "section",
-    "text": "You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part? => Use MINLPBnBYou have a really good solver for the relaxation and just want to solve problems with discrete variables as well? Just combine your solver with MINLPBnB."
+    "text": "You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part? => Use JuniperYou have a really good solver for the relaxation and just want to solve problems with discrete variables as well? Just combine your solver with Juniper."
 },
 
 {
@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Basic usage",
     "category": "section",
-    "text": "It is currently not registered therefore you have to clone the package to be able to use it.Pkg.clone(\"http://github.com/Wikunia/MINLPBnB\")Then adding it to your project byusing MINLPBnBYou also have to import your NLP solver i.e.using Ipoptas well as JuMPDefine MINLPBnBSolver as your solver:solver = MINLPBnBSolver(IpoptSolver(print_level=0))And give it a go:m = Model(solver=solver)\n\nv = [10,20,12,23,42]\nw = [12,45,12,22,21]\n@variable(m, x[1:5], Bin)\n\n@objective(m, Max, dot(v,x))\n\n@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   \n\nstatus = solve(m)\nThis solver is a NLP solver therefore you should have at least one NLconstraint or NLobjective."
+    "text": "It is currently not registered therefore you have to clone the package to be able to use it.Pkg.clone(\"http://github.com/Wikunia/Juniper\")Then adding it to your project byusing JuniperYou also have to import your NLP solver i.e.using Ipoptas well as JuMPDefine JuniperSolver as your solver:solver = JuniperSolver(IpoptSolver(print_level=0))And give it a go:m = Model(solver=solver)\n\nv = [10,20,12,23,42]\nw = [12,45,12,22,21]\n@variable(m, x[1:5], Bin)\n\n@objective(m, Max, dot(v,x))\n\n@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   \n\nstatus = solve(m)\nThis solver is a NLP solver therefore you should have at least one NLconstraint or NLobjective."
 },
 
 {
@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "General",
     "category": "section",
-    "text": "MINLPBnBSolver(IpoptSolver(print_level=0))This is the most basic configuration of the solver.The first argument defines the solver for the relaxation here IpoptSolver. I use Ipopt for all the tests as well. The Ipopt julia package is described here The solver itself can have parameters i.e print_level=0.A list of some NLP solvers is mentioned hereYou can add options doing the following:minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);\n    branch_strategy=:StrongPseudoCost\n)In this example the strategy used for branching is defined.In the following the options are explained. The type for the option is given after :: and the default value in [].Attention: The default values might change in the future after several tests were executed to determine the best overall options. "
+    "text": "JuniperSolver(IpoptSolver(print_level=0))This is the most basic configuration of the solver.The first argument defines the solver for the relaxation here IpoptSolver. I use Ipopt for all the tests as well. The Ipopt julia package is described here The solver itself can have parameters i.e print_level=0.A list of some NLP solvers is mentioned hereYou can add options doing the following:juniper = JuniperSolver(IpoptSolver(print_level=0);\n    branch_strategy=:StrongPseudoCost\n)In this example the strategy used for branching is defined.In the following the options are explained. The type for the option is given after :: and the default value in [].Attention: The default values might change in the future after several tests were executed to determine the best overall options. "
 },
 
 {
@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "Parallel",
     "category": "section",
-    "text": "MINLPBnB can be run in parallel to speed up the algorithm. You have to start julia with julia -p P where P is the number of processors available or at least the number of processors you want to use.Then you have to specify the number of processor as an option."
+    "text": "Juniper can be run in parallel to speed up the algorithm. You have to start julia with julia -p P where P is the number of processors available or at least the number of processors you want to use.Then you have to specify the number of processor as an option."
 },
 
 {
