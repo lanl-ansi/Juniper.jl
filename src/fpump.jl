@@ -151,17 +151,31 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
 end
 
 """
-    generate_nlp(m, mip_sol)
+    generate_nlp(m, mip_sol; random_start=false)
 
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
-function generate_nlp(m, mip_sol)
+function generate_nlp(m, mip_sol; random_start=false)
     nlp_model = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
 
     @variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
-    setvalue(nx[1:m.num_var],mip_sol)
+    if random_start
+        for i=1:m.num_var
+            lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
+            ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
+
+            if m.var_type == :Cont
+                setvalue(nx[i], (ubi-lbi)*rand()+lbi)
+            else
+                setvalue(nx[i], rand(lbi:ubi))
+            end
+        end
+    else
+        setvalue(nx[1:m.num_var],mip_sol)
+    end
+
     # add all constraints
     for i=1:m.num_constr
         constr_expr = MathProgBase.constr_expr(m.d,i)
@@ -287,17 +301,28 @@ function fpump(m)
 
         nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
         if nlp_status != :Optimal
-            warn("NLP couldn't be solved to optimality")
-            break
+            cnlpinf = 0 
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal
+                nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol; random_start=true)
+                cnlpinf += 1
+            end
+            if nlp_status != :Optimal
+                warn("NLP couldn't be solved to optimality")
+                break
+            end
         end
         # if the difference is near 0 => try to improve the obj by using the original obj
-        if isapprox(nlp_obj, 0.0, atol=1e-4)
+        if isapprox(nlp_obj, 0.0, atol=atol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             if real_status == :Optimal
                 nlp_obj = real_obj
                 nlp_sol = real_sol
                 iscorrect = true
                 break
+            else
+                nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
+                iscorrect = true
+                warn("Real objective wasn't solved to optimality")
             end
         end
         c += 1

@@ -38,12 +38,14 @@ function get_default_options()
     feasibility_pump                = false
     feasibility_pump_time_limit     = 10
     tabu_list_length                = 30
+    num_resolve_nlp_feasibility_pump= 1
     mip_solver                      = nothing
     return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy,
-        feasibility_pump,feasibility_pump_time_limit,tabu_list_length,mip_solver)
+        feasibility_pump,feasibility_pump_time_limit,tabu_list_length,num_resolve_nlp_feasibility_pump,
+        mip_solver)
 end
 
 function combine_options(options)

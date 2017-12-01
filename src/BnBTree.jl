@@ -411,7 +411,11 @@ function upd_tree_obj!(tree, step_obj, time_obj)
     end
 
     if step_obj.state == :GlobalInfeasible
-        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
+        # if there is no incumbent yet 
+        if !isdefined(tree,:incumbent)
+            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
+        end
+        # TODO else ...
         still_running = false 
     end
    
