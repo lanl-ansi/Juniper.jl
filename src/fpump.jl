@@ -72,8 +72,8 @@ Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(m, nlp_sol, aff, tabu_list)
     mip_model = Model(solver=m.mip_solver)
-    lb = [m.l_var; -1e6]
-    ub = [m.u_var; 1e6]
+    lb = m.l_var
+    ub = m.u_var
     @variable(mip_model, lb[i] <= mx[i=1:m.num_var] <= ub[i])
     for i=1:m.num_var
         if m.var_type[i] == :Int
@@ -112,15 +112,16 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
 
     # If there solutions in the tabu list => avoid them
     if num_sols > 0
-        M = 100
         @variable(mip_model, z1[j=1:m.num_int_bin_var,k=1:num_sols], Bin)
         @variable(mip_model, z2[j=1:m.num_int_bin_var,k=1:num_sols], Bin)
         v = tabu_list.sols
         for k=1:num_sols, j=1:m.num_int_bin_var
-            i = m.int2var_idx[j] 
+            i = m.int2var_idx[j]
+            lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
+            ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
             @constraint(mip_model, z1[j,k]+z2[j,k] <= 1)
-            @constraint(mip_model, (m.l_var[i] - v[k][j])*z1[j,k]+z2[j,k]+v[k][j] <= mx[i])
-            @constraint(mip_model, mx[i] <= v[k][j] - z1[j,k] + (m.u_var[i]-v[k][j])*z2[j,k])
+            @constraint(mip_model, (lbi - v[k][j])*z1[j,k]+z2[j,k]+v[k][j] <= mx[i])
+            @constraint(mip_model, mx[i] <= v[k][j] - z1[j,k] + (ubi-v[k][j])*z2[j,k])
         end
         for k=1:num_sols
             @constraint(mip_model, sum(z1[j,k]+z2[j,k] for j=1:m.num_int_bin_var) >= 1)
@@ -156,8 +157,8 @@ Generates the original nlp but changes the objective to minimize the distance to
 """
 function generate_nlp(m, mip_sol)
     nlp_model = Model(solver=m.nl_solver)
-    lb = [m.l_var; -1e6]
-    ub = [m.u_var; 1e6]
+    lb = m.l_var
+    ub = m.u_var
 
     @variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
     setvalue(nx[1:m.num_var],mip_sol)
@@ -190,8 +191,8 @@ Generate the orignal nlp and get the objective for that
 """
 function generate_real_nlp(m, sol)
     rmodel = Model(solver=m.nl_solver)
-    lb = [m.l_var; -1e6]
-    ub = [m.u_var; 1e6]
+    lb = m.l_var
+    ub = m.u_var
 
     @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
     for ni=1:m.num_int_bin_var

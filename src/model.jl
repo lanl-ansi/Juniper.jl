@@ -212,8 +212,8 @@ function MathProgBase.optimize!(m::JuniperModel)
     (:Options in ps) && print_options(m;all=false)
 
     m.model = Model(solver=m.nl_solver)
-    lb = [m.l_var; -1e6]
-    ub = [m.u_var; 1e6]
+    lb = m.l_var
+    ub = m.u_var
     # all continuous we solve relaxation first
     @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
 
