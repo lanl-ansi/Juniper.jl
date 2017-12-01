@@ -243,7 +243,7 @@ function fpump(m)
     c = 1
     tabu_list = TabuList()
     mip_sols = Dict{UInt64,Bool}()
-    tabu_list.length = 30
+    tabu_list.length = m.options.tabu_list_length
     tabu_list.pointer = 1
     tabu_list.sols = []
     for i=1:tabu_list.length

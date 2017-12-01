@@ -25,6 +25,7 @@ type SolverOptions
     traverse_strategy               :: Symbol
     feasibility_pump                :: Bool
     feasibility_pump_time_limit     :: Float64
+    tabu_list_length                :: Int64
     mip_solver                      :: Union{Void, MathProgBase.AbstractMathProgSolver} # is union bad here?
 end
 
