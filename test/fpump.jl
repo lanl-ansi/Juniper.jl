@@ -1,5 +1,4 @@
 include("POD_experiment/blend029.jl")
-include("POD_experiment/genpooling_lee1.jl")
 include("basic/gamsworld.jl")
 
 @testset "fp tests" begin
@@ -21,25 +20,6 @@ include("basic/gamsworld.jl")
 
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
-
-@testset "FP: genpooling_lee1" begin
-    println("==================================")
-    println("FP: genpooling_lee1")
-    println("==================================")
-
-    m = get_gp_lee1()
-
-    setsolver(m, DefaultTestSolver(
-            branch_strategy=:MostInfeasible,
-            feasibility_pump = true,
-            time_limit = 5,
-            mip_solver=GLPKSolverMIP()
-    ))
-    status = solve(m)
-
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
-end
-
 
 @testset "FP: cvxnonsep_nsig20r_problem" begin
     println("==================================")
