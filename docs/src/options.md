@@ -159,6 +159,14 @@ and set the option with `mip_solver=GLPKSolverMIP()`
 
 The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
 
+### tabu_list_length::Int64 [30]
+
+During the run of the feasibility pump it might happen that the alternating solve steps get into a cycle.
+By using a tabu list cycles can be avoided. The length determines the length of the cycle which will be avoided. If a cycle is encountered which is longer the feasibility pump terminates.
+
+### num_resolve_nlp_feasibility_pump::Int64 [1]
+
+If the NLP is infeasible during the feasibility pump it can be restarted with a random starting point for the NL solver. This will be done as long as it is infeasible or `num_resolve_nlp_feasibility_pump` is reached.
 
 ## User Limits
 

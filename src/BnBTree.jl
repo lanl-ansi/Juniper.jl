@@ -414,8 +414,7 @@ function upd_tree_obj!(tree, step_obj, time_obj)
         # if there is no incumbent yet 
         if !isdefined(tree,:incumbent)
             tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
-        end
-        # TODO else ...
+        end # it will terminate and use the current solution as optimal (might want to rerun as an option)
         still_running = false 
     end
    
