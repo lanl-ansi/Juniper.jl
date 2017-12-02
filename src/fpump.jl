@@ -238,14 +238,8 @@ function generate_real_nlp(m, sol; random_start=false)
 
             if m.var_type[i] == :Cont
                 setvalue(rx[i], (ubi-lbi)*rand()+lbi)
-            else
-                # doesn't have to be set will be fixed anyway
-            end
+            end # discrete will be fixed anyway
         end
-    end
-    for i=1:m.num_int_bin_var
-        vi = m.int2var_idx[i]
-        JuMP.fix(rx[vi], sol[vi])
     end
 
     # define the objective function
