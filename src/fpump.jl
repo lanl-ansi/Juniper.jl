@@ -220,6 +220,12 @@ Generate the orignal nlp and get the objective for that
 """
 function generate_real_nlp(m, sol; random_start=false)
     println("Start generate_real_nlp")
+    if m.num_var == m.num_int_bin_var
+        nlp_obj = MathProgBase.eval_f(m.d, sol)
+        status = :Optimal
+        return status, sol, nlp_obj
+    end
+
     rmodel = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
