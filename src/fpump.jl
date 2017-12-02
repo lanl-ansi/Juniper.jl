@@ -15,6 +15,25 @@ type TabuList
     TabuList() = new()
 end
 
+function expr_dereferencing_fixing!(expr, m, var_types, sol)
+    for i in 2:length(expr.args)
+        if isa(expr.args[i], Union{Float64,Int64})
+            k = 0
+        elseif expr.args[i].head == :ref
+            @assert isa(expr.args[i].args[2], Int)
+            if var_types[expr.args[i].args[2]] != :Cont
+                expr.args[i] = sol[expr.args[i].args[2]]
+            else
+                expr.args[i] = Variable(m, expr.args[i].args[2])
+            end
+        elseif expr.args[i].head == :call
+            expr_dereferencing_fixing!(expr.args[i], m, var_types, sol)
+        else
+            error("expr_dereferencing :: Unexpected term in expression tree.")
+        end
+    end
+end
+
 """
     construct_affine_vector(m)
 
@@ -166,7 +185,7 @@ function generate_nlp(m, mip_sol; random_start=false)
             lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
             ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
 
-            if m.var_type == :Cont
+            if m.var_type[i] == :Cont
                 setvalue(nx[i], (ubi-lbi)*rand()+lbi)
             else
                 setvalue(nx[i], rand(lbi:ubi))
@@ -183,51 +202,65 @@ function generate_nlp(m, mip_sol; random_start=false)
         JuMP.addNLconstraint(nlp_model, constr_expr)
     end
 
-    @variable(nlp_model, nabsx[i=1:m.num_int_bin_var] >= 0)
-    for i=1:m.num_int_bin_var
-        vi = m.int2var_idx[i]
-        @constraint(nlp_model, nabsx[i] >= nx[vi]-mip_sol[vi])
-        @constraint(nlp_model, nabsx[i] >= -nx[vi]+mip_sol[vi])
-    end
-    @objective(nlp_model, Min, sum(nabsx[i] for i=1:m.num_int_bin_var))
-
+    @objective(nlp_model, Min, sum((nx[m.int2var_idx[i]]-mip_sol[m.int2var_idx[i]])^2 for i=1:m.num_int_bin_var))
     setsolver(nlp_model, m.nl_solver)
     status = solve(nlp_model)
+    nlp_sol = getvalue(nx)
+    nx_val = getvalue(nx)
+    nlp_obj = getobjectivevalue(nlp_model)
     println("NLP Status: ", status)
-    println("NLP Obj: ", getobjectivevalue(nlp_model))
-    return status, getvalue(nx), getobjectivevalue(nlp_model)
+    println("NLP Obj: ", nlp_obj)
+    return status, nlp_sol, nlp_obj
 end
 
 """
-    generate_real_nlp(m,sol)
+    generate_real_nlp(m, sol; random_start=false)
 
 Generate the orignal nlp and get the objective for that
 """
-function generate_real_nlp(m, sol)
+function generate_real_nlp(m, sol; random_start=false)
+    println("Start generate_real_nlp")
     rmodel = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
 
     @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
-    for ni=1:m.num_int_bin_var
-        i = m.int2var_idx[ni]
-        JuMP.fix(rx[i], sol[i])
+    if random_start
+        for i=1:m.num_var
+            lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
+            ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
+
+            if m.var_type[i] == :Cont
+                setvalue(rx[i], (ubi-lbi)*rand()+lbi)
+            else
+                # doesn't have to be set will be fixed anyway
+            end
+        end
+    end
+    for i=1:m.num_int_bin_var
+        vi = m.int2var_idx[i]
+        JuMP.fix(rx[vi], sol[vi])
     end
 
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
-    expr_dereferencing!(obj_expr, rmodel)
+    expr_dereferencing_fixing!(obj_expr, rmodel, m.var_type, sol)
     JuMP.setNLobjective(rmodel, m.obj_sense, obj_expr)
 
     # add all constraints
     for i=1:m.num_constr
         constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing!(constr_expr, rmodel)
+        expr_dereferencing_fixing!(constr_expr, rmodel, m.var_type, sol)
         JuMP.addNLconstraint(rmodel, constr_expr)
     end
 
     status = solve(rmodel)
-    return status, getvalue(rx), getobjectivevalue(rmodel)
+    real_sol = getvalue(rx)
+    for ni=1:m.num_int_bin_var
+        i = m.int2var_idx[ni]
+        real_sol[i] = sol[i]
+    end
+    return status, real_sol, getobjectivevalue(rmodel)
 end
 
 """
@@ -273,7 +306,10 @@ function fpump(m)
     nlp_status = :Error
     iscorrect = false
     tl = m.options.feasibility_pump_time_limit
-    while !isapprox(nlp_obj,0.0, atol=atol) && time()-start_fpump < tl 
+    # the tolerance can be changed => current atol
+    catol = atol
+    atol_counter = 0
+    while !isapprox(nlp_obj,0.0, atol=catol) && time()-start_fpump < tl 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
             mip_status, mip_sol = generate_mip(m, nlp_sol, aff, tabu_list) 
@@ -311,9 +347,23 @@ function fpump(m)
                 break
             end
         end
+
+        # if the current tolerance was nearly reached 5 times 
+        # => If reasonable should be an option
+        if atol_counter >= 5
+            catol *= 10
+            warn("FPump tolerance changed to: ",catol)
+            atol_counter = 0
+        end
+
         # if the difference is near 0 => try to improve the obj by using the original obj
-        if isapprox(nlp_obj, 0.0, atol=atol)
+        if isapprox(nlp_obj, 0.0, atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
+            cnlpinf = 0
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal
+                real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol; random_start=true)
+                cnlpinf += 1
+            end
             if real_status == :Optimal
                 nlp_obj = real_obj
                 nlp_sol = real_sol
@@ -323,16 +373,30 @@ function fpump(m)
                 nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
                 iscorrect = true
                 warn("Real objective wasn't solved to optimality")
+                break
             end
+        end
+        if !isapprox(nlp_obj, 0.0, atol=catol) && isapprox(nlp_obj, 0.0, atol=10*catol)
+            atol_counter += 1
+        else 
+            atol_counter = 0
         end
         c += 1
     end
     
     println("It took ", time()-start_fpump, " s")
     println("It took ", c, " rounds")
+    m.fpump_info = Dict{Symbol,Float64}()
+    m.fpump_info[:time] = time()-start_fpump
+    m.fpump_info[:rounds] = c
+    
     if iscorrect
         println("Obj: ", nlp_obj)
+        m.fpump_info[:obj] = nlp_obj
+        m.fpump_info[:gap] = abs(m.objval-nlp_obj)/abs(nlp_obj)
         return nlp_sol, nlp_obj
-    end    
+    end
+    m.fpump_info[:obj] = NaN
+    m.fpump_info[:gap] = NaN
     return nothing, nothing
 end

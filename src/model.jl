@@ -50,6 +50,8 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     nbranches       :: Int64
     nlevels         :: Int64
 
+    fpump_info      :: Dict{Symbol,Float64}
+
     JuniperModel() = new()
 end
 
