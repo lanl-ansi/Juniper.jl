@@ -6,6 +6,7 @@ using JuMP
 # Options for the solver (more details like defaults in solver.jl)
 type SolverOptions
     log_levels                      :: Vector{Symbol}
+    num_resolve_root_relaxation     :: Int64
     branch_strategy                 :: Symbol
     gain_mu                         :: Float64
     strong_branching_perc           :: Float64
@@ -40,7 +41,9 @@ function Base.show(io::IO, opts::SolverOptions)
 end
 
 include("solver.jl")
+include("util.jl")
 include("model.jl")
 include("BnBTree.jl")
+
 
 end

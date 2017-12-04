@@ -181,15 +181,9 @@ function generate_nlp(m, mip_sol; random_start=false)
 
     @variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
     if random_start
-        for i=1:m.num_var
-            lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
-            ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
-
-            if m.var_type[i] == :Cont
-                setvalue(nx[i], (ubi-lbi)*rand()+lbi)
-            else
-                setvalue(nx[i], rand(lbi:ubi))
-            end
+        restart_values = generate_random_restart(m)
+        for i=1:m.num_var      
+            setvalue(nx[i], restart_values[i])
         end
     else
         setvalue(nx[1:m.num_var],mip_sol)

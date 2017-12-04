@@ -193,6 +193,14 @@ If an incumbent is found which is better than `best_obj_stop` the incumbent is r
 The solver stops if the requested amount of feasible solutions is found.
 If `0` the option gets ignored.
 
+## Resolve
+
+Sometimes the non linear solver doesn't find a feasible solution in the first run.
+
+### num_resolve_root_relaxation::Int [3]
+This especially bad if this happens for the root relaxation. If there is no optimal/local optimal
+solution in the root relaxation you can use this option to resolve a couple of time until a solution is found or the number of resolves exceeded this value.
+
 ## Logging
 
 ### log_levels::Vector{Symbol} [[:Table,:Info,:Options]]

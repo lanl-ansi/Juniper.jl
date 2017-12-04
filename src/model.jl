@@ -238,13 +238,25 @@ function MathProgBase.optimize!(m::JuniperModel)
     m.x = x
     start = time()
     m.status = solve(m.model)
-    
+    restarts = 0
+    max_restarts = m.options.num_resolve_root_relaxation
+    while m.status != :Optimal && m.status != :LocalOptimal && restarts < max_restarts
+        println("resolve????")
+        restart_values = generate_random_restart(m)
+        for i=1:m.num_var      
+            setvalue(m.x[i], restart_values[i])
+        end
+        m.status = solve(m.model)
+        restarts += 1
+    end
+
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
+    m.soltime = time()-start
     if m.status != :Optimal && m.status != :LocalOptimal
         return m.status
     end
-    m.soltime = time()-start
+    
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
