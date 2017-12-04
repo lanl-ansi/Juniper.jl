@@ -150,8 +150,21 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
         JuMP.setupperbound(m.x[i], cnode.u_var[i])
     end
     setvalue(m.x[1:m.num_var],step_obj.node.solution)
+    if contains(string(m.nl_solver),"Ipopt")
+        overwritten = false
+        for ipopt_opt in m.nl_solver.options
+            if ipopt_opt[1] == :mu_init
+                ipopt_opt = (:mu_init, 1e-5)
+                overwritten = true
+            end
+        end
+        if !overwritten 
+            push!(m.nl_solver.options, (:mu_init, 1e-5))
+        end
+    end
 
     status = JuMP.solve(m.model)
+
     objval = getobjectivevalue(m.model)
     cnode.solution = getvalue(m.x)
     cnode.relaxation_state = status
@@ -626,6 +639,11 @@ function solvemip(tree::BnBTreeObj)
         sol = getvalue(tree.m.x)
         bbound = getobjectivebound(tree.m.model)
         return Incumbent(objval,sol,:Optimal,bbound)
+    end
+
+    # check if incumbent and if mip gap already fulfilled
+    if isbreak_mip_gap(tree)
+        return tree.incumbent
     end
 
     last_table_arr = []
