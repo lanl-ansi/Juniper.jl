@@ -242,6 +242,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     num_strong_var = Int(round((reliability_perc/100)*m.num_int_bin_var))
     # if smaller than 2 it doesn't make sense
     num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
+
     # use strong_branching_approx_time_limit to change num_strong_var
     if !isinf(opts.strong_branching_approx_time_limit)
         approx_time_per_node = 2*m.relaxation_time

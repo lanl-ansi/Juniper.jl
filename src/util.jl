@@ -10,8 +10,8 @@ function generate_random_restart(m)
             lbi_def = false
         end
 
-        if m.l_var[i] < typemax(Int64) 
-            ubi = m.l_var[i]
+        if m.u_var[i] < typemax(Int64) 
+            ubi = m.u_var[i]
         else
             ubi = typemin(Int64)
             ubi_def = false
@@ -29,6 +29,8 @@ function generate_random_restart(m)
         if m.var_type[i] == :Cont
             push!(values,(ubi-lbi)*rand()+lbi)
         else
+            lbi = Int(round(lbi))
+            ubi = Int(round(ubi))
             push!(values, rand(lbi:ubi))
         end
     end

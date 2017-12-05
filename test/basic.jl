@@ -81,7 +81,8 @@ end
     println("==================================")
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:Reliability,
-        strong_branching_approx_time_limit=2,
+        strong_branching_approx_time_limit=0.02,
+        reliablility_branching_perc=100,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
@@ -219,6 +220,27 @@ end
 
     @test status == :Infeasible
 end
+
+@testset "infeasible relaxation 2" begin
+    println("==================================")
+    println("Infeasible relaxation 2")
+    println("==================================")
+    m = Model(solver=juniper_strong_no_restart)
+
+    @variable(m, x[1:3], Int)
+    @variable(m, y)
+
+    @objective(m, Max, sum(x))
+
+    @NLconstraint(m, x[1]^2+x[2]^2+x[3]^2+y^2 <= 3)
+    @NLconstraint(m, x[1]^2*x[2]^2*x[3]^2*y^2 >= 10)
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+end
+
 
 @testset "infeasible integer" begin
     println("==================================")
