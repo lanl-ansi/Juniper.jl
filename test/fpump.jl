@@ -1,4 +1,6 @@
 include("POD_experiment/blend029.jl")
+include("POD_experiment/st_e32.jl")
+include("POD_experiment/FLay02H.jl")
 include("basic/gamsworld.jl")
 
 @testset "fp tests" begin
@@ -115,6 +117,75 @@ end
     ))
 
     status = solve(m)
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+end
+
+@testset "FP: infeasible cos" begin
+    println("==================================")
+    println("FP: Infeasible cos")
+    println("==================================")
+    m = Model()
+
+    @variable(m, 1 <= x <= 5, Int)
+    @variable(m, -2 <= y <= 2, Int)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==2*cos(2*x))
+
+    setsolver(m, DefaultTestSolver(
+        branch_strategy=:MostInfeasible,
+        feasibility_pump = true,
+        time_limit = 1,
+        mip_solver=GLPKSolverMIP()
+    ))
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+    @test Juniper.getnsolutions(internalmodel(m)) == 0
+end
+
+@testset "FP: ste_32" begin
+    println("==================================")
+    println("FP: st_e32")
+    println("==================================")
+
+    m = get_st_e32()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            feasibility_pump = true,
+            time_limit = 5,
+            mip_solver=GLPKSolverMIP()
+    ))
+    status = solve(m)
+
+    # is fast so doesn't have to find a fp solution
+    # the nlp should produce more Errors and Infeasible so it's basically for codecov
+    @test status == :Optimal
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+end
+
+@testset "FP: FLay02H" begin
+    println("==================================")
+    println("FP: FLay02H")
+    println("==================================")
+
+    # This probably needs a restart in real nlp
+    m = get_FLay02H()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            feasibility_pump = true,
+            feasibility_pump_time_limit = 10,
+            time_limit = 10,
+            mip_solver=GLPKSolverMIP()
+    ))
+    status = solve(m)
+
+    @test status == :Optimal || status == :UserLimit
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 

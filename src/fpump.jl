@@ -226,12 +226,10 @@ function generate_real_nlp(m, sol; random_start=false)
 
     @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
     if random_start
-        for i=1:m.num_var
-            lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
-            ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
-
-            if m.var_type[i] == :Cont
-                setvalue(rx[i], (ubi-lbi)*rand()+lbi)
+        restart_values = generate_random_restart(m)
+        for i=1:m.num_var   
+            if m.var_type[i] == :Cont   
+                setvalue(rx[i], restart_values[i])
             end # discrete will be fixed anyway
         end
     end
@@ -395,5 +393,6 @@ function fpump(m)
     end
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
+    println("No fp")
     return nothing, nothing
 end
