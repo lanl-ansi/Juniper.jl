@@ -38,12 +38,49 @@ include("basic/gamsworld.jl")
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
-@testset "bruteforce" begin
+@testset "bruteforce approx time limit" begin
     println("==================================")
-    println("Bruteforce")
+    println("Bruteforce  approx time limit")
     println("==================================")
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
+        strong_branching_approx_time_limit=2,
+        all_solutions = true,
+        list_of_solutions = true,
+        strong_restart = true
+    )
+
+    m = Model(solver=juniper_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+
+    @test status == :Optimal
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
+end
+
+@testset "bruteforce approx time limit reliable" begin
+    println("==================================")
+    println("Bruteforce  approx time reliable")
+    println("==================================")
+    juniper_all_solutions = DefaultTestSolver(
+        branch_strategy=:Reliability,
         strong_branching_approx_time_limit=2,
         all_solutions = true,
         list_of_solutions = true,

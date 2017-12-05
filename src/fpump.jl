@@ -303,7 +303,7 @@ function fpump(m)
     # the tolerance can be changed => current atol
     catol = atol
     atol_counter = 0
-    while !isapprox(nlp_obj,0.0, atol=catol) && time()-start_fpump < tl 
+    while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=catol) && time()-start_fpump < tl 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
             mip_status, mip_sol = generate_mip(m, nlp_sol, aff, tabu_list) 
@@ -332,7 +332,7 @@ function fpump(m)
         nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
         if nlp_status != :Optimal
             cnlpinf = 0 
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal && time()-start_fpump < tl 
                 nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
@@ -351,10 +351,11 @@ function fpump(m)
         end
 
         # if the difference is near 0 => try to improve the obj by using the original obj
-        if isapprox(nlp_obj, 0.0, atol=catol)
+        # set catol to a 1e-3 as it will be checked anyway with generate_real_nlp
+        if are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=1e-3) 
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && time()-start_fpump < tl 
                 real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
@@ -363,7 +364,7 @@ function fpump(m)
                 nlp_sol = real_sol
                 iscorrect = true
                 break
-            else
+            elseif are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=catol)
                 nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
                 iscorrect = true
                 warn("Real objective wasn't solved to optimality")
@@ -372,7 +373,9 @@ function fpump(m)
         end
         if !isapprox(nlp_obj, 0.0, atol=catol) && isapprox(nlp_obj, 0.0, atol=10*catol)
             atol_counter += 1
+            println("atol_counter: ", atol_counter)
         else 
+            println("atol_counter: ", 0)
             atol_counter = 0
         end
         c += 1

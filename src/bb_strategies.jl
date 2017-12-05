@@ -68,6 +68,8 @@ function branch_strong_on!(m,opts,step_obj,
         return max_gain, max_gain_var, strong_int_vars
     end
 
+    strong_time = time()
+
     node = step_obj.node
 
     strong_restarts = -1 
@@ -118,13 +120,20 @@ function branch_strong_on!(m,opts,step_obj,
             # if restart is true => check if one part is infeasible => update bounds & restart
             if strong_restart == true
                 if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
-                    max_gain = 0.0
                     if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
                         # TODO: Might be Error instead of infeasible
                         status = :LocalInfeasible
                         break
                     end
-                    restart,infeasible_int_vars,max_gain_var,strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+                    restart,new_infeasible_int_vars,new_max_gain_var,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+                    if restart && time()-strong_time > opts.strong_branching_approx_time_limit
+                        restart = false
+                    elseif restart
+                        infeasible_int_vars = new_infeasible_int_vars
+                        max_gain_var = new_max_gain_var
+                        strong_int_vars = new_strong_int_vars
+                        max_gain = new_max_gain_var
+                    end
                 end
             end
             gain_l = sigma_minus(node, l_nd, node.solution[node.var_idx])
@@ -233,6 +242,17 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     num_strong_var = Int(round((reliability_perc/100)*m.num_int_bin_var))
     # if smaller than 2 it doesn't make sense
     num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
+    # use strong_branching_approx_time_limit to change num_strong_var
+    if !isinf(opts.strong_branching_approx_time_limit)
+        approx_time_per_node = 2*m.relaxation_time
+        new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
+        new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
+        if new_num_strong_var < num_strong_var
+            warn("Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit")
+            num_strong_var = new_num_strong_var
+        end
+    end
+
 
     gmc_r = gains.minus_counter .< reliability_param
     gpc_r = gains.plus_counter  .< reliability_param
