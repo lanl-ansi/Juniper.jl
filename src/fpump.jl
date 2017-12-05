@@ -252,10 +252,6 @@ function generate_real_nlp(m, sol; random_start=false)
 
     status = solve(rmodel)
     real_sol = getvalue(rx)
-    for ni=1:m.num_int_bin_var
-        i = m.int2var_idx[ni]
-        real_sol[i] = sol[i]
-    end
     return status, real_sol, getobjectivevalue(rmodel)
 end
 
