@@ -182,6 +182,24 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "no integer" begin
+    println("==================================")
+    println("no integer")
+    println("==================================")
+    m = Model(solver=juniper_strong_restart)
+
+    @variable(m, 1 <= x <= 5)
+    @variable(m, -2 <= y <= 2)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==2*cos(2*x))
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Optimal
+end
 
 @testset "infeasible cos" begin
     println("==================================")
@@ -200,6 +218,28 @@ end
     println("Status: ", status)
 
     @test status == :Infeasible
+    @test isnan(getobjgap(m))
+end
+
+@testset "infeasible sin with different bounds" begin
+    println("==================================")
+    println("Infeasible  sin with different bounds")
+    println("==================================")
+    m = Model()
+
+    @variable(m, x <= 5, Int)
+    @variable(m, y >= 2, Int)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==sin(x))
+
+    setsolver(m, JuniperSolver(IpoptSolver(print_level=0),
+        branch_strategy=:MostInfeasible,
+        feasibility_pump = true,
+        time_limit = 1,
+        mip_solver=GLPKSolverMIP()
+    ))
 end
 
 @testset "infeasible relaxation" begin
