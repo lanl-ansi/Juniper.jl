@@ -171,6 +171,16 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_int_bin_var))
     # if smaller than 2 it doesn't make sense
     num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
+    # use strong_branching_approx_time_limit to change num_strong_var
+    if !isinf(opts.strong_branching_approx_time_limit)
+        approx_time_per_node = 2*m.relaxation_time
+        new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
+        new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
+        if new_num_strong_var < num_strong_var
+            warn("Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit")
+            num_strong_var = new_num_strong_var
+        end
+    end
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
     int_vars = m.num_int_bin_var

@@ -42,6 +42,8 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
 
     mip_solver      :: MathProgBase.AbstractMathProgSolver
 
+    relaxation_time :: Float64
+
     # Info
     nintvars        :: Int64
     nbinvars        :: Int64
@@ -87,6 +89,7 @@ function JuniperNonlinearModel(s::JuniperSolverObj)
     m.ncuts = 0
     m.nbranches = 0
     m.nlevels = 1
+    m.relaxation_time = 0.0
     if m.options.mip_solver != nothing
         m.mip_solver = m.options.mip_solver
     end
@@ -241,7 +244,6 @@ function MathProgBase.optimize!(m::JuniperModel)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
     while m.status != :Optimal && m.status != :LocalOptimal && restarts < max_restarts
-        println("resolve????")
         restart_values = generate_random_restart(m)
         for i=1:m.num_var      
             setvalue(m.x[i], restart_values[i])
@@ -253,6 +255,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     m.soltime = time()-start
+    m.relaxation_time = time()-start
     if m.status != :Optimal && m.status != :LocalOptimal
         return m.status
     end

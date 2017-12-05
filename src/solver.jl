@@ -15,8 +15,9 @@ function get_default_options()
     branch_strategy                 = :StrongPseudoCost
     gain_mu                         = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
     # Strong branching
-    strong_branching_perc           = 25
+    strong_branching_perc           = 100
     strong_branching_nsteps         = 1
+    strong_branching_approx_time_limit = 100
     strong_restart                  = true
     # Reliability branching 
     reliability_branching_threshold = 5 # reliability param
@@ -41,7 +42,8 @@ function get_default_options()
     tabu_list_length                = 30
     num_resolve_nlp_feasibility_pump= 1
     mip_solver                      = nothing
-    return SolverOptions(log_levels,num_resolve_root_relaxation,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
+    return SolverOptions(log_levels,num_resolve_root_relaxation,branch_strategy,gain_mu,
+        strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy,
