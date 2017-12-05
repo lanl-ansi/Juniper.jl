@@ -233,6 +233,10 @@ function generate_real_nlp(m, sol; random_start=false)
             end # discrete will be fixed anyway
         end
     end
+    for i=1:m.num_int_bin_var
+        vi = m.int2var_idx[i]
+        JuMP.fix(rx[vi], sol[vi])
+    end
 
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
