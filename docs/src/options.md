@@ -1,21 +1,24 @@
 ## General
 
+The most basic configuration of Juniper is:
+
 ```
 JuniperSolver(IpoptSolver(print_level=0))
 ```
 
-This is the most basic configuration of the solver.
 
-The first argument defines the solver for the relaxation here `IpoptSolver`. I use [Ipopt](https://projects.coin-or.org/Ipopt) for all the tests as well. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl) The solver itself can have parameters i.e `print_level=0`.
+The first argument defines the solver for the relaxation here `IpoptSolver`. [Ipopt](https://projects.coin-or.org/Ipopt) is used for all our test cases. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl). The solver itself can have parameters i.e `print_level=0`.
 
-A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
+JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
 
 You can add options doing the following:
 
 ```
+m = Model()
 juniper = JuniperSolver(IpoptSolver(print_level=0);
     branch_strategy=:StrongPseudoCost
 )
+setsolver(m, juniper)
 ```
 
 In this example the strategy used for branching is defined.
@@ -80,13 +83,13 @@ Defines the percentage of variables to consider for strong branching.
 If set to 25 it means that strong branching is performed on 25% of all discrete variables.
 Variables which are discrete in the relaxation aren't considered again but count to the number of 
 all discrete variables.
-If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. **Attention:** `strong_branching_approx_time_limit` might change this value.
 
 ### strong_branching_nsteps::Int64 [1]
 
 Defines the number of steps in which strong branching is used. `:PseudoCost` will be used for later steps.
 
-## strong_branching_approx_time_limit::Float64 [100]s
+### strong_branching_approx_time_limit::Float64 [100]s
 
 For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable
 to reduce the number of strong branching variables.
@@ -151,7 +154,7 @@ The number of processors used for the branch and bound part. **Attention:** Even
 
 ## Feasibility Pump
 
-Juniper has the option to find a feasible solution before the branch and bound part starts. The following options to use the feasibility pump are described below.
+Juniper has the option to find a feasible solution before the branch and bound part starts. The following options describe how to use the feasibility pump.
 
 ### feasibility_pump::Bool [False]
 
@@ -160,7 +163,7 @@ Determines whether or not the feasibility pump should be used to get a feasible 
 ### mip_solver::MathProgBase.AbstractMathProgSolver [nothing]
 
 This has to be set to a mip solver if the feasibility pump should be used.
-A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
+A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers).
 
 If you want to use [GLPK](https://www.gnu.org/software/glpk/)
 you would need to use
@@ -170,7 +173,7 @@ using GLPKMathProgInterface
 ```
 and set the option with `mip_solver=GLPKSolverMIP()`
 
-### feasibility_pump_time_limit::Int64 [10]s
+### feasibility_pump_time_limit::Int64 [60]s
 
 The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
 

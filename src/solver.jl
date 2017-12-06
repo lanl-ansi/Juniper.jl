@@ -38,7 +38,7 @@ function get_default_options()
     traverse_strategy               = :BFS
     # Feasibility Pump  
     feasibility_pump                = false
-    feasibility_pump_time_limit     = 10
+    feasibility_pump_time_limit     = 60
     tabu_list_length                = 30
     num_resolve_nlp_feasibility_pump= 1
     mip_solver                      = nothing
