@@ -306,6 +306,10 @@ Run the feasibility pump
 function fpump(m)
     srand(1)
 
+    if are_type_correct(m.solution, m.var_type, m.int2var_idx)
+        return m.solution, m.objval 
+    end
+
     start_fpump = time()
     nlp_sol = m.solution
     nlp_obj = 1 # should be not 0 for while
@@ -440,6 +444,7 @@ function fpump(m)
         m.fpump_info[:gap] = abs(m.objval-nlp_obj)/abs(nlp_obj)
         return nlp_sol, nlp_obj
     end
+
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
     check_print(ps,[:Info]) && println("FP: No integral solution found")

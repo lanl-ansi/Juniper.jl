@@ -41,7 +41,7 @@ end
     @test !isa(try option_not_available() catch ex ex end, Exception) 
 end
 
-@testset "Table config" begin
+@testset "Info/Table" begin
     m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
                                         strong_restart=true))
 
@@ -56,6 +56,11 @@ end
     JuMP.build(m)
     m = m.internalModel
     options = m.options
+
+    @test !isa(try Juniper.print_info(m) catch ex ex end, Exception) 
+    @test !isa(try Juniper.print_options(m;all=true) catch ex ex end, Exception) 
+    @test !isa(try Juniper.print_options(m;all=false) catch ex ex end, Exception) 
+    
 
     fields, field_chars = Juniper.get_table_config(options)
     ln = Juniper.get_table_header_line(fields, field_chars)
@@ -131,6 +136,19 @@ end
     idx_gain_gap = findfirst(fields .== :GainGap)
     @test tab_arr[idx_gain_gap] == ">>"
 
+    # very large gap
+    tree.best_bound = 1000000
+    tree.incumbent.objval = 1
+    tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
+    idx_gap = findfirst(fields .== :Gap)
+    @test tab_arr[idx_gap] == ">>"
+
+    # way too long 
+    fields, field_chars = Juniper.get_table_config(options)
+    start_time = time()-123456789
+    tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
+    idx_time = findfirst(fields .== :Time)
+    @test tab_arr[idx_time] == "t.l."
 end
 
 @testset "FP: Table config" begin
