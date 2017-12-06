@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "branch_strategy::Symbol [:StrongPseudoCost]",
     "category": "section",
-    "text": "Possible values::MostInfeasible\nBranch on variables closest to 0.5\n:PseudoCost\nUse :MostInfeasible first and then Pseudo Cost Branching.\n:StrongPseudoCost\nUse Strong Branching first and then :PseudoCost.\n:Reliability\nUse Reliability Branching in a slightly different version."
+    "text": "Possible values::MostInfeasible\nBranch on variables closest to 0.5\n:PseudoCost\nUse :MostInfeasible first and then Pseudo Cost Branching.\n:StrongPseudoCost\nUse Strong Branching first and then :PseudoCost\nMore options for strong branching are described here\n:Reliability\nUse Reliability Branching in a slightly different version."
 },
 
 {
@@ -105,9 +105,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#strong_branching_perc::Float64-[25]-1",
+    "location": "options.html#strong_branching_perc::Float64-[100]-1",
     "page": "Options",
-    "title": "strong_branching_perc::Float64 [25]",
+    "title": "strong_branching_perc::Float64 [100]",
     "category": "section",
     "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren't considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
 },
@@ -118,6 +118,14 @@ var documenterSearchIndex = {"docs": [
     "title": "strong_branching_nsteps::Int64 [1]",
     "category": "section",
     "text": "Defines the number of steps in which strong branching is used. :PseudoCost will be used for later steps."
+},
+
+{
+    "location": "options.html#strong_branching_approx_time_limit::Float64-[100]s-1",
+    "page": "Options",
+    "title": "strong_branching_approx_time_limit::Float64 [100]s",
+    "category": "section",
+    "text": "For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable to reduce the number of strong branching variables.A small example:strong_branching_perc is set to 100%.\nThe root relaxation takes 5 seconds and there are 100 discrete variables.\nNow the approximated time for strong branching (without considering restarts) is   2*5s*100 = 1000s because each discrete variable has two children.By using strong_branching_approx_time_limit = 100 the number of strong branching variables is reduced to 10 because 2*5s*10 = 100. If you don't want to use this time limit you can set it to Inf."
 },
 
 {
@@ -193,6 +201,54 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "options.html#Feasibility-Pump-1",
+    "page": "Options",
+    "title": "Feasibility Pump",
+    "category": "section",
+    "text": "Juniper has the option to find a feasible solution before the branch and bound part starts. The following options to use the feasibility pump are described below."
+},
+
+{
+    "location": "options.html#feasibility_pump::Bool-[False]-1",
+    "page": "Options",
+    "title": "feasibility_pump::Bool [False]",
+    "category": "section",
+    "text": "Determines whether or not the feasibility pump should be used to get a feasible solution. Attention: If set to true you need to also set the mip_solver option."
+},
+
+{
+    "location": "options.html#mip_solver::MathProgBase.AbstractMathProgSolver-[nothing]-1",
+    "page": "Options",
+    "title": "mip_solver::MathProgBase.AbstractMathProgSolver [nothing]",
+    "category": "section",
+    "text": "This has to be set to a mip solver if the feasibility pump should be used. A list of some MIP solvers is mentioned hereIf you want to use GLPK you would need to useusing GLPKMathProgInterfaceand set the option with mip_solver=GLPKSolverMIP()"
+},
+
+{
+    "location": "options.html#feasibility_pump_time_limit::Int64-[10]s-1",
+    "page": "Options",
+    "title": "feasibility_pump_time_limit::Int64 [10]s",
+    "category": "section",
+    "text": "The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not."
+},
+
+{
+    "location": "options.html#tabu_list_length::Int64-[30]-1",
+    "page": "Options",
+    "title": "tabu_list_length::Int64 [30]",
+    "category": "section",
+    "text": "During the run of the feasibility pump it might happen that the alternating solve steps get into a cycle. By using a tabu list cycles can be avoided. The length determines the length of the cycle which will be avoided. If a cycle is encountered which is longer the feasibility pump terminates."
+},
+
+{
+    "location": "options.html#num_resolve_nlp_feasibility_pump::Int64-[1]-1",
+    "page": "Options",
+    "title": "num_resolve_nlp_feasibility_pump::Int64 [1]",
+    "category": "section",
+    "text": "If the NLP is infeasible during the feasibility pump it can be restarted with a random starting point for the NL solver. This will be done as long as it is infeasible or num_resolve_nlp_feasibility_pump is reached."
+},
+
+{
     "location": "options.html#User-Limits-1",
     "page": "Options",
     "title": "User Limits",
@@ -233,6 +289,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "options.html#Resolve-1",
+    "page": "Options",
+    "title": "Resolve",
+    "category": "section",
+    "text": "Sometimes the non linear solver doesn't find a feasible solution in the first run."
+},
+
+{
+    "location": "options.html#num_resolve_root_relaxation::Int-[3]-1",
+    "page": "Options",
+    "title": "num_resolve_root_relaxation::Int [3]",
+    "category": "section",
+    "text": "This especially bad if this happens for the root relaxation. If there is no optimal/local optimal solution in the root relaxation you can use this option to resolve a couple of time until a solution is found or the number of resolves exceeded this value."
+},
+
+{
     "location": "options.html#Logging-1",
     "page": "Options",
     "title": "Logging",
@@ -245,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "log_levels::Vector{Symbol} [[:Table,:Info,:Options]]",
     "category": "section",
-    "text": "You can change the option log_levels to define what kind of logs you want to see.The output for [:Table,:Info] looks something like this:(Image: default-logging):Optionsincludes something like this before the info is printed:time_limit               : 10.0\nstrong_branching_nsteps  : 5Possible symbols which can be added to the vector are::Timing\nProvides some more timing informations\n:AllOptions\nprints all options "
+    "text": "You can change the option log_levels to define what kind of logs you want to see.The output for [:Table,:Info] looks something like this:(Image: default-logging):Table#ONodes\nThe number of open nodes\nCLevel\nThe current node is at level ... of the tree\nIncumbent\nBest integral solution found\nBest Bound\nThe best bound of the open nodes\nGap \nThe gap between Incumbent and Best Bound\nTime\nThe time spend since the beginning of branch and bound\nDoesn't count time before branch and bound starts (i.e. feasibility pump or root relaxation)\nGainGap\nThe difference in percentage between a guessed gain and the actual gain.\nUsed if branch_strategy = PseudoCost or after strong branching / reliability branching.:Optionsincludes something like this before the info is printed:time_limit               : 10.0\nstrong_branching_nsteps  : 5Possible symbols which can be added to the vector are::Timing\nProvides some more timing information\n:AllOptions\nprints all options "
 },
 
 {
