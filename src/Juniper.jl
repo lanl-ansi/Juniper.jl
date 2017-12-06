@@ -6,10 +6,12 @@ using JuMP
 # Options for the solver (more details like defaults in solver.jl)
 type SolverOptions
     log_levels                      :: Vector{Symbol}
+    num_resolve_root_relaxation     :: Int64
     branch_strategy                 :: Symbol
     gain_mu                         :: Float64
     strong_branching_perc           :: Float64
     strong_branching_nsteps         :: Int64
+    strong_branching_approx_time_limit :: Float64
     strong_restart                  :: Bool
     reliability_branching_threshold :: Int64
     reliability_branching_perc      :: Float64
@@ -23,6 +25,11 @@ type SolverOptions
     list_of_solutions               :: Bool
     processors                      :: Int64
     traverse_strategy               :: Symbol
+    feasibility_pump                :: Bool
+    feasibility_pump_time_limit     :: Float64
+    tabu_list_length                :: Int64
+    num_resolve_nlp_feasibility_pump:: Int64
+    mip_solver                      :: Union{Void, MathProgBase.AbstractMathProgSolver} # is union bad here?
 end
 
 function Base.show(io::IO, opts::SolverOptions) 
@@ -35,7 +42,9 @@ function Base.show(io::IO, opts::SolverOptions)
 end
 
 include("solver.jl")
+include("util.jl")
 include("model.jl")
 include("BnBTree.jl")
+
 
 end

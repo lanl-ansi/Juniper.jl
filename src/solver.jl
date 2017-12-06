@@ -11,11 +11,13 @@ end
 
 function get_default_options()
     log_levels                      = [:Options,:Table,:Info]
+    num_resolve_root_relaxation     = 3
     branch_strategy                 = :StrongPseudoCost
     gain_mu                         = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
     # Strong branching
-    strong_branching_perc           = 25
+    strong_branching_perc           = 100
     strong_branching_nsteps         = 1
+    strong_branching_approx_time_limit = 100
     strong_restart                  = true
     # Reliability branching 
     reliability_branching_threshold = 5 # reliability param
@@ -23,7 +25,7 @@ function get_default_options()
     # Obj cuts
     incumbent_constr                = true
     obj_epsilon                     = 0
-    # :UserLimit    
+    # :UserLimit
     time_limit                      = Inf  
     mip_gap                         = 1e-4
     best_obj_stop                   = NaN
@@ -34,9 +36,19 @@ function get_default_options()
     processors                      = 1
     # Traversing    
     traverse_strategy               = :BFS
-    return SolverOptions(log_levels,branch_strategy,gain_mu,strong_branching_perc,strong_branching_nsteps,strong_restart,
-        reliability_branching_threshold, reliability_branching_perc, incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
-        list_of_solutions,processors,traverse_strategy)
+    # Feasibility Pump  
+    feasibility_pump                = false
+    feasibility_pump_time_limit     = 10
+    tabu_list_length                = 30
+    num_resolve_nlp_feasibility_pump= 1
+    mip_solver                      = nothing
+    return SolverOptions(log_levels,num_resolve_root_relaxation,branch_strategy,gain_mu,
+        strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
+        reliability_branching_threshold,reliability_branching_perc,
+        incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
+        list_of_solutions,processors,traverse_strategy,
+        feasibility_pump,feasibility_pump_time_limit,tabu_list_length,num_resolve_nlp_feasibility_pump,
+        mip_solver)
 end
 
 function combine_options(options)
@@ -65,6 +77,13 @@ function combine_options(options)
     defaults = get_default_options()
     for fname in fieldnames(SolverOptions)
         if haskey(options_dict, fname)
+            # check that mip_solver is defined if feasibile pump should be used
+            if fname == :feasibility_pump && options_dict[:feasibility_pump] == true
+                if !haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing
+                    error("If you want to use the feasibility pump you need to provide a mip_solver")
+                end
+            end
+
             # check branch strategy
             if fname == :branch_strategy 
                 if !haskey(branch_strategies, options_dict[fname])

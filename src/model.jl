@@ -1,3 +1,5 @@
+include("fpump.jl")
+
 type SolutionObj
     solution    :: Vector{Float64}
     objval      :: Float64
@@ -22,8 +24,10 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     l_constr        :: Vector{Float64}
     u_constr        :: Vector{Float64}
 
+    int2var_idx     :: Vector{Int64}
+    var2int_idx     :: Vector{Int64}
+
     var_type        :: Vector{Symbol}
-    constr_type     :: Vector{Symbol}
     isconstrlinear  :: Vector{Bool}
     obj_sense       :: Symbol
     d               :: MathProgBase.AbstractNLPEvaluator
@@ -36,6 +40,10 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     solutions       :: Vector{SolutionObj}
     nsolutions      :: Int64
 
+    mip_solver      :: MathProgBase.AbstractMathProgSolver
+
+    relaxation_time :: Float64
+
     # Info
     nintvars        :: Int64
     nbinvars        :: Int64
@@ -44,9 +52,10 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     nbranches       :: Int64
     nlevels         :: Int64
 
+    fpump_info      :: Dict{Symbol,Float64}
+
     JuniperModel() = new()
 end
-
 
 """
     MathProgBase.NonlinearModel(s::JuniperSolverObj)
@@ -80,6 +89,10 @@ function JuniperNonlinearModel(s::JuniperSolverObj)
     m.ncuts = 0
     m.nbranches = 0
     m.nlevels = 1
+    m.relaxation_time = 0.0
+    if m.options.mip_solver != nothing
+        m.mip_solver = m.options.mip_solver
+    end
 
     return m
 end
@@ -108,7 +121,7 @@ function MathProgBase.loadproblem!(
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
 
-    MathProgBase.initialize(m.d, [:ExprGraph])
+    MathProgBase.initialize(m.d, [:ExprGraph,:Jac,:Grad])
 end
 
 #=
@@ -158,7 +171,10 @@ function print_info(m::JuniperModel)
     println("#Variables: ", m.num_var)
     println("#IntBinVar: ", m.num_int_bin_var)
     println("#Constraints: ", m.num_constr)
+    println("#Linear Constraints: ", m.num_l_constr)
+    println("#NonLinear Constraints: ", m.num_nl_constr)
     println("Obj Sense: ", m.obj_sense)
+    println()
 end
 
 function print_dict(d)
@@ -189,6 +205,7 @@ function print_options(m::JuniperModel;all=true)
     else
         print_dict(get_non_default_options(m.options))
     end
+    println()
 end
 
 """
@@ -198,13 +215,12 @@ Optimize by creating a model based on the variables saved in JuniperModel.
 """
 function MathProgBase.optimize!(m::JuniperModel)
     ps = m.options.log_levels
-    (:All in ps || :Info in ps) && print_info(m)
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
     m.model = Model(solver=m.nl_solver)
-    lb = [m.l_var; -1e6]
-    ub = [m.u_var; 1e6]
+    lb = m.l_var
+    ub = m.u_var
     # all continuous we solve relaxation first
     @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
 
@@ -214,6 +230,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
 
     divide_nl_l_constr(m)
+    (:All in ps || :Info in ps) && print_info(m)
 
     # add all constraints
     for i=1:m.num_constr
@@ -226,21 +243,37 @@ function MathProgBase.optimize!(m::JuniperModel)
     m.x = x
     start = time()
     m.status = solve(m.model)
-    
+    restarts = 0
+    max_restarts = m.options.num_resolve_root_relaxation
+    while m.status != :Optimal && m.status != :LocalOptimal && restarts < max_restarts
+        restart_values = generate_random_restart(m)
+        for i=1:m.num_var      
+            setvalue(m.x[i], restart_values[i])
+        end
+        m.status = solve(m.model)
+        restarts += 1
+    end
+
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
+    m.soltime = time()-start
+    m.relaxation_time = time()-start
     if m.status != :Optimal && m.status != :LocalOptimal
         return m.status
     end
-    m.soltime = time()-start
+    
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
+    inc_sol, inc_obj = nothing, nothing
     if m.num_int_bin_var > 0
-        bnbtree = init(start,m)
+        if m.options.feasibility_pump 
+            inc_sol, inc_obj = fpump(m)
+        end
+        bnbtree = init(start, m; inc_sol = inc_sol, inc_obj = inc_obj)
         best_known = solvemip(bnbtree)
 
         replace_solution!(m, best_known)
@@ -276,6 +309,16 @@ function MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol})
         if s==:Bin
             m.l_var[i] = 0
             m.u_var[i] = 1
+        end
+    end
+    m.int2var_idx = zeros(m.num_int_bin_var)
+    m.var2int_idx = zeros(m.num_var)
+    int_i = 1
+    for i=1:m.num_var
+        if m.var_type[i] != :Cont
+            m.int2var_idx[int_i] = i
+            m.var2int_idx[i] = int_i
+            int_i += 1
         end
     end
 end

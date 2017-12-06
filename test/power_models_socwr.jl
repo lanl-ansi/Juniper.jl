@@ -17,7 +17,7 @@
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 14999.7, atol=1e0)
@@ -46,7 +46,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test m.internalModel.options.strong_restart == false
@@ -78,7 +78,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 14999.7, atol=1e0)

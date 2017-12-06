@@ -13,7 +13,7 @@
     juniper_val = result["objective"]
 
     println("")
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 6291.28, atol=1e0)

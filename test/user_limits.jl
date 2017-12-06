@@ -7,7 +7,7 @@ include("POD_experiment/blend029.jl")
     println("KNAPSACK 50%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=0.5))
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,branch_strategy=:MostInfeasible,mip_gap=0.5))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -48,7 +48,7 @@ end
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
@@ -81,7 +81,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test nsolutions == 1 || nsolutions == 2 # if last branch has two integral solutions
@@ -112,7 +112,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test juniper_val <= best_obj_stop

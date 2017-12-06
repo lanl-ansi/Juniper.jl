@@ -22,8 +22,7 @@ end
 
 function print_table_header(fields, field_chars)
     println("")
-    ln = get_table_header_line(fields, field_chars)
-    println(ln)
+    println(get_table_header_line(fields, field_chars))
     println(repeat("=", sum(field_chars)))
 end
 
@@ -100,8 +99,8 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
                 o = tree.incumbent.objval
                 val = round(abs(b-o)/abs(o)*100,2)
                 if length(string(val)) > field_chars[i]
-                    if val > 0 && val < tree.options.mip_gap
-                        val = "< "*tree.options.mip_gap*"%"
+                    if val > 0 && val < tree.options.mip_gap*100
+                        val = "< "*string(tree.options.mip_gap*100)*"%"
                     elseif val > 1000
                         val = ">>"
                     else

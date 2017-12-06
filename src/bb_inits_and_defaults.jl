@@ -1,4 +1,4 @@
-function init(start_time, m)
+function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     srand(1)
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval)
     obj_gain_m = zeros(m.num_int_bin_var)
@@ -30,8 +30,18 @@ function init(start_time, m)
     bnbTree.start_time  = start_time
     bnbTree.nsolutions  = 0
     bnbTree.branch_nodes = [node]
-    bnbTree.best_bound  = NaN
+    bnbTree.best_bound  = m.objval
     bnbTree.mutex_get_node = false
+
+    if inc_sol != nothing
+        bnbTree.incumbent = Incumbent(inc_obj, inc_sol, :Optimal, m.objval)
+        if m.options.incumbent_constr
+            add_incumbent_constr(m,bnbTree.incumbent)
+            bnbTree.nsolutions += 1
+            m.ncuts += 1
+        end
+    end
+
     return bnbTree
 end
 

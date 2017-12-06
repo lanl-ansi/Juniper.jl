@@ -23,7 +23,35 @@ include("POD_experiment/blend029.jl")
     juniper_val = getobjectivevalue(m)
     juniper_bb = getobjbound(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
+    println("bound: ", juniper_bb)
+
+
+    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
+end
+
+@testset "Batch.mod reliable parallel > processors" begin
+    println("==================================")
+    println("BATCH.MOD reliable more processors than available")
+    println("==================================")
+
+    m = batch_problem()
+
+    juniper = DefaultTestSolver(
+        branch_strategy=:Reliability,
+        strong_restart = false,
+        processors = 10
+    ) 
+
+    setsolver(m, juniper)
+    status = solve(m)
+    @test status == :Optimal
+
+    juniper_val = getobjectivevalue(m)
+    juniper_bb = getobjbound(m)
+
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
@@ -51,7 +79,7 @@ end
     juniper_val = getobjectivevalue(m)
     juniper_bb = getobjbound(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
@@ -110,7 +138,7 @@ end
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)

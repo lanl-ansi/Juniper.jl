@@ -38,6 +38,81 @@ include("basic/gamsworld.jl")
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "bruteforce approx time limit" begin
+    println("==================================")
+    println("Bruteforce  approx time limit")
+    println("==================================")
+    juniper_all_solutions = DefaultTestSolver(
+        branch_strategy=:StrongPseudoCost,
+        strong_branching_approx_time_limit=2,
+        all_solutions = true,
+        list_of_solutions = true,
+        strong_restart = true
+    )
+
+    m = Model(solver=juniper_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+
+    @test status == :Optimal
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
+end
+
+@testset "bruteforce approx time limit reliable" begin
+    println("==================================")
+    println("Bruteforce  approx time reliable")
+    println("==================================")
+    juniper_all_solutions = DefaultTestSolver(
+        branch_strategy=:Reliability,
+        strong_branching_approx_time_limit=0.02,
+        reliablility_branching_perc=100,
+        all_solutions = true,
+        list_of_solutions = true,
+        strong_restart = true
+    )
+
+    m = Model(solver=juniper_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+
+    @test status == :Optimal
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
+end
+
 @testset "bruteforce PseudoCost" begin
     println("==================================")
     println("Bruteforce PseudoCost")
@@ -107,6 +182,24 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "no integer" begin
+    println("==================================")
+    println("no integer")
+    println("==================================")
+    m = Model(solver=juniper_strong_restart)
+
+    @variable(m, 1 <= x <= 5)
+    @variable(m, -2 <= y <= 2)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==2*cos(2*x))
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Optimal
+end
 
 @testset "infeasible cos" begin
     println("==================================")
@@ -125,6 +218,28 @@ end
     println("Status: ", status)
 
     @test status == :Infeasible
+    @test isnan(getobjgap(m))
+end
+
+@testset "infeasible sin with different bounds" begin
+    println("==================================")
+    println("Infeasible  sin with different bounds")
+    println("==================================")
+    m = Model()
+
+    @variable(m, x <= 5, Int)
+    @variable(m, y >= 2, Int)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==sin(x))
+
+    setsolver(m, JuniperSolver(IpoptSolver(print_level=0),
+        branch_strategy=:MostInfeasible,
+        feasibility_pump = true,
+        time_limit = 1,
+        mip_solver=GLPKSolverMIP()
+    ))
 end
 
 @testset "infeasible relaxation" begin
@@ -145,6 +260,27 @@ end
 
     @test status == :Infeasible
 end
+
+@testset "infeasible relaxation 2" begin
+    println("==================================")
+    println("Infeasible relaxation 2")
+    println("==================================")
+    m = Model(solver=juniper_strong_no_restart)
+
+    @variable(m, x[1:3], Int)
+    @variable(m, y)
+
+    @objective(m, Max, sum(x))
+
+    @NLconstraint(m, x[1]^2+x[2]^2+x[3]^2+y^2 <= 3)
+    @NLconstraint(m, x[1]^2*x[2]^2*x[3]^2*y^2 >= 10)
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+end
+
 
 @testset "infeasible integer" begin
     println("==================================")
@@ -491,7 +627,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
@@ -510,7 +646,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
@@ -530,7 +666,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
@@ -549,7 +685,7 @@ end
 
     juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
 
     @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)

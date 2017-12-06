@@ -23,7 +23,7 @@ include("POD_experiment/blend029.jl")
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
@@ -55,7 +55,7 @@ end
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
-    println("Solution by MINLPBnb")
+    println("Solution by Juniper")
     println("obj: ", juniper_val)
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
