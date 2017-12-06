@@ -226,7 +226,26 @@ The output for `[:Table,:Info]` looks something like this:
 
 ![default-logging](https://user-images.githubusercontent.com/4931746/32625934-07b7db3c-c58e-11e7-922d-18a0a8776437.png)
 
-:Options
+**:Table**
+
+- #ONodes
+    - The number of open nodes
+- CLevel
+    - The current node is at level ... of the tree
+- Incumbent
+    - Best integral solution found
+- Best Bound
+    - The best bound of the open nodes
+- Gap 
+    - The gap between `Incumbent` and `Best Bound`
+- Time
+    - The time spend since the beginning of branch and bound
+    - Doesn't count time before branch and bound starts (i.e. feasibility pump or root relaxation)
+- GainGap
+    - The difference in percentage between a guessed gain and the actual gain.
+    - Used if `branch_strategy = PseudoCost` or after strong branching / reliability branching.
+
+**:Options**
 
 includes something like this before the info is printed:
 
@@ -238,6 +257,6 @@ strong_branching_nsteps  : 5
 Possible symbols which can be added to the vector are:
 
 - :Timing
-    - Provides some more timing informations
+    - Provides some more timing information
 - :AllOptions
     - prints all options 

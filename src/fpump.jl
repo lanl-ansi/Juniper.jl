@@ -157,8 +157,6 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
     end
     
     status = solve(mip_model)
-    println("MIP Status: ", status)
-    println("MIP Obj: ", getobjectivevalue(mip_model))
 
     # round mip values
     values = getvalue(mx)
@@ -166,7 +164,7 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
         vi = m.int2var_idx[i]
         values[vi] = round(values[vi])
     end
-    return status, values
+    return status, values, getobjectivevalue(mip_model)
 end
 
 """
@@ -202,8 +200,6 @@ function generate_nlp(m, mip_sol; random_start=false)
     nlp_sol = getvalue(nx)
     nx_val = getvalue(nx)
     nlp_obj = getobjectivevalue(nlp_model)
-    println("NLP Status: ", status)
-    println("NLP Obj: ", nlp_obj)
     return status, nlp_sol, nlp_obj
 end
 
@@ -213,7 +209,6 @@ end
 Generate the orignal nlp and get the objective for that
 """
 function generate_real_nlp(m, sol; random_start=false)
-    println("Start generate_real_nlp")
     if m.num_var == m.num_int_bin_var
         nlp_obj = MathProgBase.eval_f(m.d, sol)
         status = :Optimal
@@ -268,6 +263,41 @@ function add!(t::TabuList, m, sol)
     end
 end
 
+function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+    ln = ""
+    i = 1
+    arr = []
+    for f in fields
+        val = ""
+        if f == :MIPobj
+            val = string(round(mip_obj, 4))
+        elseif f == :NLPobj
+            val = string(round(nlp_obj,4))
+        elseif f == :Time
+            val = string(round(t,1))
+        end
+
+        if length(val) > field_chars[i]
+            # too long to display shouldn't happen normally but is better than error
+            # if it happens
+            val = "t.l." 
+        end
+
+        padding = field_chars[i]-length(val)
+        ln *= repeat(" ",trunc(Int, floor(padding/2)))
+        ln *= val
+        ln *= repeat(" ",trunc(Int, ceil(padding/2)))
+        push!(arr,val)
+        i += 1
+    end
+    return ln, arr
+end
+
+function print_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+    ln, arr = get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+    println(ln)
+end
+
 """
     fpump(m)
 
@@ -294,6 +324,17 @@ function fpump(m)
         aff = construct_affine_vector(m)
     end
 
+    last_table_arr = []
+    fields = []
+    field_chars = []
+    ps = m.options.log_levels
+    # Print table init
+    if check_print(ps,[:Table]) 
+        fields, field_chars = [:MIPobj,:NLPobj,:Time], [20,20,5]
+        print_table_header(fields,field_chars)        
+    end
+
+
     fix = false
     nlp_status = :Error
     iscorrect = false
@@ -304,7 +345,7 @@ function fpump(m)
     while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=catol) && time()-start_fpump < tl 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
-            mip_status, mip_sol = generate_mip(m, nlp_sol, aff, tabu_list) 
+            mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, aff, tabu_list) 
         else
             # if no linear constraints just round the discrete variables
             mip_sol = copy(nlp_sol)
@@ -340,6 +381,10 @@ function fpump(m)
             end
         end
 
+        if check_print(ps,[:Table]) 
+            print_fp_table(mip_obj, nlp_obj, time()-start_fpump, fields, field_chars)
+        end
+
         # if the current tolerance was nearly reached 5 times 
         # => If reasonable should be an option
         if atol_counter >= 5
@@ -371,28 +416,32 @@ function fpump(m)
         end
         if !isapprox(nlp_obj, 0.0, atol=catol) && isapprox(nlp_obj, 0.0, atol=10*catol)
             atol_counter += 1
-            println("atol_counter: ", atol_counter)
         else 
-            println("atol_counter: ", 0)
             atol_counter = 0
         end
         c += 1
     end
     
-    println("It took ", time()-start_fpump, " s")
-    println("It took ", c, " rounds")
+    if check_print(ps,[:Table]) 
+        println()
+    end
+
+    if check_print(ps,[:Info]) 
+        println("FP: ", time()-start_fpump, " s")
+        println("FP: ", c == 1 ? "$c round" : "$c rounds")
+    end 
     m.fpump_info = Dict{Symbol,Float64}()
     m.fpump_info[:time] = time()-start_fpump
     m.fpump_info[:rounds] = c
     
     if iscorrect
-        println("Obj: ", nlp_obj)
+        check_print(ps,[:Info]) && println("FP: Obj: ", nlp_obj)
         m.fpump_info[:obj] = nlp_obj
         m.fpump_info[:gap] = abs(m.objval-nlp_obj)/abs(nlp_obj)
         return nlp_sol, nlp_obj
     end
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
-    println("No fp")
+    check_print(ps,[:Info]) && println("FP: No integral solution found")
     return nothing, nothing
 end

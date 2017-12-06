@@ -30,7 +30,7 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     bnbTree.start_time  = start_time
     bnbTree.nsolutions  = 0
     bnbTree.branch_nodes = [node]
-    bnbTree.best_bound  = NaN
+    bnbTree.best_bound  = m.objval
     bnbTree.mutex_get_node = false
 
     if inc_sol != nothing

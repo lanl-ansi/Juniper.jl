@@ -133,4 +133,11 @@ end
 
 end
 
+@testset "FP: Table config" begin
+    mip_obj,nlp_obj,t, fields, field_chars = 5,2,2, [:MIPobj,:NLPobj,:Time], [20,20,10]
+    ln, arr = Juniper.get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+    @test length(ln) == 50
+    @test arr == ["5.0","2.0","2.0"] 
+end
+
 end

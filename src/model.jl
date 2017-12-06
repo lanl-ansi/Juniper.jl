@@ -174,6 +174,7 @@ function print_info(m::JuniperModel)
     println("#Linear Constraints: ", m.num_l_constr)
     println("#NonLinear Constraints: ", m.num_nl_constr)
     println("Obj Sense: ", m.obj_sense)
+    println()
 end
 
 function print_dict(d)
@@ -204,6 +205,7 @@ function print_options(m::JuniperModel;all=true)
     else
         print_dict(get_non_default_options(m.options))
     end
+    println()
 end
 
 """
