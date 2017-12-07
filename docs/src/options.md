@@ -66,7 +66,7 @@ Possible values:
     * Use of DFS first until the first feasible solution is found then switch to BFS
 
 ## Objective Cuts
-### incumbent_constr::Bool [true]
+### incumbent_constr::Bool [false]
 
 Add a constraint `objval >=/<= incumbent`. 
 
@@ -163,9 +163,11 @@ The number of processors used for the branch and bound part. **Attention:** Even
 
 Juniper has the option to find a feasible solution before the branch and bound part starts. The following options describe how to use the feasibility pump.
 
-### feasibility_pump::Bool [False]
+### feasibility_pump::Bool [Auto]
 
-Determines whether or not the feasibility pump should be used to get a feasible solution. **Attention**: If set to `true` you need to also set the `mip_solver` option.
+Determines whether or not the feasibility pump should be used to get a feasible solution.
+The default is `true` if a mip solver is specified and `false` otherwise.
+**Attention**: If set to `true` you need to also set the `mip_solver` option.
 
 ### mip_solver::MathProgBase.AbstractMathProgSolver [nothing]
 

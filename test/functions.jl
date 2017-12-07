@@ -32,12 +32,23 @@ function option_not_available()
 end
 function option_no_mip_solver()
     m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true))
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    JuMP.build(m)
+    return m.internalModel.options
 end
 
 @testset ":Option not available" begin
     @test_throws ErrorException option_not_available_t()
     @test_throws ErrorException option_not_available_b()
-    @test_throws ErrorException option_no_mip_solver()
+    opts = option_no_mip_solver()
+    @test opts.feasibility_pump == false
     @test !isa(try option_not_available() catch ex ex end, Exception) 
 end
 

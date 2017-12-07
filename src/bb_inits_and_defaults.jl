@@ -35,9 +35,9 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
 
     if inc_sol != nothing
         bnbTree.incumbent = Incumbent(inc_obj, inc_sol, :Optimal, m.objval)
+        bnbTree.nsolutions += 1
         if m.options.incumbent_constr
             add_incumbent_constr(m,bnbTree.incumbent)
-            bnbTree.nsolutions += 1
             m.ncuts += 1
         end
     end

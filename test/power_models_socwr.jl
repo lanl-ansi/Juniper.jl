@@ -23,7 +23,7 @@
     @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
-@testset "case 5 wo inc constr" begin
+@testset "case 5 w inc constr" begin
     println("==============================================")
     println("SOCWRPowerModel case5.m no incumbent constr")
     println("==============================================")
@@ -36,7 +36,7 @@ end
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         strong_restart = false,
-        incumbent_constr = false,
+        incumbent_constr = true,
         traverse_strategy = :DFS
     )
     setsolver(m, solver)
@@ -50,7 +50,7 @@ end
     println("obj: ", juniper_val)
 
     @test m.internalModel.options.strong_restart == false
-    @test m.internalModel.options.incumbent_constr == false
+    @test m.internalModel.options.incumbent_constr == true
     @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 

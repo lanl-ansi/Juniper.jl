@@ -24,7 +24,7 @@ function get_default_options()
     reliability_branching_threshold     = 5 # reliability param
     reliability_branching_perc          = 25
     # Obj cuts  
-    incumbent_constr                    = true
+    incumbent_constr                    = false
     obj_epsilon                         = 0
     # :UserLimit    
     time_limit                          = Inf  
@@ -38,12 +38,13 @@ function get_default_options()
     # Traversing    
     traverse_strategy                   = :BFS
     # Feasibility Pump  
-    feasibility_pump                    = false
+    feasibility_pump                    = true # changes to false if mip_solver not provided
     feasibility_pump_time_limit         = 60
     feasibility_pump_tolerance_counter  = 5
     tabu_list_length                    = 30
     num_resolve_nlp_feasibility_pump    = 1
     mip_solver                          = nothing
+
     return SolverOptions(log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
         strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
@@ -78,12 +79,17 @@ function combine_options(options)
         end
     end
     defaults = get_default_options()
+    if defaults.feasibility_pump == true && (!haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing)
+        options_dict[:feasibility_pump] = false
+    end
+
     for fname in fieldnames(SolverOptions)
         if haskey(options_dict, fname)
             # check that mip_solver is defined if feasibile pump should be used
             if fname == :feasibility_pump && options_dict[:feasibility_pump] == true
                 if !haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing
-                    error("If you want to use the feasibility pump you need to provide a mip_solver")
+                    warning("The feasibility pump can only be used if a mip solver is defined.")
+                    options_dict[:feasibility_pump] = false
                 end
             end
 
