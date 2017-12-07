@@ -38,7 +38,8 @@ end
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:PseudoCost, 
-            time_limit = 10 # seconds
+            time_limit = 10, # seconds
+            incumbent_constr = true
     ))
     status = solve(m)
 
@@ -70,7 +71,6 @@ end
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
         strong_restart = false,
-        incumbent_constr = false,
         solution_limit = 1
     )
     setsolver(m, solver)
@@ -101,7 +101,6 @@ end
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
         strong_restart = false,
-        incumbent_constr = false,
         best_obj_stop = best_obj_stop
     )
     setsolver(m, solver)
