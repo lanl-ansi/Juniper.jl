@@ -97,9 +97,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#incumbent_constr::Bool-[true]-1",
+    "location": "options.html#incumbent_constr::Bool-[false]-1",
     "page": "Options",
-    "title": "incumbent_constr::Bool [true]",
+    "title": "incumbent_constr::Bool [false]",
     "category": "section",
     "text": "Add a constraint objval >=/<= incumbent. "
 },
@@ -225,11 +225,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#feasibility_pump::Bool-[False]-1",
+    "location": "options.html#feasibility_pump::Bool-[Auto]-1",
     "page": "Options",
-    "title": "feasibility_pump::Bool [False]",
+    "title": "feasibility_pump::Bool [Auto]",
     "category": "section",
-    "text": "Determines whether or not the feasibility pump should be used to get a feasible solution. Attention: If set to true you need to also set the mip_solver option."
+    "text": "Determines whether or not the feasibility pump should be used to get a feasible solution. The default is true if a mip solver is specified and false otherwise. Attention: If set to true you need to also set the mip_solver option."
 },
 
 {
