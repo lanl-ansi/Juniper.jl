@@ -1,9 +1,6 @@
 include("table_log.jl")
 importall Base.Operators
 
-rtol = 1e-6
-atol = 1e-6
-
 type BnBNode
     idx                 :: Int64
     level               :: Int64
@@ -123,7 +120,7 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m, opts, int2var_idx, step_obj, counter)
         else
-            idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu)
+            idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu, opts.atol)
         end
     elseif branch_strat == :Reliability 
         idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
@@ -385,7 +382,7 @@ function one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, cou
 
 # get branch variable    
     upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter)
-    if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, int2var_idx)
+    if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, int2var_idx, opts.atol)
         push!(step_obj.integral, node)
     else         
         if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
@@ -634,7 +631,7 @@ function solvemip(tree::BnBTreeObj)
     ps = tree.options.log_levels
 
     # check if already integral
-    if are_type_correct(tree.m.solution,tree.m.var_type,tree.int2var_idx)
+    if are_type_correct(tree.m.solution,tree.m.var_type,tree.int2var_idx, tree.options.atol)
         tree.nsolutions = 1
         objval = getobjectivevalue(tree.m.model)
         sol = getvalue(tree.m.x)

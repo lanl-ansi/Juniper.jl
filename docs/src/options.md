@@ -28,6 +28,13 @@ In the following the options are explained. The type for the option is given aft
 **Attention:**
 The default values might change in the future after several tests were executed to determine the best overall options. 
 
+## Tolerance
+
+### atol::Float64 [1e-6]
+
+This tolerance is used to check whether a value is integer or not and is used in the feasibility pump.
+More information about the feasibility pump can be found [here](#Feasibility-Pump-1).
+
 ## Branching
 
 ### branch_strategy::Symbol [:StrongPseudoCost]
@@ -176,6 +183,17 @@ and set the option with `mip_solver=GLPKSolverMIP()`
 ### feasibility_pump_time_limit::Int64 [60]s
 
 The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
+
+### feasibility_pump_tolerance_counter::Int64 [5]
+
+In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution.
+If the default tolerance (`atol`) can't be reached for `feasibility_pump_tolerance_counter` consecutive times
+but the `tolerance*10` can be reached. The tolerance will be switched after `feasibility_pump_tolerance_counter` and a warning will be thrown.
+If there is no warning like `Real objective wasn't solved to optimality` afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the 
+objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues. 
+If this can't be done a warning like `Real objective wasn't solved to optimality` is thrown.
+This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues. 
+You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option.
 
 ### tabu_list_length::Int64 [30]
 

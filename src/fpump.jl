@@ -306,7 +306,7 @@ Run the feasibility pump
 function fpump(m)
     srand(1)
 
-    if are_type_correct(m.solution, m.var_type, m.int2var_idx)
+    if are_type_correct(m.solution, m.var_type, m.int2var_idx, m.options.atol)
         return m.solution, m.objval 
     end
 
@@ -344,9 +344,9 @@ function fpump(m)
     iscorrect = false
     tl = m.options.feasibility_pump_time_limit
     # the tolerance can be changed => current atol
-    catol = atol
+    catol = m.options.atol
     atol_counter = 0
-    while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=catol) && time()-start_fpump < tl 
+    while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol) && time()-start_fpump < tl 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
             mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, aff, tabu_list) 
@@ -391,15 +391,15 @@ function fpump(m)
 
         # if the current tolerance was nearly reached 5 times 
         # => If reasonable should be an option
-        if atol_counter >= 5
+        if atol_counter >= m.options.feasibility_pump_tolerance_counter
             catol *= 10
             warn("FPump tolerance changed to: ",catol)
             atol_counter = 0
         end
 
         # if the difference is near 0 => try to improve the obj by using the original obj
-        # set catol to a 1e-3 as it will be checked anyway with generate_real_nlp
-        if are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=1e-3) 
+        # set atol for type correct to a low value as it is checked with real_nlp anyway
+        if are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol*100) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && time()-start_fpump < tl 
@@ -411,14 +411,14 @@ function fpump(m)
                 nlp_sol = real_sol
                 iscorrect = true
                 break
-            elseif are_type_correct(nlp_sol, m.var_type, m.int2var_idx; catol=catol)
+            elseif are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol)
                 nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
                 iscorrect = true
                 warn("Real objective wasn't solved to optimality")
                 break
             end
         end
-        if !isapprox(nlp_obj, 0.0, atol=catol) && isapprox(nlp_obj, 0.0, atol=10*catol)
+        if !isapprox(nlp_obj, 0.0; atol=catol) && isapprox(nlp_obj, 0.0; atol=10*catol)
             atol_counter += 1
         else 
             atol_counter = 0
