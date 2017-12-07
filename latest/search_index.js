@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "General",
     "category": "section",
-    "text": "JuniperSolver(IpoptSolver(print_level=0))This is the most basic configuration of the solver.The first argument defines the solver for the relaxation here IpoptSolver. I use Ipopt for all the tests as well. The Ipopt julia package is described here The solver itself can have parameters i.e print_level=0.A list of some NLP solvers is mentioned hereYou can add options doing the following:juniper = JuniperSolver(IpoptSolver(print_level=0);\n    branch_strategy=:StrongPseudoCost\n)In this example the strategy used for branching is defined.In the following the options are explained. The type for the option is given after :: and the default value in [].Attention: The default values might change in the future after several tests were executed to determine the best overall options. "
+    "text": "The most basic configuration of Juniper is:JuniperSolver(IpoptSolver(print_level=0))The first argument defines the solver for the relaxation here IpoptSolver. Ipopt is used for all our test cases. The Ipopt julia package is described here. The solver itself can have parameters i.e print_level=0.JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned hereYou can add options doing the following:m = Model()\njuniper = JuniperSolver(IpoptSolver(print_level=0);\n    branch_strategy=:StrongPseudoCost\n)\nsetsolver(m, juniper)In this example the strategy used for branching is defined.In the following the options are explained. The type for the option is given after :: and the default value in [].Attention: The default values might change in the future after several tests were executed to determine the best overall options. "
 },
 
 {
@@ -109,7 +109,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "strong_branching_perc::Float64 [100]",
     "category": "section",
-    "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren't considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
+    "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren't considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. Attention: strong_branching_approx_time_limit might change this value."
 },
 
 {
@@ -205,7 +205,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "Feasibility Pump",
     "category": "section",
-    "text": "Juniper has the option to find a feasible solution before the branch and bound part starts. The following options to use the feasibility pump are described below."
+    "text": "Juniper has the option to find a feasible solution before the branch and bound part starts. The following options describe how to use the feasibility pump."
 },
 
 {
@@ -221,13 +221,13 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "mip_solver::MathProgBase.AbstractMathProgSolver [nothing]",
     "category": "section",
-    "text": "This has to be set to a mip solver if the feasibility pump should be used. A list of some MIP solvers is mentioned hereIf you want to use GLPK you would need to useusing GLPKMathProgInterfaceand set the option with mip_solver=GLPKSolverMIP()"
+    "text": "This has to be set to a mip solver if the feasibility pump should be used. A list of some MIP solvers is mentioned here.If you want to use GLPK you would need to useusing GLPKMathProgInterfaceand set the option with mip_solver=GLPKSolverMIP()"
 },
 
 {
-    "location": "options.html#feasibility_pump_time_limit::Int64-[10]s-1",
+    "location": "options.html#feasibility_pump_time_limit::Int64-[60]s-1",
     "page": "Options",
-    "title": "feasibility_pump_time_limit::Int64 [10]s",
+    "title": "feasibility_pump_time_limit::Int64 [60]s",
     "category": "section",
     "text": "The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not."
 },
