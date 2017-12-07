@@ -5,7 +5,7 @@ Add integral or branch node to step_obj
 """
 function push_integral_or_branch!(m, step_obj, cnode, int2var_idx, temp)
     # check if all int vars are int
-    if are_type_correct(cnode.solution, m.var_type, int2var_idx)
+    if are_type_correct(cnode.solution, m.var_type, int2var_idx, m.options.atol)
         cnode.state = :Integral
         if !temp
             push!(step_obj.integral, cnode)

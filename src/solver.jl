@@ -10,44 +10,47 @@ type JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
 end
 
 function get_default_options()
-    log_levels                      = [:Options,:Table,:Info]
-    num_resolve_root_relaxation     = 3
-    branch_strategy                 = :StrongPseudoCost
-    gain_mu                         = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
-    # Strong branching
-    strong_branching_perc           = 100
-    strong_branching_nsteps         = 1
-    strong_branching_approx_time_limit = 100
-    strong_restart                  = true
-    # Reliability branching 
-    reliability_branching_threshold = 5 # reliability param
-    reliability_branching_perc      = 25
-    # Obj cuts
-    incumbent_constr                = true
-    obj_epsilon                     = 0
-    # :UserLimit
-    time_limit                      = Inf  
-    mip_gap                         = 1e-4
-    best_obj_stop                   = NaN
-    solution_limit                  = 0
-    all_solutions                   = false
-    list_of_solutions               = false
+    log_levels                          = [:Options,:Table,:Info]
+    atol                                = 1e-6
+    num_resolve_root_relaxation         = 3
+    branch_strategy                     = :StrongPseudoCost
+    gain_mu                             = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
+    # Strong branching  
+    strong_branching_perc               = 100
+    strong_branching_nsteps             = 1
+    strong_branching_approx_time_limit  = 100
+    strong_restart                      = true
+    # Reliability branching     
+    reliability_branching_threshold     = 5 # reliability param
+    reliability_branching_perc          = 25
+    # Obj cuts  
+    incumbent_constr                    = true
+    obj_epsilon                         = 0
+    # :UserLimit    
+    time_limit                          = Inf  
+    mip_gap                             = 1e-4
+    best_obj_stop                       = NaN
+    solution_limit                      = 0
+    all_solutions                       = false
+    list_of_solutions                   = false
     # Parallel  
-    processors                      = 1
+    processors                          = 1
     # Traversing    
-    traverse_strategy               = :BFS
+    traverse_strategy                   = :BFS
     # Feasibility Pump  
-    feasibility_pump                = false
-    feasibility_pump_time_limit     = 60
-    tabu_list_length                = 30
-    num_resolve_nlp_feasibility_pump= 1
-    mip_solver                      = nothing
-    return SolverOptions(log_levels,num_resolve_root_relaxation,branch_strategy,gain_mu,
+    feasibility_pump                    = false
+    feasibility_pump_time_limit         = 60
+    feasibility_pump_tolerance_counter  = 5
+    tabu_list_length                    = 30
+    num_resolve_nlp_feasibility_pump    = 1
+    mip_solver                          = nothing
+    return SolverOptions(log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
         strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy,
-        feasibility_pump,feasibility_pump_time_limit,tabu_list_length,num_resolve_nlp_feasibility_pump,
+        feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
+        tabu_list_length,num_resolve_nlp_feasibility_pump,
         mip_solver)
 end
 

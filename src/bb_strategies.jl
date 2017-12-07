@@ -93,6 +93,7 @@ function branch_strong_on!(m,opts,step_obj,
     gains_pc = zeros(Int64,m.num_int_bin_var)
 
     left_node, right_node = nothing, nothing
+    atol = opts.atol
     while restart 
         strong_restarts += 1 # is init with -1
         restart = false
@@ -106,7 +107,7 @@ function branch_strong_on!(m,opts,step_obj,
             step_obj.var_idx = var_idx
             u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
             # don't rerun if bounds are exact or is type correct
-            if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx])
+            if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx], atol)
                 continue
             end
             # branch on the current variable and get the corresponding children
@@ -194,11 +195,12 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     # get reasonable candidates (not type correct and not already perfectly bounded)
     int_vars = m.num_int_bin_var
     reasonable_int_vars = zeros(Int64,0)
+    atol = opts.atol
     for i=1:int_vars
         idx = int2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
-        if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
+        if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx],atol)
             continue
         end
         push!(reasonable_int_vars,i)
@@ -260,12 +262,13 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
 
     strong_restarts = 0
     reasonable_int_vars = []
+    atol = opts.atol
     for i=1:length(gmc_r)
         if gmc_r[i] || gpc_r[i]
             idx = int2var_idx[i]
             u_b = node.u_var[idx]
             l_b = node.l_var[idx]
-            if isapprox(u_b,l_b,atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx])
+            if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx],atol)
                 continue
             end
             push!(reasonable_int_vars,i)
@@ -294,21 +297,21 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
         new_gains = GainObj(gains.minus, gains.plus, 
                             gains.minus_counter, gains.plus_counter)
     end
-    idx = branch_pseudo(m, node, int2var_idx, new_gains, mu)
+    idx = branch_pseudo(m, node, int2var_idx, new_gains, mu, atol)
     return idx, strong_restarts
 end
 
-function branch_pseudo(m, node, int2var_idx, obj_gain, mu)
+function branch_pseudo(m, node, int2var_idx, obj_gain, mu, atol)
     # use the one with highest obj_gain which is currently continous
     idx = 0
     scores, sort_idx = sorted_score_idx(node.solution, obj_gain, int2var_idx, mu)
     for l_idx in sort_idx
         var_idx = int2var_idx[l_idx]
-        if !is_type_correct(node.solution[var_idx], m.var_type[var_idx])
+        if !is_type_correct(node.solution[var_idx], m.var_type[var_idx], atol)
             u_b = node.u_var[var_idx]
             l_b = node.l_var[var_idx]
             # if the upper bound is the lower bound => no reason to branch
-            if isapprox(u_b, l_b, atol=atol)
+            if isapprox(u_b, l_b; atol=atol)
                 continue
             end
             idx = var_idx
