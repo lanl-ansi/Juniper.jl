@@ -399,7 +399,7 @@ function fpump(m)
 
         # if the difference is near 0 => try to improve the obj by using the original obj
         # set atol for type correct to a low value as it is checked with real_nlp anyway
-        if are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol*100) || isapprox(nlp_obj, 0.0; atol=catol)
+        if are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && time()-start_fpump < tl 
