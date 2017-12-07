@@ -50,7 +50,7 @@ end
     println("obj: ", juniper_val)
 
     @test m.internalModel.options.strong_restart == false
-    @test m.internalModel.options.incumbent_constr == false
+    @test m.internalModel.options.incumbent_constr == true
     @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
