@@ -49,6 +49,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "options.html#Tolerance-1",
+    "page": "Options",
+    "title": "Tolerance",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "options.html#atol::Float64-[1e-6]-1",
+    "page": "Options",
+    "title": "atol::Float64 [1e-6]",
+    "category": "section",
+    "text": "This tolerance is used to check whether a value is integer or not and is used in the feasibility pump. More information about the feasibility pump can be found here."
+},
+
+{
     "location": "options.html#Branching-1",
     "page": "Options",
     "title": "Branching",
@@ -230,6 +246,14 @@ var documenterSearchIndex = {"docs": [
     "title": "feasibility_pump_time_limit::Int64 [60]s",
     "category": "section",
     "text": "The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not."
+},
+
+{
+    "location": "options.html#feasibility_pump_tolerance_counter::Int64-[5]-1",
+    "page": "Options",
+    "title": "feasibility_pump_tolerance_counter::Int64 [5]",
+    "category": "section",
+    "text": "In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution. If the default tolerance (atol) can't be reached for feasibility_pump_tolerance_counter consecutive times but the tolerance*10 can be reached. The tolerance will be switched after feasibility_pump_tolerance_counter and a warning will be thrown. If there is no warning like Real objective wasn't solved to optimality afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the  objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues.  If this can't be done a warning like Real objective wasn't solved to optimality is thrown. This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues.  You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option."
 },
 
 {
