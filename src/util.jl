@@ -1,4 +1,4 @@
-function generate_random_restart(m)
+function generate_random_restart(m; cont=true)
     values = []
     for i=1:m.num_var
         lbi_def = true
@@ -26,7 +26,7 @@ function generate_random_restart(m)
             lbi = ubi-20
         end             
 
-        if m.var_type[i] == :Cont
+        if m.var_type[i] == :Cont || cont
             push!(values,(ubi-lbi)*rand()+lbi)
         else
             lbi = Int(round(lbi))

@@ -11,9 +11,9 @@ You have a really good solver for the relaxation and just want to solve problems
 
 # Basic usage
 
-It is currently not registered therefore you have to clone the package to be able to use it.
+Version v0.1.0 can be installed via:
 
-`Pkg.clone("http://github.com/lanl-ansi/Juniper.jl")`
+`Pkg.add("Juniper")`
 
 Then adding it to your project by
 

@@ -80,7 +80,7 @@ function combine_options(options)
     end
     defaults = get_default_options()
     if defaults.feasibility_pump == true && (!haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing)
-        options_dict[:feasibility_pump] = false
+        defaults.feasibility_pump = false
     end
 
     for fname in fieldnames(SolverOptions)
@@ -88,7 +88,7 @@ function combine_options(options)
             # check that mip_solver is defined if feasibile pump should be used
             if fname == :feasibility_pump && options_dict[:feasibility_pump] == true
                 if !haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing
-                    warning("The feasibility pump can only be used if a mip solver is defined.")
+                    warn("The feasibility pump can only be used if a mip solver is defined.")
                     options_dict[:feasibility_pump] = false
                 end
             end

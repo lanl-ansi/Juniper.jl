@@ -15,7 +15,8 @@ include("basic/gamsworld.jl")
     setsolver(m, DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             time_limit = 5,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=GLPKSolverMIP(),
+            incumbent_constr = true
     ))
     status = solve(m)
 

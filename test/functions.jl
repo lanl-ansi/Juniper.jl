@@ -169,4 +169,40 @@ end
     @test arr == ["5.0","2.0","2.0"] 
 end
 
+@testset "Random restarts" begin
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
+    strong_restart=true))
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Int)
+    setlowerbound(x[1], 0)
+    setlowerbound(x[2], 0.5)
+    setupperbound(x[3], 1)
+    setupperbound(x[2], 1)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    JuMP.build(m)
+    model = m.internalModel
+
+    cont_restart = Juniper.generate_random_restart(model)
+    @test length(cont_restart) == 5
+    @test 0 <= cont_restart[1] <= 20
+    @test 0.5 <= cont_restart[2] <= 1
+    @test -19 <= cont_restart[3] <= 1
+    @test -10 <= cont_restart[4] <= 10
+    @test -10 <= cont_restart[5] <= 10
+    
+
+    disc_restart = Juniper.generate_random_restart(model; cont=false)
+    @test length(disc_restart) == 5
+    for i=1:5
+        @test isapprox(round(disc_restart[i])-disc_restart[i],0,atol=1e-6)
+    end
+
+end
+
 end

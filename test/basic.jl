@@ -511,7 +511,9 @@ end
     println("KNAPSACK")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS))
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,
+            incumbent_constr=true,mip_solver=GLPKSolverMIP(),
+            strong_branching_approx_time_limit=1))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -535,8 +537,9 @@ end
     println("KNAPSACK Reliable no restart")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:Reliability,strong_restart=false))
-
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:Reliability,
+              strong_restart=false,strong_branching_approx_time_limit=1))
+ 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     @variable(m, x[1:5], Bin)
