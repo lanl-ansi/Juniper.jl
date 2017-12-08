@@ -56,7 +56,8 @@ It is recommended to specify a mip solver as well i.e.
 
 ```
 using Cbc
-solver = JuniperSolver(IpoptSolver(print_level=0);                       mip_solver=CbcSolver())
+solver = JuniperSolver(IpoptSolver(print_level=0);   
+                       mip_solver=CbcSolver())
 ```
 
 Then the feasibility pump is used to find a feasible solution before the branch and bound part starts. This turned out to be highly effective.
