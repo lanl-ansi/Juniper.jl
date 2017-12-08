@@ -336,7 +336,7 @@ MathProgBase.getobjbound(m::JuniperModel) = m.best_bound
 
 function MathProgBase.getobjgap(m::JuniperModel)
     b = m.best_bound
-    if m.objval == NaN
+    if isnan(m.objval)
         return NaN
     else
         f = m.objval

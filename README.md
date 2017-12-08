@@ -14,9 +14,9 @@ You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.
 
 # Basic usage
 
-It is currently not registered therefore you have to clone the package to be able to use it.
+Version v0.1.0 can be installed via:
 
-`Pkg.clone("http://github.com/lanl-ansi/Juniper.jl")`
+`Pkg.add("Juniper")`
 
 Then adding it to your project by
 
@@ -51,3 +51,12 @@ status = solve(m)
 ```
 
 This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.
+
+It is recommended to specify a mip solver as well i.e.
+
+```
+using Cbc
+solver = JuniperSolver(IpoptSolver(print_level=0);                       mip_solver=CbcSolver())
+```
+
+Then the feasibility pump is used to find a feasible solution before the branch and bound part starts. This turned out to be highly effective.

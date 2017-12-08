@@ -13,7 +13,9 @@ include("POD_experiment/blend029.jl")
     juniper = DefaultTestSolver(
         branch_strategy=:Reliability,
         strong_restart = false,
-        processors = 4
+        processors = 4,
+        mip_solver = GLPKSolverMIP(),
+        incumbent_constr = true
     ) 
 
     setsolver(m, juniper)
