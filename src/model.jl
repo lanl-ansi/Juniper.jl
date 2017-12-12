@@ -246,6 +246,9 @@ function MathProgBase.optimize!(m::JuniperModel)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
     while m.status != :Optimal && m.status != :LocalOptimal && restarts < max_restarts
+        if method_exists(MathProgBase.freemodel!, Tuple{typeof(m)})
+            MathProgBase.freemodel!(m)
+        end
         restart_values = generate_random_restart(m)
         for i=1:m.num_var      
             setvalue(m.x[i], restart_values[i])
@@ -266,6 +269,10 @@ function MathProgBase.optimize!(m::JuniperModel)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
+    if method_exists(MathProgBase.freemodel!, Tuple{typeof(m)})
+        MathProgBase.freemodel!(m)
+    end
+    
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
     inc_sol, inc_obj = nothing, nothing
