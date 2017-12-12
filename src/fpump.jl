@@ -201,8 +201,9 @@ function generate_nlp(m, mip_sol; random_start=false)
     nx_val = getvalue(nx)
     nlp_obj = getobjectivevalue(nlp_model)
 
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(m)})
-        MathProgBase.freemodel!(m)
+    internal_model = internalmodel(nlp_model)
+    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+        MathProgBase.freemodel!(internal_model)
     end
 
     return status, nlp_sol, nlp_obj
@@ -253,8 +254,10 @@ function generate_real_nlp(m, sol; random_start=false)
     status = solve(rmodel)
     real_sol = getvalue(rx)
     obj_val = getobjectivevalue(rmodel)
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(m)})
-        MathProgBase.freemodel!(m)
+    
+    internal_model = internalmodel(rmodel)
+    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+        MathProgBase.freemodel!(internal_model)
     end
     return status, real_sol, obj_val
 end

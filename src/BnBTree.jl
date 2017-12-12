@@ -173,8 +173,9 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
     else
         cnode.state = :Infeasible
     end
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(m)})
-        MathProgBase.freemodel!(m)
+    internal_model = internalmodel(m.model)
+    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+        MathProgBase.freemodel!(internal_model)
     end
     return cnode.state
 end
