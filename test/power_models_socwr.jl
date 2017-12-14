@@ -13,7 +13,7 @@
     setsolver(m, juniper_strong_no_restart)
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
     juniper_val = getobjectivevalue(m)
 
@@ -42,7 +42,7 @@ end
     setsolver(m, solver)
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
     juniper_val = getobjectivevalue(m)
 
@@ -74,7 +74,7 @@ end
     setsolver(m, solver)
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
     juniper_val = getobjectivevalue(m)
 

@@ -8,7 +8,7 @@
     result = run_ots("data/pglib_opf_case14_ieee.m", ACPPowerModel, juniper_strong_no_restart)
 
     status = result["status"]
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
     juniper_val = result["objective"]
 
