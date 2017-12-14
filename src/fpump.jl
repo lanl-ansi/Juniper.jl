@@ -270,7 +270,11 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
     for f in fields
         val = ""
         if f == :MIPobj
-            val = string(round(mip_obj, 4))
+            if isnan(mip_obj)
+                val = "-"
+            else
+                val = string(round(mip_obj, 4))
+            end
         elseif f == :NLPobj
             val = string(round(nlp_obj,4))
         elseif f == :Time
@@ -352,6 +356,7 @@ function fpump(m)
             mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, aff, tabu_list) 
         else
             # if no linear constraints just round the discrete variables
+            mip_obj = NaN
             mip_sol = copy(nlp_sol)
             mip_status = :Optimal
             for vi=1:m.num_int_bin_var
