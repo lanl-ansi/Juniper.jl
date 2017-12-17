@@ -2,12 +2,12 @@ include("POD_experiment/blend029.jl")
 
 @testset "User limit testing" begin
 
-@testset "Knapsack 10% limit" begin
+@testset "Knapsack 50% limit" begin
     println("==================================")
-    println("KNAPSACK 10%")
+    println("KNAPSACK 50%")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,mip_gap=10))
+    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,branch_strategy=:MostInfeasible,mip_gap=0.5))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -26,7 +26,7 @@ include("POD_experiment/blend029.jl")
     @test status == :UserLimit
 
     @test best_bound_val >= objval
-    @test 0.01 <= gap_val <= 0.1
+    @test 0.1 <= gap_val <= 0.5
 end
 
 @testset "blend029 10s limit" begin
@@ -38,18 +38,19 @@ end
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:PseudoCost, 
-            time_limit = 10 # seconds
+            time_limit = 10, # seconds
+            incumbent_constr = true
     ))
     status = solve(m)
 
     @test status == :UserLimit
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
     best_bound_val = getobjbound(m)
     gap_val = getobjgap(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
 
@@ -70,19 +71,18 @@ end
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
         strong_restart = false,
-        incumbent_constr = false,
         solution_limit = 1
     )
     setsolver(m, solver)
     status = solve(m)
 
     @test status == :UserLimit
-    nsolutions = MINLPBnB.getnsolutions(internalmodel(m))
+    nsolutions = Juniper.getnsolutions(internalmodel(m))
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
 
     @test nsolutions == 1 || nsolutions == 2 # if last branch has two integral solutions
 end
@@ -101,21 +101,20 @@ end
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost, #
         strong_restart = false,
-        incumbent_constr = false,
         best_obj_stop = best_obj_stop
     )
     setsolver(m, solver)
     status = solve(m)
 
     @test status == :UserLimit
-    nsolutions = MINLPBnB.getnsolutions(internalmodel(m))
+    nsolutions = Juniper.getnsolutions(internalmodel(m))
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
 
-    @test minlpbnb_val <= best_obj_stop
+    @test juniper_val <= best_obj_stop
 end
 
 end

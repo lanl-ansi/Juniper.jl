@@ -21,9 +21,10 @@ println("Workers:", nworkers())
 using JuMP
 
 using Ipopt
+using GLPKMathProgInterface
 using PowerModels
 
-using MINLPBnB
+using Juniper
 
 opt_rtol = 1e-6
 opt_atol = 1e-6
@@ -37,32 +38,39 @@ function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0), solver_args...
     for v in solver_args
         solver_args_dict[v[1]] = v[2]
     end
-    return MINLPBnBSolver(nl_solver; solver_args_dict...)
+    return JuniperSolver(nl_solver; solver_args_dict...)
 end
 
-minlpbnb_strong_restart_2 = DefaultTestSolver(
+juniper_strong_restart_2 = DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_perc = 25,
             strong_branching_nsteps = 2,
             strong_restart = true
             )
+        
+juniper_reliable_restart = DefaultTestSolver(
+            branch_strategy=:Reliability,
+            reliability_branching_perc = 25,
+            reliability_branching_threshold = 2,
+            strong_restart = true
+            )
 
-minlpbnb_strong_restart = DefaultTestSolver(
+juniper_strong_restart = DefaultTestSolver(
                 branch_strategy=:StrongPseudoCost,
                 strong_branching_perc = 25,
                 strong_restart = true
             )
-minlpbnb_strong_no_restart = DefaultTestSolver(
+juniper_strong_no_restart = DefaultTestSolver(
                 branch_strategy=:StrongPseudoCost,
                 strong_branching_perc = 25,
                 strong_restart = false
             )
 
-minlpbnb_mosti = DefaultTestSolver(
+juniper_mosti = DefaultTestSolver(
                 branch_strategy=:MostInfeasible,
             )  
 
-minlpbnb_pseudo = DefaultTestSolver(
+juniper_pseudo = DefaultTestSolver(
                 branch_strategy=:PseudoCost,
             )                               
 
@@ -72,6 +80,7 @@ include("functions.jl")
 include("basic.jl")
 include("user_limits.jl")
 include("parallel.jl")
+include("fpump.jl")
 include("pod.jl")
 include("power_models_acp.jl")
 include("power_models_socwr.jl")

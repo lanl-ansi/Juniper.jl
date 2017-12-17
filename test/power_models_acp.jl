@@ -5,18 +5,18 @@
     println("ACPPowerModel case14.m")
     println("==================================")
 
-    result = run_ots("data/pglib_opf_case14_ieee.m", ACPPowerModel, minlpbnb_strong_no_restart)
+    result = run_ots("data/pglib_opf_case14_ieee.m", ACPPowerModel, juniper_strong_no_restart)
 
     status = result["status"]
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
-    minlpbnb_val = result["objective"]
+    juniper_val = result["objective"]
 
     println("")
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 6291.28, atol=1e0)
+    @test isapprox(juniper_val, 6291.28, atol=1e0)
 end
 
 end

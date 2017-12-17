@@ -1,21 +1,24 @@
 ## General
 
+The most basic configuration of Juniper is:
+
 ```
-MINLPBnBSolver(IpoptSolver(print_level=0))
+JuniperSolver(IpoptSolver(print_level=0))
 ```
 
-This is the most basic configuration of the solver.
 
-The first argument defines the solver for the relaxation here `IpoptSolver`. I use [Ipopt](https://projects.coin-or.org/Ipopt) for all the tests as well. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl) The solver itself can have parameters i.e `print_level=0`.
+The first argument defines the solver for the relaxation here `IpoptSolver`. [Ipopt](https://projects.coin-or.org/Ipopt) is used for all our test cases. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl). The solver itself can have parameters i.e `print_level=0`.
 
-A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
+JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
 
 You can add options doing the following:
 
 ```
-minlpbnb = MINLPBnBSolver(IpoptSolver(print_level=0);
+m = Model()
+juniper = JuniperSolver(IpoptSolver(print_level=0);
     branch_strategy=:StrongPseudoCost
 )
+setsolver(m, juniper)
 ```
 
 In this example the strategy used for branching is defined.
@@ -24,6 +27,13 @@ In the following the options are explained. The type for the option is given aft
 
 **Attention:**
 The default values might change in the future after several tests were executed to determine the best overall options. 
+
+## Tolerance
+
+### atol::Float64 [1e-6]
+
+This tolerance is used to check whether a value is integer or not and is used in the feasibility pump.
+More information about the feasibility pump can be found [here](#Feasibility-Pump-1).
 
 ## Branching
 
@@ -36,7 +46,10 @@ Possible values:
 * `:PseudoCost`
     * Use `:MostInfeasible` first and then [Pseudo Cost Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies).
 * `:StrongPseudoCost`
-    * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`.
+    * Use [Strong Branching](https://en.wikipedia.org/wiki/Branch_and_cut#Branching_Strategies) first and then `:PseudoCost`
+    * More options for strong branching are described [here](#Options-for-strong-branching-1)
+* `:Reliability`
+    * Use [Reliability Branching](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf) in a slightly different version.
 
 ### traverse_strategy::Symbol [:BFS]
 
@@ -53,7 +66,7 @@ Possible values:
     * Use of DFS first until the first feasible solution is found then switch to BFS
 
 ## Objective Cuts
-### incumbent_constr::Bool [true]
+### incumbent_constr::Bool [false]
 
 Add a constraint `objval >=/<= incumbent`. 
 
@@ -71,18 +84,58 @@ $\text{obj } \geq (1-\epsilon)\text{UB}$
 
 ## Options for strong branching
 
-### strong_branching_perc::Float64 [25]
+### strong_branching_perc::Float64 [100]
 
 Defines the percentage of variables to consider for strong branching. 
-If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
+If set to 25 it means that strong branching is performed on 25% of all discrete variables.
+Variables which are discrete in the relaxation aren't considered again but count to the number of 
+all discrete variables.
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. **Attention:** `strong_branching_approx_time_limit` might change this value.
 
 ### strong_branching_nsteps::Int64 [1]
 
 Defines the number of steps in which strong branching is used. `:PseudoCost` will be used for later steps.
 
+### strong_branching_approx_time_limit::Float64 [100]s
+
+For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable
+to reduce the number of strong branching variables.
+
+A small example:
+- `strong_branching_perc` is set to 100%.
+- The root relaxation takes 5 seconds and there are 100 discrete variables.
+- Now the approximated time for strong branching (without considering restarts) is
+    2\*5s\*100 = 1000s because each discrete variable has two children.
+
+By using `strong_branching_approx_time_limit = 100` the number of strong branching variables is reduced to 10 because 2\*5s\*10 = 100. 
+
+If you don't want to use this time limit you can set it to `Inf`.
+
 ### strong_restart::Bool [true]
 
 If a child, while running strong branching, is infeasible this holds for the whole node. Therefore we can tighten the bounds and rerun the strong branch part. (This might occur more then once)
+This option is also used in reliablity branching.
+
+## Options for reliablity branching
+
+The implemented version of reliablity branching uses the gain score as in pseudo cost branching 
+and if some branching variables aren't reliable in a sense that strong branching wasn't performed 
+at least `reliablility_branching_threshold` times then strong branching is performed on those.
+Afterwards it will be branched on the variable with the highest gain score.
+
+### reliablility_branching_perc::Float64 [25]
+
+Defines the percentage of variables to consider for the strong branching part of reliablity branching.
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
+
+### reliablility_branching_threshold::Int64 [5]
+
+Defines whether strong branching is used to improve the reliability of the gain score.
+If a variable was used less than `reliablility_branching_threshold` times for strong branching then strong branching is performed on some of those candidates. The amount of candidates used is calculated by `reliablility_branching_perc`.
+
+### strong_restart::Bool [true]
+
+This option is explained in strong branching but is also used for reliability branching.
 
 ## Options gain computation
 
@@ -96,7 +149,7 @@ The parameter is used and a bit described in this [paper](http://citeseerx.ist.p
 
 ## Parallel
 
-MINLPBnB can be run in parallel to speed up the algorithm.
+Juniper can be run in parallel to speed up the algorithm.
 You have to start julia with `julia -p P` where `P` is the number of processors available or at least the number of processors you want to use.
 
 Then you have to specify the number of processor as an option.
@@ -105,6 +158,53 @@ Then you have to specify the number of processor as an option.
 
 The number of processors used for the branch and bound part. **Attention:** Even if you start julia using
 `julia -p P` you still have to define the number of processors using this option.
+
+## Feasibility Pump
+
+Juniper has the option to find a feasible solution before the branch and bound part starts. The following options describe how to use the feasibility pump.
+
+### feasibility_pump::Bool [Auto]
+
+Determines whether or not the feasibility pump should be used to get a feasible solution.
+The default is `true` if a mip solver is specified and `false` otherwise.
+**Attention**: If set to `true` you need to also set the `mip_solver` option.
+
+### mip_solver::MathProgBase.AbstractMathProgSolver [nothing]
+
+This has to be set to a mip solver if the feasibility pump should be used.
+A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers).
+
+If you want to use [GLPK](https://www.gnu.org/software/glpk/)
+you would need to use
+
+```
+using GLPKMathProgInterface
+```
+and set the option with `mip_solver=GLPKSolverMIP()`
+
+### feasibility_pump_time_limit::Int64 [60]s
+
+The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
+
+### feasibility_pump_tolerance_counter::Int64 [5]
+
+In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution.
+If the default tolerance (`atol`) can't be reached for `feasibility_pump_tolerance_counter` consecutive times
+but the `tolerance*10` can be reached. The tolerance will be switched after `feasibility_pump_tolerance_counter` and a warning will be thrown.
+If there is no warning like `Real objective wasn't solved to optimality` afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the 
+objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues. 
+If this can't be done a warning like `Real objective wasn't solved to optimality` is thrown.
+This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues. 
+You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option.
+
+### tabu_list_length::Int64 [30]
+
+During the run of the feasibility pump it might happen that the alternating solve steps get into a cycle.
+By using a tabu list cycles can be avoided. The length determines the length of the cycle which will be avoided. If a cycle is encountered which is longer the feasibility pump terminates.
+
+### num_resolve_nlp_feasibility_pump::Int64 [1]
+
+If the NLP is infeasible during the feasibility pump it can be restarted with a random starting point for the NL solver. This will be done as long as it is infeasible or `num_resolve_nlp_feasibility_pump` is reached.
 
 ## User Limits
 
@@ -118,9 +218,9 @@ The maximum time in seconds the solver should run.
 
 **Note:** The solver will check after each branching step therefore it isn't a strict limit and depends on the duration of a relaxation.
 
-### mip_gap::Float64 [0.01]%
+### mip_gap::Float64 [0.0001]
 
-Stops the solver if the gap is smaller than `mip_gap`. This is a percentage value.
+Stops the solver if the gap is smaller than `mip_gap`. The default is `0.01%`.
 
 ### best_obj_stop::Float [NaN]
 
@@ -131,21 +231,55 @@ If an incumbent is found which is better than `best_obj_stop` the incumbent is r
 The solver stops if the requested amount of feasible solutions is found.
 If `0` the option gets ignored.
 
+## Resolve
+
+Sometimes the non linear solver doesn't find a feasible solution in the first run.
+
+### num_resolve_root_relaxation::Int [3]
+This especially bad if this happens for the root relaxation. If there is no optimal/local optimal
+solution in the root relaxation you can use this option to resolve a couple of time until a solution is found or the number of resolves exceeded this value.
+
 ## Logging
 
-### log_levels::Vector{Symbol} [[:Table,:Info]]
+### log_levels::Vector{Symbol} [[:Table,:Info,:Options]]
 
 You can change the option `log_levels` to define what kind of logs you want to see.
 
-The default is `[:Table,:Info]` which outputs something like this:
+The output for `[:Table,:Info]` looks something like this:
 
 ![default-logging](https://user-images.githubusercontent.com/4931746/32625934-07b7db3c-c58e-11e7-922d-18a0a8776437.png)
+
+**:Table**
+
+- #ONodes
+    - The number of open nodes
+- CLevel
+    - The current node is at level ... of the tree
+- Incumbent
+    - Best integral solution found
+- Best Bound
+    - The best bound of the open nodes
+- Gap 
+    - The gap between `Incumbent` and `Best Bound`
+- Time
+    - The time spend since the beginning of branch and bound
+    - Doesn't count time before branch and bound starts (i.e. feasibility pump or root relaxation)
+- GainGap
+    - The difference in percentage between a guessed gain and the actual gain.
+    - Used if `branch_strategy = PseudoCost` or after strong branching / reliability branching.
+
+**:Options**
+
+includes something like this before the info is printed:
+
+```
+time_limit               : 10.0
+strong_branching_nsteps  : 5
+```
 
 Possible symbols which can be added to the vector are:
 
 - :Timing
-    - Provides some more timing informations
-- :Options
-    - prints all options that differ from default
+    - Provides some more timing information
 - :AllOptions
     - prints all options 

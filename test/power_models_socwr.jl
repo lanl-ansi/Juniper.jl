@@ -10,20 +10,20 @@
     @variable(m, 0 <= aeiou <= 1)
     @NLconstraint(m, aeiou^2== 1)
 
-    setsolver(m, minlpbnb_strong_no_restart)
+    setsolver(m, juniper_strong_no_restart)
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+    @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
-@testset "case 5 wo inc constr" begin
+@testset "case 5 w inc constr" begin
     println("==============================================")
     println("SOCWRPowerModel case5.m no incumbent constr")
     println("==============================================")
@@ -36,20 +36,22 @@ end
     solver = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         strong_restart = false,
-        incumbent_constr = false,
+        incumbent_constr = true,
         traverse_strategy = :DFS
     )
     setsolver(m, solver)
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+    @test m.internalModel.options.strong_restart == false
+    @test m.internalModel.options.incumbent_constr == true
+    @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
 @testset "case 5 epsilon obj constr" begin
@@ -72,14 +74,14 @@ end
     setsolver(m, solver)
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == :Optimal || status == :LocalOptimal
 
-    minlpbnb_val = getobjectivevalue(m)
+    juniper_val = getobjectivevalue(m)
 
-    println("Solution by MINLPBnb")
-    println("obj: ", minlpbnb_val)
+    println("Solution by Juniper")
+    println("obj: ", juniper_val)
 
-    @test isapprox(minlpbnb_val, 14999.7, atol=1e0)
+    @test isapprox(juniper_val, 14999.7, atol=1e0)
 end
 
 end
