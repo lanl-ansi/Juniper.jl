@@ -3,6 +3,9 @@
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Juniper.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/Juniper.jl) [![codecov](https://codecov.io/gh/lanl-ansi/Juniper.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper.jl)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/latest)
 
+![Julia v0.6](https://pkg.julialang.org/badges/Juniper_0.6.svg)
+![!Julia v0.5](https://pkg.julialang.org/badges/Juniper_0.5.svg)
+
 
 # Idea
 
