@@ -69,16 +69,16 @@ end
     @NLconstraint(m, aeiou^2== 1)
 
     solver = DefaultTestSolver(
-        branch_strategy=:StrongPseudoCost, #
+        branch_strategy=:MostInfeasible,
         strong_restart = false,
         solution_limit = 1
     )
     setsolver(m, solver)
     status = solve(m)
 
-    @test status == :UserLimit
+    @test status == :UserLimit || status == :Optimal
     nsolutions = Juniper.getnsolutions(internalmodel(m))
-
+    println("Nsolutions: ", nsolutions)
     juniper_val = getobjectivevalue(m)
 
     println("Solution by Juniper")
@@ -99,14 +99,14 @@ end
 
     best_obj_stop = 15000
     solver = DefaultTestSolver(
-        branch_strategy=:StrongPseudoCost, #
+        branch_strategy=:MostInfeasible, 
         strong_restart = false,
         best_obj_stop = best_obj_stop
     )
     setsolver(m, solver)
     status = solve(m)
 
-    @test status == :UserLimit
+    @test status == :UserLimit || status == :Optimal
     nsolutions = Juniper.getnsolutions(internalmodel(m))
 
     juniper_val = getobjectivevalue(m)

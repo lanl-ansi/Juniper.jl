@@ -45,6 +45,9 @@ function get_default_options()
     num_resolve_nlp_feasibility_pump    = 1
     mip_solver                          = nothing
 
+    # Only for testing
+    force_parallel                      = false
+
     return SolverOptions(log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
         strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
@@ -52,7 +55,7 @@ function get_default_options()
         list_of_solutions,processors,traverse_strategy,
         feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
         tabu_list_length,num_resolve_nlp_feasibility_pump,
-        mip_solver)
+        mip_solver, force_parallel)
 end
 
 function combine_options(options)

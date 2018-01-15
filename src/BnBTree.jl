@@ -513,13 +513,13 @@ Run the solving steps on several processors
 """
 function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     fields, field_chars, time_obj)
-    np = nworkers()  # determine the number of processes available
+    np = nprocs()  # determine the number of processes available
     if np < tree.options.processors
         tree.options.processors = np
         warn("Julia was started with less processors then you define in your options")
     end
-    if tree.options.processors < np
-        np = tree.options.processors
+    if tree.options.processors+1 < np
+        np = tree.options.processors+1
     end
 
     # function to produce the next work item from the queue.
@@ -661,7 +661,7 @@ function solvemip(tree::BnBTreeObj)
     add_obj_epsilon_constr(tree)
 
     # use pmap if more then one processor
-    if tree.options.processors > 1
+    if tree.options.processors > 1 || tree.options.force_parallel
         counter = pmap(Juniper.one_branch_step!,tree,
             last_table_arr,
             time_bnb_solve_start,
