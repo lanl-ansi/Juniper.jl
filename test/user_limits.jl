@@ -78,7 +78,6 @@ end
 
     @test status == :UserLimit || status == :Optimal
     nsolutions = Juniper.getnsolutions(internalmodel(m))
-    println("Nsolutions: ", nsolutions)
     juniper_val = getobjectivevalue(m)
 
     println("Solution by Juniper")
