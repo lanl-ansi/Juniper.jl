@@ -31,7 +31,10 @@ type SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Void, MathProgBase.AbstractMathProgSolver} 
+    mip_solver                          :: Union{Void, MathProgBase.AbstractMathProgSolver}
+    
+    # only for testing
+    force_parallel                      :: Bool
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

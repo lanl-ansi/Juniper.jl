@@ -288,6 +288,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         replace_solution!(m, best_known)
         m.nsolutions = bnbtree.nsolutions
     else
+        m.nsolutions = 1
         m.best_bound = getobjbound(m)
     end
     m.soltime = time()-start
