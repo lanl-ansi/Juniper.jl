@@ -1,3 +1,4 @@
+include("tree.jl")
 include("fpump.jl")
 
 type SolutionObj
@@ -53,6 +54,9 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     nlevels         :: Int64
 
     fpump_info      :: Dict{Symbol,Float64}
+
+    # debug
+    debugDict        :: Dict{Symbol,Any}
 
     JuniperModel() = new()
 end
@@ -215,6 +219,7 @@ Optimize by creating a model based on the variables saved in JuniperModel.
 """
 function MathProgBase.optimize!(m::JuniperModel)
     ps = m.options.log_levels
+    m.debugDict = Dict{Any,Any}()
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
@@ -258,17 +263,27 @@ function MathProgBase.optimize!(m::JuniperModel)
         restarts += 1
     end
 
+   
+
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     m.soltime = time()-start
     m.relaxation_time = time()-start
+
+    m.options.debug && debug_init(m.debugDict,m,restarts)
+
     if m.status != :Optimal && m.status != :LocalOptimal
+        if m.options.debug && m.options.debug_write
+            write("debug.json", JSON.json(m.debugDict))
+        end
         return m.status
     end
     
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
+
+    m.options.debug && debug_objective(m.debugDict,m)
 
     internal_model = internalmodel(m.model)
     if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
@@ -299,6 +314,9 @@ function MathProgBase.optimize!(m::JuniperModel)
         push!(m.solutions, SolutionObj(m.solution, m.objval))
     end
 
+    if m.options.debug && m.options.debug_write
+        write("debug.json", JSON.json(m.debugDict))
+    end
     return m.status
 end
 

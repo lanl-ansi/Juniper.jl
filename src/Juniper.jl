@@ -37,6 +37,7 @@ type SolverOptions
     # only for testing
     force_parallel                      :: Bool
     debug                               :: Bool
+    debug_write                         :: Bool
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

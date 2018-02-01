@@ -10,7 +10,8 @@ include("basic/gamsworld.jl")
         branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
-        strong_restart = true
+        strong_restart = true,
+        debug = true
     )
 
     m = Model(solver=juniper_all_solutions)
@@ -30,6 +31,8 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
     status = solve(m)
+    debugDict = internalmodel(m).debugDict
+    @test getnState(debugDict,:Integral) == 24
 
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))

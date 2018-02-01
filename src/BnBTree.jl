@@ -1,5 +1,4 @@
 include("table_log.jl")
-include("tree.jl")
 
 importall Base.Operators
 
@@ -485,7 +484,8 @@ function solve_sequential(tree,
     int2var_idx = tree.int2var_idx
     counter = 0
     ps = tree.options.log_levels
-    tree.options.debug && (dictTree = Dict{Any,Any}())
+        
+    dictTree = Dict{Any,Any}()
     while true
         # the _ is only needed for parallel
         exists, _, step_obj = get_next_branch_node!(tree)
@@ -511,7 +511,8 @@ function solve_sequential(tree,
             break
         end
     end
-    tree.options.debug && write("tree.json", JSON.json(dictTree))
+
+    tree.options.debug && (tree.m.debugDict[:tree] = dictTree)
     return counter
 end
 
@@ -562,7 +563,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     
     proc_counter = zeros(np)
 
-    tree.options.debug && (dictTree = Dict{Any,Any}())
+    dictTree = Dict{Any,Any}() 
 
     branch_strat = tree.options.branch_strategy
     opts = tree.options
@@ -636,7 +637,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
             end
         end
     end
-    tree.options.debug && write("tree_parallel.json", JSON.json(dictTree))
+    tree.options.debug && (tree.m.debugDict[:tree] = dictTree)
     return counter
 end
 
@@ -653,6 +654,7 @@ function solvemip(tree::BnBTreeObj)
     time_bnb_solve_start = time()
 
     ps = tree.options.log_levels
+    
 
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.int2var_idx, tree.options.atol)

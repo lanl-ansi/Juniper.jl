@@ -76,6 +76,7 @@ juniper_pseudo = DefaultTestSolver(
 
 start = time()
 
+include("debug.jl")
 include("functions.jl")
 include("basic.jl")
 include("user_limits.jl")
