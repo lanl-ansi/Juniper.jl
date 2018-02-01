@@ -12,7 +12,7 @@ type BnBNode
     var_idx             :: Int64
     state               :: Symbol
     relaxation_state    :: Symbol
-    best_bound          :: Union{Void,Float64}
+    best_bound          :: Float64
     path                :: Vector{BnBNode}
     hash                :: String
 end
@@ -163,14 +163,6 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
             push!(m.nl_solver.options, (:mu_init, 1e-5))
         end
     end
-    setvalue(m.x[1:m.num_var],zeros(m.num_var))
-    #=amplmodel = deepcopy(m.model)
-    if myid() > 1
-        setsolver(amplmodel, AmplNLSolver("bonmin", filename="nl4/"*string(leaf.hash)))
-    else
-        setsolver(amplmodel, AmplNLSolver("bonmin", filename="nl1/"*string(leaf.hash)))
-    end
-    JuMP.solve(amplmodel)=#
 
     status = JuMP.solve(m.model)
 
@@ -219,10 +211,15 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     l_nd_u_var[vidx] = floor(node.solution[vidx])
     r_nd_l_var[vidx] = ceil(node.solution[vidx])
 
-    path_l = copy(node.path)
-    path_r = copy(node.path)
-    push!(path_l,node)
-    push!(path_r,node)
+    if opts.debug
+        path_l = copy(node.path)
+        path_r = copy(node.path)
+        push!(path_l,node)
+        push!(path_r,node)
+    else
+        path_l = []
+        path_r = []
+    end
     l_nd = new_default_node(node.idx*2,   node.level+1, node.l_var, l_nd_u_var, node.solution; path=path_l)
     r_nd = new_default_node(node.idx*2+1, node.level+1, r_nd_l_var, node.u_var, node.solution; path=path_r)
 
@@ -342,7 +339,7 @@ function add_obj_epsilon_constr(tree)
 end
 
 """
-    get_next_branch_node!(tree, p, np, counter)
+    get_next_branch_node!(tree)
 
 Get the next branch node (sorted by best bound)
 Return true,step_obj if there is a branch node and
@@ -379,22 +376,6 @@ function get_next_branch_node!(tree)
     end
 end
 
-
-function add_incumbent_constr_parallel!(m,opts,incumbent)
-    if opts.incumbent_constr && incumbent != nothing
-        obj_expr = MathProgBase.obj_expr(m.d)
-        if m.obj_sense == :Min
-            obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
-        else
-            obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
-        end
-        MINLPBnB.expr_dereferencing!(obj_constr, m.model)            
-        # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
-        JuMP.addNLconstraint(m.model, obj_constr)
-        m.ncuts += 1
-    end
-    return m
-end
 
 """
     one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, counter)
@@ -504,7 +485,7 @@ function solve_sequential(tree,
     int2var_idx = tree.int2var_idx
     counter = 0
     ps = tree.options.log_levels
-    dictTree = Dict{Any,Any}()
+    tree.options.debug && (dictTree = Dict{Any,Any}())
     while true
         # the _ is only needed for parallel
         exists, _, step_obj = get_next_branch_node!(tree)
@@ -519,7 +500,7 @@ function solve_sequential(tree,
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
-        dictTree = push_step2treeDict!(dictTree,step_obj)
+        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
         
         if check_print(ps,[:Table]) 
@@ -530,7 +511,7 @@ function solve_sequential(tree,
             break
         end
     end
-    write("tree.json", JSON.json(dictTree))
+    tree.options.debug && write("tree.json", JSON.json(dictTree))
     return counter
 end
 
@@ -567,7 +548,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     ps = tree.options.log_levels
     still_running = true
     run_counter = 0
-    counter = 1
+    counter = 0
 
     for p=2:np
         remotecall_fetch(srand, p, 1)
@@ -581,8 +562,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     
     proc_counter = zeros(np)
 
-    dictTree = Dict{Any,Any}()
-    p_counter = zeros(np)
+    tree.options.debug && (dictTree = Dict{Any,Any}())
 
     branch_strat = tree.options.branch_strategy
     opts = tree.options
@@ -626,8 +606,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
-                        p_counter[p] += 1
-                        dictTree = push_step2treeDict!(dictTree,step_obj)
+                        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
                         
                         !still_running && break
                     
@@ -657,7 +636,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
             end
         end
     end
-    write("tree_parallel.json", JSON.json(dictTree))
+    tree.options.debug && write("tree_parallel.json", JSON.json(dictTree))
     return counter
 end
 
