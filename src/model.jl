@@ -246,6 +246,10 @@ function MathProgBase.optimize!(m::JuniperModel)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
     while m.status != :Optimal && m.status != :LocalOptimal && restarts < max_restarts
+        internal_model = internalmodel(m.model)
+        if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+            MathProgBase.freemodel!(internal_model)
+        end
         restart_values = generate_random_restart(m)
         for i=1:m.num_var      
             setvalue(m.x[i], restart_values[i])
@@ -266,6 +270,11 @@ function MathProgBase.optimize!(m::JuniperModel)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(x)
 
+    internal_model = internalmodel(m.model)
+    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+        MathProgBase.freemodel!(internal_model)
+    end
+
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
     inc_sol, inc_obj = nothing, nothing
@@ -279,6 +288,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         replace_solution!(m, best_known)
         m.nsolutions = bnbtree.nsolutions
     else
+        m.nsolutions = 1
         m.best_bound = getobjbound(m)
     end
     m.soltime = time()-start

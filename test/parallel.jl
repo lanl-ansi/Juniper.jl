@@ -186,9 +186,9 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
-@testset "bruteforce 2 vs 1" begin
+@testset "bruteforce fake parallel vs sequential" begin
     println("==================================")
-    println("Bruteforce 2 vs 1")
+    println("Bruteforce fake parallel vs sequential")
     println("==================================")
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:PseudoCost,
@@ -198,12 +198,13 @@ end
         processors = 1
     )
 
-    juniper_all_solutions_p2 = DefaultTestSolver(
+    juniper_all_solutions_p = DefaultTestSolver(
         branch_strategy=:PseudoCost,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = false,
-        processors = 2
+        processors = 1,
+        force_parallel = true # just for testing this goes into the parallel branch (using driver + 1)
     )
 
     m = Model(solver=juniper_all_solutions)
@@ -224,7 +225,7 @@ end
     status = solve(m)
     nbranches = Juniper.getnbranches(internalmodel(m))
 
-    setsolver(m, juniper_all_solutions_p2)
+    setsolver(m, juniper_all_solutions_p)
 
     status = solve(m)
     @test Juniper.getnbranches(internalmodel(m)) == nbranches
