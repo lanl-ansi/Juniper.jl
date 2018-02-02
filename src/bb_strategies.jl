@@ -162,6 +162,10 @@ function branch_strong_on!(m,opts,step_obj,
                 gains_p[int_var_idx] = gain_r
                 gains_pc[int_var_idx] = 1
             end
+
+            if time()-m.start_time >= opts.time_limit
+                break
+            end
         end
     end
     return status, max_gain_var, left_node, right_node, 
