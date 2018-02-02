@@ -11,7 +11,8 @@ include("basic/gamsworld.jl")
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true,
-        debug = true
+        debug = true,
+        debug_write = true
     )
 
     m = Model(solver=juniper_all_solutions)
@@ -32,7 +33,9 @@ include("basic/gamsworld.jl")
 
     status = solve(m)
     debugDict = internalmodel(m).debugDict
-    @test getnState(debugDict,:Integral) == 24
+    @test getnstate(debugDict,:Integral) == 24
+    @test different_hashes(debugDict) == true
+    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
 
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))

@@ -1,4 +1,12 @@
-function get_node_dict(step_obj)
+step_obj_primitives = [:var_idx,:state,:nrestarts,:gain_gap,
+                       :strong_int_vars,:idx_time,:node_idx_time,:upd_gains_time,:branch_time,
+                       :counter,:upd_gains]
+node_primitives = [:level,:var_idx,:l_var,:u_var,:solution,:state,:relaxation_state,:best_bound]
+gain_obj_primitives = [:minus,:plus,:minus_counter,:plus_counter]
+
+typedict(x,keys) = Dict(fn=>getfield(x, fn) for fn ∈ keys) 
+
+function get_entry_dict(step_obj)
     node = step_obj.node
     d = Dict{Symbol,Any}()
     d_l = Dict{Symbol,Any}()
@@ -9,11 +17,14 @@ function get_node_dict(step_obj)
     n_l = Dict{Symbol,Any}()
     n_r = Dict{Symbol,Any}()
 
-    n[:counter] = step_obj.counter
-    n[:best_bound] = node.best_bound
-    n[:var_idx] = node.var_idx
-    n[:state] = node.state
-    d[:node] = n
+    step_obj_dict = typedict(step_obj, step_obj_primitives)
+    node_dict = typedict(node, node_primitives)
+    gain_obj_dict = typedict(step_obj.obj_gain, gain_obj_primitives)
+
+    step_obj_dict[:node] = node_dict
+    step_obj_dict[:obj_gain] = gain_obj_dict
+    d[:step_obj] = step_obj_dict
+
     d_l[:hash] = step_obj.l_nd.hash
     n_l[:state] =step_obj.l_nd.state
     n_l[:best_bound] =step_obj.l_nd.best_bound
@@ -22,19 +33,20 @@ function get_node_dict(step_obj)
     n_r[:state] =step_obj.r_nd.state
     n_r[:best_bound] =step_obj.r_nd.best_bound
     n_r[:rel_state] =step_obj.r_nd.relaxation_state
-    d_l[:node] = n_l
-    d_r[:node] = n_r
+    d_l[:step_obj] = Dict{Symbol,Any}()
+    d_r[:step_obj] = Dict{Symbol,Any}()
+    d_l[:step_obj][:node] = n_l
+    d_r[:step_obj][:node] = n_r
     push!(d[:children],d_l)
     push!(d[:children],d_r)
     return d
 end
 
 function upd_node_dict!(cd, step_obj)
-    node_dict = get_node_dict(step_obj)
-    cd[:node][:var_idx] = node_dict[:node][:var_idx]
-    cd[:node][:state] = node_dict[:node][:state]
-    cd[:children] = node_dict[:children]
-    cd[:node][:counter] = node_dict[:node][:counter]
+    ed = get_entry_dict(step_obj)
+    cd[:children] = ed[:children]
+    cd[:step_obj] = ed[:step_obj]
+    cd[:hash] = ed[:hash]
 end
 
 
@@ -42,7 +54,7 @@ function push_step2treeDict!(d, step_obj)
     c = step_obj.counter
     node = step_obj.node
     if length(node.path) == 0
-        d = get_node_dict(step_obj)
+        d = get_entry_dict(step_obj)
     else 
         path = copy(node.path)
         cd = d
@@ -66,6 +78,7 @@ function debug_init(d,m,restarts)
     d[:relaxation] = Dict{Symbol,Any}()
     d[:relaxation][:status] = m.status
     d[:relaxation][:time] = m.relaxation_time
+    d[:relaxation][:restarts] = restarts
 end 
 
 function debug_objective(d,m)

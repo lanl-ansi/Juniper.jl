@@ -239,9 +239,7 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     r_state = process_node!(m, step_obj, r_nd, int2var_idx, temp)
     node_time = time() - start_process
 
-    if temp
-        step_obj.node_idx_time += node_time
-    else
+    if !temp
         step_obj.node_branch_time += node_time
     end
 
@@ -398,7 +396,9 @@ function one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, cou
     step_obj.counter = counter
 
 # get branch variable    
+    node_idx_start = time()
     upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter)
+    step_obj.node_idx_time = time()-node_idx_start
     if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, int2var_idx, opts.atol)
         push!(step_obj.integral, node)
     else         
@@ -500,8 +500,8 @@ function solve_sequential(tree,
         m.nnodes += 2 # two nodes explored per branch
         node = step_obj.node
 
-        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
+        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
         
         if check_print(ps,[:Table]) 
             last_table_arr = print_table(1,tree,node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
@@ -607,11 +607,11 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
-                        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
                         
                         !still_running && break
-                    
+                        
                         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
+                        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
 
                         if run_counter == 0 && length(tree.branch_nodes) == 0
                             still_running = false 
@@ -736,6 +736,15 @@ function solvemip(tree::BnBTreeObj)
     time_bnb_solve = time()-time_bnb_solve_start
     (:Table in tree.options.log_levels) && println("")
     (:Info in tree.options.log_levels) && println("#branches: ", counter)
+
+    if tree.options.debug
+        tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_int_bin_var)
+        tree.m.debugDict[:obj_gain][1,:] = tree.obj_gain.minus
+        tree.m.debugDict[:obj_gain][2,:] = tree.obj_gain.plus
+        tree.m.debugDict[:obj_gain][3,:] = tree.obj_gain.minus_counter
+        tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
+    end
+
     if :Timing in tree.options.log_levels
         println("BnB time: ", round(time_bnb_solve,2))
         println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))

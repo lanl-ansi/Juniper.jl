@@ -159,7 +159,8 @@ end
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true,
-        processors = 3
+        processors = 3,
+        debug = true
     )
 
     m = Model(solver=juniper_all_solutions)
@@ -178,12 +179,17 @@ end
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
     status = solve(m)
-    println("Status: ", status)
+
+    debugDict = internalmodel(m).debugDict
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
     @test status == :Optimal
     @test Juniper.getnsolutions(internalmodel(m)) == 24
+
+    @test getnstate(debugDict,:Integral) == 24
+    @test different_hashes(debugDict) == true
+    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
 end
 
 @testset "bruteforce fake parallel vs sequential" begin
