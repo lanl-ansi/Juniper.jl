@@ -130,7 +130,9 @@ end
             strong_branching_perc = 50,
             strong_branching_nsteps = 5,
             strong_restart = true,
-            processors = 4
+            processors = 4,
+            debug = true,
+            debug_write = true
     ))
     status = solve(m)
 

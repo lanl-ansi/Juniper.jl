@@ -28,11 +28,17 @@ function get_entry_dict(step_obj)
     d_l[:hash] = step_obj.l_nd.hash
     n_l[:state] =step_obj.l_nd.state
     n_l[:best_bound] =step_obj.l_nd.best_bound
-    n_l[:rel_state] =step_obj.l_nd.relaxation_state
+    n_l[:relaxation_state] =step_obj.l_nd.relaxation_state
+    if n_l[:state] == :Integral
+        n_l[:solution] =step_obj.l_nd.solution
+    end
     d_r[:hash] = step_obj.r_nd.hash
     n_r[:state] =step_obj.r_nd.state
     n_r[:best_bound] =step_obj.r_nd.best_bound
-    n_r[:rel_state] =step_obj.r_nd.relaxation_state
+    n_r[:relaxation_state] =step_obj.r_nd.relaxation_state
+    if n_r[:state] == :Integral
+        n_r[:solution] =step_obj.r_nd.solution
+    end
     d_l[:step_obj] = Dict{Symbol,Any}()
     d_r[:step_obj] = Dict{Symbol,Any}()
     d_l[:step_obj][:node] = n_l
@@ -76,9 +82,13 @@ end
 
 function debug_init(d,m,restarts)
     d[:relaxation] = Dict{Symbol,Any}()
+    d[:info] = Dict{Symbol,Any}()
     d[:relaxation][:status] = m.status
     d[:relaxation][:time] = m.relaxation_time
     d[:relaxation][:restarts] = restarts
+    d[:info][:sense] = m.obj_sense
+    d[:info][:nintvars] = m.nintvars
+    d[:info][:nbinvars] = m.nbinvars
 end 
 
 function debug_objective(d,m)
@@ -86,3 +96,11 @@ function debug_objective(d,m)
     d[:relaxation][:solution] = m.solution
 end 
     
+function debug_set_solution(d,m)
+    d[:solution] = Dict{Symbol,Any}()
+    d[:solution][:objval] = m.objval
+    d[:solution][:best_bound] = m.best_bound
+    d[:solution][:status] = m.status
+    d[:solution][:solution] = m.solution
+    d[:solution][:time] = m.soltime
+end

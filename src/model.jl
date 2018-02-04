@@ -313,7 +313,8 @@ function MathProgBase.optimize!(m::JuniperModel)
     if length(m.solutions) == 0
         push!(m.solutions, SolutionObj(m.solution, m.objval))
     end
-
+    
+    m.options.debug && debug_set_solution(m.debugDict,m)
     if m.options.debug && m.options.debug_write
         write("debug.json", JSON.json(m.debugDict))
     end

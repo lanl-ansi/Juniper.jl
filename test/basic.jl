@@ -11,8 +11,7 @@ include("basic/gamsworld.jl")
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true,
-        debug = true,
-        debug_write = true
+        debug = true
     )
 
     m = Model(solver=juniper_all_solutions)
