@@ -19,22 +19,35 @@ function branch_mostinfeasible(m, node, int2var_idx)
 end
 
 """
-init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
+init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node)
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
 function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
-                                reasonable_int_vars, infeasible_int_vars)
+                                reasonable_int_vars, infeasible_int_vars,
+                                left_node, right_node)
     restart = false
 
     # set the bounds directly for the node
     # also update the best bound and the solution
     if l_nd.relaxation_state != :Optimal
         node.l_var[var_idx] = ceil(node.solution[var_idx])
+        if left_node != nothing
+            left_node.l_var[var_idx] = node.l_var[var_idx]
+        end
+        if right_node != nothing
+            right_node.l_var[var_idx] = node.l_var[var_idx]
+        end
         node.best_bound = r_nd.best_bound
         node.solution = r_nd.solution
     else
         node.u_var[var_idx] = floor(node.solution[var_idx])
+        if left_node != nothing
+            left_node.u_var[var_idx] = node.u_var[var_idx]
+        end
+        if right_node != nothing
+            right_node.u_var[var_idx] = node.u_var[var_idx]
+        end
         node.best_bound = l_nd.best_bound
         node.solution = l_nd.solution
     end
@@ -72,7 +85,6 @@ function branch_strong_on!(m,opts,step_obj,
 
     node = step_obj.node
 
-    strong_restarts = -1 
 
     # compute the gain for each reasonable candidate and choose the highest
     max_gain, max_gain_var, strong_int_vars = init_variables()
@@ -118,23 +130,21 @@ function branch_strong_on!(m,opts,step_obj,
                 break
             end
 
-            # if restart is true => check if one part is infeasible => update bounds & restart
-            if strong_restart == true
-                if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
-                    if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
-                        # TODO: Might be Error instead of infeasible
-                        status = :LocalInfeasible
-                        break
-                    end
-                    restart,new_infeasible_int_vars,new_max_gain_var,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars)
-                    if restart && time()-strong_time > opts.strong_branching_approx_time_limit
-                        restart = false
-                    elseif restart
-                        infeasible_int_vars = new_infeasible_int_vars
-                        max_gain_var = new_max_gain_var
-                        strong_int_vars = new_strong_int_vars
-                        max_gain = new_max_gain_var
-                    end
+            # check if one part is infeasible => update bounds & restart if strong restart is true
+            if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
+                if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
+                    # TODO: Might be Error instead of infeasible
+                    status = :LocalInfeasible
+                    break
+                end
+                restart,new_infeasible_int_vars,new_max_gain_var,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node)
+                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
+                    restart = false
+                elseif restart && strong_restart
+                    infeasible_int_vars = new_infeasible_int_vars
+                    max_gain_var = new_max_gain_var
+                    strong_int_vars = new_strong_int_vars
+                    max_gain = new_max_gain_var
                 end
             end
             gain_l = sigma_minus(node, l_nd, node.solution[node.var_idx])
