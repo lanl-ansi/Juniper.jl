@@ -138,7 +138,7 @@ function branch_strong_on!(m,opts,step_obj,
                     break
                 end
                 restart,new_infeasible_int_vars,new_max_gain_var,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node)
-                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
+                if restart && (time()-strong_time > opts.strong_branching_approx_time_limit || !strong_restart)
                     restart = false
                 elseif restart && strong_restart
                     infeasible_int_vars = new_infeasible_int_vars
@@ -160,7 +160,8 @@ function branch_strong_on!(m,opts,step_obj,
                 right_node = r_nd
                 # gain is set to inf if Integral or Infeasible
                 # TODO: Might be reasonable to use something different
-                if isinf(gain)
+                # if gain is inf => one branch is infeasible => maybe restart
+                if isinf(gain) && restart
                     break
                 end
             end
