@@ -19,13 +19,14 @@ function branch_mostinfeasible(m, node, int2var_idx)
 end
 
 """
-init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node)
+init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars,
+ left_node, right_node, strong_restart)
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
 function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
-                                reasonable_int_vars, infeasible_int_vars,
-                                left_node, right_node)
+                                reasonable_int_vars, infeasible_int_vars, strong_int_vars, 
+                                left_node, right_node, strong_restart)
     restart = false
 
     # set the bounds directly for the node
@@ -56,12 +57,14 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
 
     if length(reasonable_int_vars) == length(infeasible_int_vars)
         # basically branching on the last infeasible variable 
-        max_gain_var = infeasible_int_vars[end]
-        strong_int_vars = [infeasible_int_vars[end]] # don't divide by 0 later
-    else
+        max_gain_var = var_idx
+        strong_int_vars = [int_var_idx] # don't divide by 0 later
+    elseif strong_restart
         max_gain_var = 0
         strong_int_vars = zeros(Int64,0)
         restart = true
+    else
+        max_gain_var = var_idx
     end
     return restart, infeasible_int_vars, max_gain_var, strong_int_vars
 end
@@ -137,14 +140,28 @@ function branch_strong_on!(m,opts,step_obj,
                     status = :LocalInfeasible
                     break
                 end
-                restart,new_infeasible_int_vars,new_max_gain_var,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node)
-                if restart && (time()-strong_time > opts.strong_branching_approx_time_limit || !strong_restart)
+                restart,new_infeasible_int_vars,new_max_gain_var,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, strong_int_vars, left_node, right_node, strong_restart)
+                infeasible_int_vars = new_infeasible_int_vars
+                strong_int_vars = new_strong_int_vars
+
+                # bounds changed but no restart => check if still feasible
+                if !strong_restart
+                    # branch on the max_gain_var variable to check if after the bounds still feasible
+                    # otherwise do an actual restart to avoid infeasibility
+                    step_obj.var_idx = new_max_gain_var
+                    l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
+                    if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && time()-strong_time > opts.strong_branching_approx_time_limit
+                        max_gain = 0
+                        max_gain_var = 0
+                        restart = true
+                        break
+                    else
+                        left_node = l_nd
+                        right_node = r_nd
+                    end
+                end
+                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
                     restart = false
-                elseif restart && strong_restart
-                    infeasible_int_vars = new_infeasible_int_vars
-                    max_gain_var = new_max_gain_var
-                    strong_int_vars = new_strong_int_vars
-                    max_gain = new_max_gain_var
                 end
             end
             gain_l = sigma_minus(node, l_nd, node.solution[node.var_idx])
