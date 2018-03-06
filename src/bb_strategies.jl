@@ -144,22 +144,6 @@ function branch_strong_on!(m,opts,step_obj,
                 infeasible_int_vars = new_infeasible_int_vars
                 strong_int_vars = new_strong_int_vars
 
-                # bounds changed but no restart => check if still feasible
-                if !strong_restart
-                    # branch on the max_gain_var variable to check if after the bounds still feasible
-                    # otherwise do an actual restart to avoid infeasibility
-                    step_obj.var_idx = new_max_gain_var
-                    l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
-                    if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && time()-strong_time > opts.strong_branching_approx_time_limit
-                        max_gain = 0
-                        max_gain_var = 0
-                        restart = true
-                        break
-                    else
-                        left_node = l_nd
-                        right_node = r_nd
-                    end
-                end
                 if restart && time()-strong_time > opts.strong_branching_approx_time_limit
                     restart = false
                 end
@@ -192,6 +176,28 @@ function branch_strong_on!(m,opts,step_obj,
             end
         end
     end
+
+    # bounds changed but no restart => check if still feasible
+    if !strong_restart && status == :Normal
+        # branch on the max_gain_var variable to check if after the bounds still feasible
+        # otherwise do an actual restart to avoid infeasibility
+        step_obj.var_idx = max_gain_var
+        l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
+        # if infeasible => LocalInfeasible or Global if counter =1
+        if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
+            if counter == 1
+                status = :GlobalInfeasible
+            else
+                status = :LocalInfeasible
+            end
+            left_node = nothing
+            right_node = nothing
+        else
+            left_node = l_nd
+            right_node = r_nd
+        end
+    end
+
     return status, max_gain_var, left_node, right_node, 
     (gains_m, gains_mc, gains_p, gains_pc), strong_restarts, strong_int_vars
 end
