@@ -28,6 +28,7 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
                                 reasonable_int_vars, infeasible_int_vars, strong_int_vars, 
                                 left_node, right_node, strong_restart)
     restart = false
+    set_to_last_var = false
 
     # set the bounds directly for the node
     # also update the best bound and the solution
@@ -40,7 +41,6 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
             right_node.l_var[var_idx] = node.l_var[var_idx]
         end
         node.best_bound = r_nd.best_bound
-        node.solution = r_nd.solution
     else
         node.u_var[var_idx] = floor(node.solution[var_idx])
         if left_node != nothing
@@ -50,7 +50,6 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
             right_node.u_var[var_idx] = node.u_var[var_idx]
         end
         node.best_bound = l_nd.best_bound
-        node.solution = l_nd.solution
     end
 
     push!(infeasible_int_vars, int_var_idx)
@@ -58,11 +57,12 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
     if length(reasonable_int_vars) == length(infeasible_int_vars)
         # basically branching on the last infeasible variable 
         strong_int_vars = [int_var_idx] # don't divide by 0 later
+        set_to_last_var = true
     elseif strong_restart
         strong_int_vars = zeros(Int64,0)
         restart = true
     end
-    return restart, infeasible_int_vars, strong_int_vars
+    return restart, infeasible_int_vars, strong_int_vars, set_to_last_var
 end
 
 """
@@ -158,9 +158,15 @@ function branch_strong_on!(m,opts,step_obj,
                     status = :LocalInfeasible
                     break
                 end
-                restart,new_infeasible_int_vars,new_strong_int_vars = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, strong_int_vars, left_node, right_node, strong_restart)
+                restart,new_infeasible_int_vars,new_strong_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, strong_int_vars, left_node, right_node, strong_restart)
                 infeasible_int_vars = new_infeasible_int_vars
                 strong_int_vars = new_strong_int_vars
+                if set_to_last_var
+                    max_gain_var = var_idx
+                    max_gain_int_var = int_var_idx
+                    left_node = l_nd
+                    right_node = r_nd
+                end
 
                 if restart && time()-strong_time > opts.strong_branching_approx_time_limit
                     restart = false
@@ -186,28 +192,24 @@ function branch_strong_on!(m,opts,step_obj,
 
     # bounds changed but no restart => check if still feasible
     if !strong_restart && status == :Normal
-        # if correct type we don't have to solve it again otherwise it would copy the node to make children
-        # this has to be avoided
-        if !is_type_correct(step_obj.node.solution[max_gain_var], m.var_type[max_gain_var], opts.atol)
-            # branch on the max_gain_var variable to check if after the bounds still feasible
-            # otherwise do an actual restart to avoid infeasibility
-            step_obj.var_idx = max_gain_var
-            l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
-            # if infeasible => LocalInfeasible or Global if counter =1
-            if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
-                if counter == 1
-                    status = :GlobalInfeasible
-                else
-                    status = :LocalInfeasible
-                end
-                left_node = nothing
-                right_node = nothing
+        # branch on the max_gain_var variable to check if after the bounds still feasible
+        # otherwise do an actual restart to avoid infeasibility
+        step_obj.var_idx = max_gain_var
+        l_nd, r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
+        # if infeasible => LocalInfeasible or Global if counter = 1
+        if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
+            if counter == 1
+                status = :GlobalInfeasible
             else
-                left_node = l_nd
-                right_node = r_nd
-                gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
-                set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,max_gain_int_var)
+                status = :LocalInfeasible
             end
+            left_node = nothing
+            right_node = nothing
+        else
+            left_node = l_nd
+            right_node = r_nd
+            gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
+            set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,max_gain_int_var)
         end
     end
 
@@ -339,13 +341,14 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
         step_obj.upd_gains = :GainsToTree
         new_gains = GainObj(step_obj.obj_gain.minus, step_obj.obj_gain.plus, 
                             step_obj.obj_gain.minus_counter, step_obj.obj_gain.plus_counter)
+        return max_gain_var, strong_restarts
     else 
         step_obj.upd_gains = :GuessAndUpdate
         new_gains = GainObj(gains.minus, gains.plus, 
                             gains.minus_counter, gains.plus_counter)
+        idx = branch_pseudo(m, node, int2var_idx, new_gains, mu, atol)
+        return idx, 0
     end
-    idx = branch_pseudo(m, node, int2var_idx, new_gains, mu, atol)
-    return idx, strong_restarts
 end
 
 function branch_pseudo(m, node, int2var_idx, obj_gain, mu, atol)
@@ -357,10 +360,8 @@ function branch_pseudo(m, node, int2var_idx, obj_gain, mu, atol)
         if !is_type_correct(node.solution[var_idx], m.var_type[var_idx], atol)
             u_b = node.u_var[var_idx]
             l_b = node.l_var[var_idx]
-            # if the upper bound is the lower bound => no reason to branch
-            if isapprox(u_b, l_b; atol=atol)
-                continue
-            end
+            # if the upper bound is the lower bound => should be type correct
+            @assert !isapprox(u_b, l_b; atol=atol)
             idx = var_idx
             break
         end
