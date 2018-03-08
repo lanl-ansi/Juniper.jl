@@ -193,7 +193,6 @@ function branch_strong_on!(m,opts,step_obj,
             # otherwise do an actual restart to avoid infeasibility
             step_obj.var_idx = max_gain_var
             l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
-            @assert hash(l_nd.u_var) != hash(r_nd.u_var)
             # if infeasible => LocalInfeasible or Global if counter =1
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
                 if counter == 1
