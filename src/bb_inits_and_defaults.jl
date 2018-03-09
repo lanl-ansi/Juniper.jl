@@ -76,7 +76,6 @@ function new_default_step_obj(m,node)
     step_obj.nrestarts        = 0   
     step_obj.gain_gap         = 0.0   
     step_obj.obj_gain         = gains
-    step_obj.strong_int_vars  = zeros(Int64,0)    
     step_obj.idx_time         = idx_time   
     step_obj.node_idx_time    = node_idx_time   
     step_obj.upd_gains_time   = upd_gains_time   

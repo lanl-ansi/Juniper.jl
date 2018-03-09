@@ -52,7 +52,6 @@ type StepObj
     nrestarts           :: Int64 
     gain_gap            :: Float64
     obj_gain            :: GainObj
-    strong_int_vars     :: Vector{Int64}
     idx_time            :: Float64
     node_idx_time       :: Float64
     upd_gains_time      :: Float64
@@ -193,7 +192,7 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
 
     start = time()
     # it might be already branched on
-    if node.state != :Branch
+    if !temp && node.state != :Branch
         for cnode in [step_obj.l_nd,step_obj.r_nd]
             if cnode.state == :Branch || cnode.state == :Integral
                 push_integral_or_branch!(m, step_obj, cnode, int2var_idx, false)
