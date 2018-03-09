@@ -76,6 +76,7 @@ function branch_strong_on!(m,opts,step_obj,
     function get_current_gains(node, l_nd, r_nd)
         gain_l = sigma_minus(node, l_nd, node.solution[node.var_idx])
         gain_r = sigma_plus(node,  r_nd, node.solution[node.var_idx])
+
         if isinf(gain_l)
             gain = gain_r
         elseif isinf(gain_r)
@@ -132,6 +133,10 @@ function branch_strong_on!(m,opts,step_obj,
 
             # branch on the current variable and get the corresponding children
             l_nd,r_nd = branch!(m, opts, step_obj, counter, int2var_idx; temp=true)
+
+            # no current restart => we can set max_gain and variable
+            gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
+
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
                 # TODO: Might be Error instead of infeasible
                 status = :GlobalInfeasible
@@ -166,16 +171,10 @@ function branch_strong_on!(m,opts,step_obj,
                 if restart && time()-strong_time > opts.strong_branching_approx_time_limit
                     restart = false
                 end
-
-                # if restart we don't have to set gains as this will be done later
-                if restart 
-                    break
-                end
             end
 
-            # no current restart => we can set max_gain and variable
-            gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
-            if gain > max_gain
+            # don't update maximum if restart
+            if gain > max_gain && !restart 
                 max_gain = gain
                 max_gain_var = var_idx
                 max_gain_int_var = int_var_idx
@@ -186,6 +185,9 @@ function branch_strong_on!(m,opts,step_obj,
                 need_to_resolve = false
             end
             set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
+            if restart
+                break
+            end
         end
     end
 
