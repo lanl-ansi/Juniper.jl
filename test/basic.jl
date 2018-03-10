@@ -258,6 +258,27 @@ end
     @test isnan(getobjgap(m))
 end
 
+
+@testset "infeasible cos reliable" begin
+    println("==================================")
+    println("Infeasible cos reliable")
+    println("==================================")
+    m = Model(solver=juniper_reliable_restart)
+
+    @variable(m, 1 <= x <= 5, Int)
+    @variable(m, -2 <= y <= 2, Int)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y==2*cos(2*x))
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+    @test isnan(getobjgap(m))
+end
+
 @testset "infeasible sin with different bounds" begin
     println("==================================")
     println("Infeasible  sin with different bounds")

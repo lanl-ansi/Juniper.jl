@@ -122,7 +122,7 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
             idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu, opts.atol)
         end
     elseif branch_strat == :Reliability 
-        idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
+        status, idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     end
     step_obj.state = status
     step_obj.var_idx = idx

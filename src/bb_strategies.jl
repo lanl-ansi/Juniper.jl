@@ -138,7 +138,7 @@ function branch_strong_on!(m,opts,step_obj,
             gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
 
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
-                # TODO: Might be Error instead of infeasible
+                # TODO: Might be Error/UserLimit instead of infeasible
                 status = :GlobalInfeasible
                 break
             end
@@ -146,7 +146,7 @@ function branch_strong_on!(m,opts,step_obj,
             # check if one part is infeasible => update bounds & restart if strong restart is true
             if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
                 if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
-                    # TODO: Might be Error instead of infeasible
+                    # TODO: Might be Error/UserLimit instead of infeasible
                     status = :LocalInfeasible
                     break
                 end
@@ -323,13 +323,17 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
         step_obj.upd_gains = :GainsToTree
         new_gains = GainObj(step_obj.obj_gain.minus, step_obj.obj_gain.plus, 
                             step_obj.obj_gain.minus_counter, step_obj.obj_gain.plus_counter)
+
+        if status == :GlobalInfeasible
+            return :GlobalInfeasible, 0, strong_restarts
+        end
     else 
         step_obj.upd_gains = :GuessAndUpdate
         new_gains = GainObj(gains.minus, gains.plus, 
                             gains.minus_counter, gains.plus_counter)
     end
     idx = branch_pseudo(m, node, int2var_idx, new_gains, mu, atol)
-    return idx, strong_restarts
+    return :Normal, idx, strong_restarts
 end
 
 function branch_pseudo(m, node, int2var_idx, obj_gain, mu, atol)
