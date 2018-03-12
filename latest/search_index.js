@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Juniper",
     "category": "section",
-    "text": "Juniper (Jump Non linear Integer Program solver) is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia. Juniper solves these kind of problems using a NLP solver and then branch and bound. If the NLP solver isn't global optimal then Juniper is a heuristic.  You need the global optimum? Check out POD.jl"
+    "text": "Juniper (Jump Non linear Integer Program solver) is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia. Juniper solves these kind of problems using a NLP solver and then branch and bound. If the NLP solver isn\'t global optimal then Juniper is a heuristic.  You need the global optimum? Check out POD.jl"
 },
 
 {
@@ -125,7 +125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "strong_branching_perc::Float64 [100]",
     "category": "section",
-    "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren't considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. Attention: strong_branching_approx_time_limit might change this value."
+    "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren\'t considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn\'t make sense for one variable. Attention: strong_branching_approx_time_limit might change this value."
 },
 
 {
@@ -141,7 +141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "strong_branching_approx_time_limit::Float64 [100]s",
     "category": "section",
-    "text": "For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable to reduce the number of strong branching variables.A small example:strong_branching_perc is set to 100%.\nThe root relaxation takes 5 seconds and there are 100 discrete variables.\nNow the approximated time for strong branching (without considering restarts) is   2*5s*100 = 1000s because each discrete variable has two children.By using strong_branching_approx_time_limit = 100 the number of strong branching variables is reduced to 10 because 2*5s*10 = 100. If you don't want to use this time limit you can set it to Inf."
+    "text": "For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable to reduce the number of strong branching variables.A small example:strong_branching_perc is set to 100%.\nThe root relaxation takes 5 seconds and there are 100 discrete variables.\nNow the approximated time for strong branching (without considering restarts) is   2*5s*100 = 1000s because each discrete variable has two children.By using strong_branching_approx_time_limit = 100 the number of strong branching variables is reduced to 10 because 2*5s*10 = 100. If you don\'t want to use this time limit you can set it to Inf."
 },
 
 {
@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "Options for reliablity branching",
     "category": "section",
-    "text": "The implemented version of reliablity branching uses the gain score as in pseudo cost branching  and if some branching variables aren't reliable in a sense that strong branching wasn't performed  at least reliablility_branching_threshold times then strong branching is performed on those. Afterwards it will be branched on the variable with the highest gain score."
+    "text": "The implemented version of reliablity branching uses the gain score as in pseudo cost branching  and if some branching variables aren\'t reliable in a sense that strong branching wasn\'t performed  at least reliablility_branching_threshold times then strong branching is performed on those. Afterwards it will be branched on the variable with the highest gain score."
 },
 
 {
@@ -165,7 +165,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "reliablility_branching_perc::Float64 [25]",
     "category": "section",
-    "text": "Defines the percentage of variables to consider for the strong branching part of reliablity branching. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn't make sense for one variable. "
+    "text": "Defines the percentage of variables to consider for the strong branching part of reliablity branching. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn\'t make sense for one variable. "
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "feasibility_pump_tolerance_counter::Int64 [5]",
     "category": "section",
-    "text": "In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution. If the default tolerance (atol) can't be reached for feasibility_pump_tolerance_counter consecutive times but the tolerance*10 can be reached. The tolerance will be switched after feasibility_pump_tolerance_counter and a warning will be thrown. If there is no warning like Real objective wasn't solved to optimality afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the  objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues.  If this can't be done a warning like Real objective wasn't solved to optimality is thrown. This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues.  You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option."
+    "text": "In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution. If the default tolerance (atol) can\'t be reached for feasibility_pump_tolerance_counter consecutive times but the tolerance*10 can be reached. The tolerance will be switched after feasibility_pump_tolerance_counter and a warning will be thrown. If there is no warning like Real objective wasn\'t solved to optimality afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the  objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues.  If this can\'t be done a warning like Real objective wasn\'t solved to optimality is thrown. This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues.  You can set this value to a huge number (more than 100 should be enough) if you don\'t want to use this option."
 },
 
 {
@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "time_limit::Float64 [Inf]",
     "category": "section",
-    "text": "The maximum time in seconds the solver should run. Note: The solver will check after each branching step therefore it isn't a strict limit and depends on the duration of a relaxation."
+    "text": "The maximum time in seconds the solver should run. Note: The solver will check after each branching step therefore it isn\'t a strict limit and depends on the duration of a relaxation."
 },
 
 {
@@ -301,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "best_obj_stop::Float [NaN]",
     "category": "section",
-    "text": "If an incumbent is found which is better than best_obj_stop the incumbent is returned. A warning gets thrown if best_obj_stop can't be reached."
+    "text": "If an incumbent is found which is better than best_obj_stop the incumbent is returned. A warning gets thrown if best_obj_stop can\'t be reached."
 },
 
 {
@@ -317,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "Resolve",
     "category": "section",
-    "text": "Sometimes the non linear solver doesn't find a feasible solution in the first run."
+    "text": "Sometimes the non linear solver doesn\'t find a feasible solution in the first run."
 },
 
 {
@@ -341,7 +341,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "log_levels::Vector{Symbol} [[:Table,:Info,:Options]]",
     "category": "section",
-    "text": "You can change the option log_levels to define what kind of logs you want to see.The output for [:Table,:Info] looks something like this:(Image: default-logging):Table#ONodes\nThe number of open nodes\nCLevel\nThe current node is at level ... of the tree\nIncumbent\nBest integral solution found\nBest Bound\nThe best bound of the open nodes\nGap \nThe gap between Incumbent and Best Bound\nTime\nThe time spend since the beginning of branch and bound\nDoesn't count time before branch and bound starts (i.e. feasibility pump or root relaxation)\nGainGap\nThe difference in percentage between a guessed gain and the actual gain.\nUsed if branch_strategy = PseudoCost or after strong branching / reliability branching.:Optionsincludes something like this before the info is printed:time_limit               : 10.0\nstrong_branching_nsteps  : 5Possible symbols which can be added to the vector are::Timing\nProvides some more timing information\n:AllOptions\nprints all options "
+    "text": "You can change the option log_levels to define what kind of logs you want to see.The output for [:Table,:Info] looks something like this:(Image: default-logging):Table#ONodes\nThe number of open nodes\nCLevel\nThe current node is at level ... of the tree\nIncumbent\nBest integral solution found\nBest Bound\nThe best bound of the open nodes\nGap \nThe gap between Incumbent and Best Bound\nTime\nThe time spend since the beginning of branch and bound\nDoesn\'t count time before branch and bound starts (i.e. feasibility pump or root relaxation)\nGainGap\nThe difference in percentage between a guessed gain and the actual gain.\nUsed if branch_strategy = PseudoCost or after strong branching / reliability branching.:Optionsincludes something like this before the info is printed:time_limit               : 10.0\nstrong_branching_nsteps  : 5Possible symbols which can be added to the vector are::Timing\nProvides some more timing information\n:AllOptions\nprints all options "
 },
 
 {
