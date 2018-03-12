@@ -323,7 +323,7 @@ function branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
         step_obj.upd_gains = :GainsToTree
         new_gains = GainObj(step_obj.obj_gain.minus, step_obj.obj_gain.plus, 
                             step_obj.obj_gain.minus_counter, step_obj.obj_gain.plus_counter)
-
+        
         if status == :GlobalInfeasible
             return :GlobalInfeasible, 0, strong_restarts
         end

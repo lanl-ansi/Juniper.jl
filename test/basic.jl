@@ -259,9 +259,9 @@ end
 end
 
 
-@testset "infeasible cos reliable" begin
+@testset "infeasible int reliable" begin
     println("==================================")
-    println("Infeasible cos reliable")
+    println("Infeasible int reliable")
     println("==================================")
     m = Model(solver=juniper_reliable_restart)
 
@@ -270,7 +270,8 @@ end
 
     @objective(m, Min, -x-y)
 
-    @NLconstraint(m, y==2*cos(2*x))
+    @NLconstraint(m, y >= sqrt(2))
+    @NLconstraint(m, y <= sqrt(3))
 
     status = solve(m)
     println("Status: ", status)
