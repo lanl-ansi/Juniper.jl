@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.1.2
+- Bugfix: Reset of `mu_init` in Ipopt options to have the default `mu_init` if `solve` is called again 
+
 ### v0.1.1
 - Freemodel for commerical nlp solvers with license restrictions
 - More convenient parallel options 
