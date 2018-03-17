@@ -188,6 +188,10 @@ function branch_strong_on!(m,opts,step_obj,
             if restart
                 break
             end
+
+            if time()-m.start_time >= opts.time_limit
+                break
+            end
         end
     end
 

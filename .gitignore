@@ -5,3 +5,5 @@ test/CSV/
 test/data/ignore
 docs/build/
 docs/site/
+Ideas/*
+ideas.md
