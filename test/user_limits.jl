@@ -29,16 +29,16 @@ include("POD_experiment/blend029.jl")
     @test 0.1 <= gap_val <= 0.5
 end
 
-@testset "blend029 10s limit" begin
+@testset "blend029 1s limit" begin
     println("==================================")
-    println("blend029 10s limit")
+    println("blend029 1s limit")
     println("==================================")
 
     m,objval = get_blend029()
 
     setsolver(m, DefaultTestSolver(
-            branch_strategy=:PseudoCost, 
-            time_limit = 10, # seconds
+            branch_strategy=:StrongPseudoCost, 
+            time_limit = 1, # second
             incumbent_constr = true
     ))
     status = solve(m)
@@ -55,7 +55,7 @@ end
     println("gap_val: ", gap_val)
 
     @test best_bound_val >= objval
-    @test getsolvetime(m) <= 15 # it might be a bit higher than 10s
+    @test getsolvetime(m) <= 2 # it might be a bit higher than 1s
 end
 
 @testset "case 5 socwr solution limit" begin
