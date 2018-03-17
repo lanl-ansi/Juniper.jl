@@ -271,7 +271,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
-    m.solution = getvalue(x)
+    m.solution = getvalue(m.x)
 
     internal_model = internalmodel(m.model)
     if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
