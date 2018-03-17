@@ -3,6 +3,10 @@
 ### v0.1.2
 - Bugfix: Reset of `mu_init` in Ipopt options to have the default `mu_init` if `solve` is called again
 - Bugfix: Break on time limit in relaxation, fpump and strong branching
+- Bugfix: Infeasible in Reliability branching
+- Strong branching: 
+    - Change bounds even if no restart
+    - branch on best variable with two children
 
 ### v0.1.1
 - Freemodel for commerical nlp solvers with license restrictions
