@@ -1,5 +1,5 @@
 include("POD_experiment/blend029.jl")
-include("POD_experiment/st_e32.jl")
+include("POD_experiment/tspn05.jl")
 include("POD_experiment/FLay02H.jl")
 include("basic/gamsworld.jl")
 
@@ -147,23 +147,22 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 0
 end
 
-@testset "FP: ste_32" begin
+@testset "FP: tspn05" begin
     println("==================================")
-    println("FP: st_e32")
+    println("FP: tspn05")
     println("==================================")
 
-    m = get_st_e32()
+    m = get_tspn05()
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            time_limit = 5,
             mip_solver=GLPKSolverMIP()
     ))
     status = solve(m)
 
-    # the nlp should produce more Errors and Infeasible so it's basically for codecov
-    @test status == :Optimal || status == :UserLimit
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m),191.2541,atol=1e0)
 end
 
 @testset "FP: FLay02H" begin
