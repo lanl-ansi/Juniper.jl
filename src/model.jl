@@ -219,6 +219,12 @@ function MathProgBase.optimize!(m::JuniperModel)
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
+    nw = nworkers()
+    if nw < m.options.processors
+        m.options.processors = nw
+        warn("Julia was started with less processors then you define in your options")
+    end
+
     m.model = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var

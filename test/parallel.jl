@@ -57,7 +57,9 @@ end
     println("obj: ", juniper_val)
     println("bound: ", juniper_bb)
 
-
+    im = internalmodel(m)
+    # must have changed to 4 processors 
+    @test im.options.processors == 4
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
