@@ -1,5 +1,6 @@
 include("POD_experiment/blend029.jl")
 include("POD_experiment/tspn05.jl")
+include("POD_experiment/ndcc12persp.jl")
 include("POD_experiment/FLay02H.jl")
 include("basic/gamsworld.jl")
 
@@ -163,6 +164,29 @@ end
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m),191.2541,atol=1e0)
+end
+
+
+@testset "FP: ndcc12persp" begin
+    println("==================================")
+    println("FP: ndcc12persp")
+    println("==================================")
+
+    # This probably has a "NLP couldn't be solved to optimality" warning in FPump
+    m = get_ndcc12persp()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            feasibility_pump = true,
+            mip_solver=GLPKSolverMIP(),
+            time_limit = 10,
+    ))
+    status = solve(m)
+
+    @test status == :Optimal || status == :UserLimit
+    if status == :Optimal
+        @test isapprox(getobjectivevalue(m),106.35415480,atol=1e0)
+    end
 end
 
 @testset "FP: FLay02H" begin
