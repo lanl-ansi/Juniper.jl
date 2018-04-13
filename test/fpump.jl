@@ -184,9 +184,6 @@ end
     status = solve(m)
 
     @test status == :Optimal || status == :UserLimit
-    if status == :Optimal
-        @test isapprox(getobjectivevalue(m),106.35415480,atol=1e0)
-    end
 end
 
 @testset "FP: FLay02H" begin
