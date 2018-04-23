@@ -63,3 +63,16 @@ solver = JuniperSolver(IpoptSolver(print_level=0);
 ```
 
 Then the feasibility pump is used to find a feasible solution before the branch and bound part starts. This turned out to be highly effective.
+
+# Citing Juniper
+
+If you find Juniper useful in your work, we kindly request that you cite the following paper:
+
+```
+@misc{1804.07332,
+     Author = {Ole Kröger and Carleton Coffrin and Hassan Hijazi and Harsha Nagarajan},
+     Title = {Juniper: An Open-Source Nonlinear Branch-and-Bound Solver in Julia},
+     Year = {2018},
+     Eprint = {arXiv:1804.07332},
+}
+```
