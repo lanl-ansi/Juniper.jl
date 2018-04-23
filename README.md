@@ -66,7 +66,7 @@ Then the feasibility pump is used to find a feasible solution before the branch 
 
 # Citing Juniper
 
-If you find Juniper useful in your work, we kindly request that you cite the following paper:
+If you find Juniper useful in your work, we kindly request that you cite the following [paper](https://arxiv.org/abs/1804.07332):
 
 ```
 @misc{1804.07332,
