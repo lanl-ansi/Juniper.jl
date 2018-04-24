@@ -16,7 +16,7 @@ include("basic/gamsworld.jl")
     setsolver(m, DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             time_limit = 5,
-            mip_solver=GLPKSolverMIP(),
+            mip_solver=CbcSolver(),
             incumbent_constr = true
     ))
     status = solve(m)
@@ -35,7 +35,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
@@ -56,7 +56,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
@@ -86,7 +86,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 
     status = solve(m)
@@ -114,7 +114,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 
     status = solve(m)
@@ -138,7 +138,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 
     status = solve(m)
@@ -158,7 +158,7 @@ end
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
@@ -178,7 +178,7 @@ end
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=GLPKSolverMIP(),
+            mip_solver=CbcSolver(),
             time_limit = 10,
     ))
     status = solve(m)
@@ -199,7 +199,7 @@ end
             feasibility_pump = true,
             feasibility_pump_time_limit = 10,
             time_limit = 10,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
