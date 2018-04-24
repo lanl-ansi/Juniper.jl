@@ -297,7 +297,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 end
 
@@ -571,7 +571,7 @@ end
     println("==================================")
 
     m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,
-            incumbent_constr=true,mip_solver=GLPKSolverMIP(),
+            incumbent_constr=true,mip_solver=CbcSolver(),
             strong_branching_approx_time_limit=1))
 
     v = [10,20,12,23,42]
