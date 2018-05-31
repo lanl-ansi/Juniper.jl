@@ -1,4 +1,5 @@
 include("POD_experiment/blend029.jl")
+include("POD_experiment/nous1.jl")
 
 @testset "POD instances" begin
 
@@ -32,6 +33,65 @@ include("POD_experiment/blend029.jl")
     @test isapprox(best_bound_val, objval, atol=1e0)
     @test isapprox(gap_val, 0, atol=1e-2)
 end
+
+
+@testset "blend029 break strong branching time limit" begin
+    println("==================================")
+    println("blend029 full strong branching")
+    println("==================================")
+
+    m,objval = get_blend029()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            strong_branching_approx_time_limit=0.01,
+            time_limit = 4,
+            strong_restart = false
+    ))
+    status = solve(m)
+
+    @test status == :Optimal || status == :UserLimit
+
+    juniper_val = getobjectivevalue(m)
+    best_bound_val = getobjbound(m)
+    gap_val = getobjgap(m)
+
+    # maximization problem
+    @test best_bound_val >= juniper_val || isnan(juniper_val)
+end
+
+@testset "nous1 restart" begin
+    println("==================================")
+    println("nous1 restart")
+    println("==================================")
+
+    m = get_nous1()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            strong_restart = true
+    ))
+    status = solve(m)
+
+    @test status == :Optimal
+end
+
+@testset "nous1 no restart" begin
+    println("==================================")
+    println("nous1 no restart")
+    println("==================================")
+
+    m = get_nous1()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            strong_restart = false
+    ))
+    status = solve(m)
+
+    @test status == :Optimal
+end
+
 
 
 @testset "blend029 reliability" begin

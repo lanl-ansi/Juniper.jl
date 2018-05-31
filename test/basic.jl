@@ -43,6 +43,43 @@ include("basic/gamsworld.jl")
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
+@testset "bruteforce full strong w/o restart" begin
+    println("==================================")
+    println("Bruteforce full strong w/o restart")
+    println("==================================")
+    juniper_all_solutions = DefaultTestSolver(
+        branch_strategy=:StrongPseudoCost,
+        all_solutions = true,
+        list_of_solutions = true,
+        strong_branching_perc = 100,
+        strong_branching_nsteps = 100,
+        strong_restart = false
+    )
+
+    m = Model(solver=juniper_all_solutions)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    status = solve(m)
+
+    list_of_solutions = Juniper.getsolutions(internalmodel(m))
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+
+    @test status == :Optimal
+    @test Juniper.getnsolutions(internalmodel(m)) == 24
+end
+
 @testset "bruteforce approx time limit" begin
     println("==================================")
     println("Bruteforce  approx time limit")
@@ -226,6 +263,28 @@ end
     @test isnan(getobjgap(m))
 end
 
+
+@testset "infeasible int reliable" begin
+    println("==================================")
+    println("Infeasible int reliable")
+    println("==================================")
+    m = Model(solver=juniper_reliable_restart)
+
+    @variable(m, 1 <= x <= 5, Int)
+    @variable(m, -2 <= y <= 2, Int)
+
+    @objective(m, Min, -x-y)
+
+    @NLconstraint(m, y >= sqrt(2))
+    @NLconstraint(m, y <= sqrt(3))
+
+    status = solve(m)
+    println("Status: ", status)
+
+    @test status == :Infeasible
+    @test isnan(getobjgap(m))
+end
+
 @testset "infeasible sin with different bounds" begin
     println("==================================")
     println("Infeasible  sin with different bounds")
@@ -243,7 +302,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 end
 
@@ -517,7 +576,7 @@ end
     println("==================================")
 
     m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,
-            incumbent_constr=true,mip_solver=GLPKSolverMIP(),
+            incumbent_constr=true,mip_solver=CbcSolver(),
             strong_branching_approx_time_limit=1))
 
     v = [10,20,12,23,42]

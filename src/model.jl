@@ -44,6 +44,7 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     mip_solver      :: MathProgBase.AbstractMathProgSolver
 
     relaxation_time :: Float64
+    start_time      :: Float64
 
     # Info
     nintvars        :: Int64
@@ -223,6 +224,12 @@ function MathProgBase.optimize!(m::JuniperModel)
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
+    nw = nworkers()
+    if nw < m.options.processors
+        m.options.processors = nw
+        warn("Julia was started with less processors then you define in your options")
+    end
+
     m.model = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
@@ -246,11 +253,13 @@ function MathProgBase.optimize!(m::JuniperModel)
     end
 
     m.x = x
-    start = time()
+    m.start_time = time()
     m.status = solve(m.model)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
-    while m.status != :Optimal && m.status != :LocalOptimal && restarts < max_restarts
+    while m.status != :Optimal && m.status != :LocalOptimal && 
+        restarts < max_restarts && time()-m.start_time < m.options.time_limit
+
         internal_model = internalmodel(m.model)
         if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
             MathProgBase.freemodel!(internal_model)
@@ -267,11 +276,9 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
-    m.soltime = time()-start
-    m.relaxation_time = time()-start
-
+    m.soltime = time()-m.start_time
+    m.relaxation_time = time()-m.start_time
     m.options.debug && debug_init(m.debugDict,m,restarts)
-
     if m.status != :Optimal && m.status != :LocalOptimal
         if m.options.debug && m.options.debug_write
             write("debug.json", JSON.json(m.debugDict))
@@ -281,7 +288,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
-    m.solution = getvalue(x)
+    m.solution = getvalue(m.x)
 
     m.options.debug && debug_objective(m.debugDict,m)
 
@@ -297,7 +304,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         if m.options.feasibility_pump 
             inc_sol, inc_obj = fpump(m)
         end
-        bnbtree = init(start, m; inc_sol = inc_sol, inc_obj = inc_obj)
+        bnbtree = init(m.start_time, m; inc_sol = inc_sol, inc_obj = inc_obj)
         best_known = solvemip(bnbtree)
 
         replace_solution!(m, best_known)
@@ -306,7 +313,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         m.nsolutions = 1
         m.best_bound = getobjbound(m)
     end
-    m.soltime = time()-start
+    m.soltime = time()-m.start_time
     
     (:All in ps || :Info in ps) && println("Obj: ",m.objval)
 

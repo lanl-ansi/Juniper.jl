@@ -362,7 +362,9 @@ function fpump(m)
     # the tolerance can be changed => current atol
     catol = m.options.atol
     atol_counter = 0
-    while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol) && time()-start_fpump < tl 
+    while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol) && time()-start_fpump < tl && 
+        time()-m.start_time < m.options.time_limit
+
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
             mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, aff, tabu_list) 
@@ -392,7 +394,8 @@ function fpump(m)
         nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
         if nlp_status != :Optimal
             cnlpinf = 0 
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal && time()-start_fpump < tl 
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal && 
+                time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
@@ -419,7 +422,8 @@ function fpump(m)
         if are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && time()-start_fpump < tl 
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && 
+                time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol; random_start=true)
                 cnlpinf += 1
             end

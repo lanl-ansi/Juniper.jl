@@ -1,5 +1,6 @@
 include("POD_experiment/blend029.jl")
-include("POD_experiment/st_e32.jl")
+include("POD_experiment/tspn05.jl")
+include("POD_experiment/ndcc12persp.jl")
 include("POD_experiment/FLay02H.jl")
 include("basic/gamsworld.jl")
 
@@ -15,7 +16,7 @@ include("basic/gamsworld.jl")
     setsolver(m, DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             time_limit = 5,
-            mip_solver=GLPKSolverMIP(),
+            mip_solver=CbcSolver(),
             incumbent_constr = true
     ))
     status = solve(m)
@@ -34,7 +35,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
@@ -55,7 +56,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
@@ -85,7 +86,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 
     status = solve(m)
@@ -113,7 +114,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 
     status = solve(m)
@@ -137,7 +138,7 @@ end
         branch_strategy=:MostInfeasible,
         feasibility_pump = true,
         time_limit = 1,
-        mip_solver=GLPKSolverMIP()
+        mip_solver=CbcSolver()
     ))
 
     status = solve(m)
@@ -147,22 +148,41 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 0
 end
 
-@testset "FP: ste_32" begin
+@testset "FP: tspn05" begin
     println("==================================")
-    println("FP: st_e32")
+    println("FP: tspn05")
     println("==================================")
 
-    m = get_st_e32()
+    m = get_tspn05()
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            time_limit = 5,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 
-    # the nlp should produce more Errors and Infeasible so it's basically for codecov
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m),191.2541,atol=1e0)
+end
+
+
+@testset "FP: ndcc12persp" begin
+    println("==================================")
+    println("FP: ndcc12persp")
+    println("==================================")
+
+    # This probably has a "NLP couldn't be solved to optimality" warning in FPump
+    m = get_ndcc12persp()
+
+    setsolver(m, DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            feasibility_pump = true,
+            mip_solver=CbcSolver(),
+            time_limit = 10,
+    ))
+    status = solve(m)
+
     @test status == :Optimal || status == :UserLimit
 end
 
@@ -179,7 +199,7 @@ end
             feasibility_pump = true,
             feasibility_pump_time_limit = 10,
             time_limit = 10,
-            mip_solver=GLPKSolverMIP()
+            mip_solver=CbcSolver()
     ))
     status = solve(m)
 

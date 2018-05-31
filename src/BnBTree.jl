@@ -55,7 +55,6 @@ type StepObj
     nrestarts           :: Int64 
     gain_gap            :: Float64
     obj_gain            :: GainObj
-    strong_int_vars     :: Vector{Int64}
     idx_time            :: Float64
     node_idx_time       :: Float64
     upd_gains_time      :: Float64
@@ -126,7 +125,7 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
             idx = branch_pseudo(m, node, int2var_idx, gains, opts.gain_mu, opts.atol)
         end
     elseif branch_strat == :Reliability 
-        idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
+        status, idx, strong_restarts = branch_reliable!(m,opts,step_obj,int2var_idx,gains,counter)
     end
     step_obj.state = status
     step_obj.var_idx = idx
@@ -152,10 +151,13 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
     setvalue(m.x[1:m.num_var],step_obj.node.solution)
     if contains(string(m.nl_solver),"Ipopt")
         overwritten = false
-        for ipopt_opt in m.nl_solver.options
-            if ipopt_opt[1] == :mu_init
-                ipopt_opt = (:mu_init, 1e-5)
+        old_mu_init = 0.1 # default value in Ipopt
+        for i=1:length(m.nl_solver.options)
+            if m.nl_solver.options[i][1] == :mu_init
+                old_mu_init = m.nl_solver.options[i][2]
+                m.nl_solver.options[i] = (:mu_init, 1e-5)
                 overwritten = true
+                break
             end
         end
         if !overwritten 
@@ -164,6 +166,16 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
     end
 
     status = JuMP.solve(m.model)
+
+    # reset mu_init
+    if contains(string(m.nl_solver),"Ipopt")
+        for i=1:length(m.nl_solver.options)
+            if m.nl_solver.options[i][1] == :mu_init
+                m.nl_solver.options[i] = (:mu_init, old_mu_init)
+                break
+            end
+        end
+    end
 
     objval = getobjectivevalue(m.model)
     cnode.solution = getvalue(m.x)
@@ -196,7 +208,7 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
 
     start = time()
     # it might be already branched on
-    if node.state != :Branch
+    if !temp && node.state != :Branch
         for cnode in [step_obj.l_nd,step_obj.r_nd]
             if cnode.state == :Branch || cnode.state == :Integral
                 push_integral_or_branch!(m, step_obj, cnode, int2var_idx, false)
@@ -536,10 +548,6 @@ Run the solving steps on several processors
 function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     fields, field_chars, time_obj)
     np = nprocs()  # determine the number of processes available
-    if np < tree.options.processors
-        tree.options.processors = np
-        warn("Julia was started with less processors then you define in your options")
-    end
     if tree.options.processors+1 < np
         np = tree.options.processors+1
     end
@@ -728,7 +736,9 @@ function solvemip(tree::BnBTreeObj)
         bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
         tree.incumbent.best_bound = tree.obj_fac*bvalue 
     else
-        tree.incumbent.best_bound = tree.incumbent.objval 
+        if !isnan(tree.incumbent.objval)
+            tree.incumbent.best_bound = tree.incumbent.objval
+        end
     end
 
     tree.m.nbranches = counter

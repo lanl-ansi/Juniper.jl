@@ -21,7 +21,7 @@ println("Workers:", nworkers())
 using JuMP
 
 using Ipopt
-using GLPKMathProgInterface
+using Cbc
 using PowerModels
 
 using Juniper
