@@ -2,6 +2,7 @@ test/load_mod.jl
 test/current.jl
 test/JuniperLib.jl
 test/CSV/
+test/debug.json
 test/data/ignore
 docs/build/
 docs/site/

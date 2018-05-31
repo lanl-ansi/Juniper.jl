@@ -87,5 +87,6 @@ function new_default_step_obj(m,node)
     step_obj.branch           = []   
     step_obj.counter          = 0   
     step_obj.upd_gains        = :None
+    step_obj.strong_int_vars  = Int64[]
     return step_obj
 end
