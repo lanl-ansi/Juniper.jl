@@ -35,6 +35,8 @@ type SolverOptions
     
     # only for testing
     force_parallel                      :: Bool
+
+    fixed_gain_mu                       :: Bool
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

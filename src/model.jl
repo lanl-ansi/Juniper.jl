@@ -216,6 +216,9 @@ Optimize by creating a model based on the variables saved in JuniperModel.
 """
 function MathProgBase.optimize!(m::JuniperModel)
     ps = m.options.log_levels
+    if !m.options.fixed_gain_mu && m.obj_sense == :Max
+        m.options.gain_mu = 1-m.options.gain_mu   
+    end
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
 
