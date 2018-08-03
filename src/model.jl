@@ -25,6 +25,8 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
     l_constr        :: Vector{Float64}
     u_constr        :: Vector{Float64}
 
+    affs            :: Vector{Aff}
+
     int2var_idx     :: Vector{Int64}
     var2int_idx     :: Vector{Int64}
 
@@ -301,6 +303,9 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     inc_sol, inc_obj = nothing, nothing
     if m.num_int_bin_var > 0
+        if m.num_l_constr > 0
+            m.affs = construct_affine_vector(m)
+        end
         if m.options.feasibility_pump 
             inc_sol, inc_obj = fpump(m)
         end

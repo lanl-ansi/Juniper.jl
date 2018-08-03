@@ -28,8 +28,6 @@ Returns the aggregated summation result in the end.
 function traverse_sum(entry,callback,params,result)
     new_result = callback(entry[:hash],entry[:step_obj],params)
     result += new_result
-    println("result: ", result)
-    println("new_result: ", new_result)
     if haskey(entry,:children)
         result = traverse_sum(entry[:children][1], callback, params, result)
         result = traverse_sum(entry[:children][2], callback, params, result)

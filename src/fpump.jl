@@ -1,12 +1,3 @@
-type Aff
-    sense     :: Symbol
-    var_idx   :: Vector{Int64}
-    coeff     :: Vector{Float64}
-    rhs       :: Float64
-
-    Aff() = new()
-end
-
 type TabuList
     sols      :: Vector{Vector{Float64}}
     length    :: Int64
@@ -32,55 +23,6 @@ function expr_dereferencing_fixing!(expr, m, var_types, sol)
             error("expr_dereferencing :: Unexpected term in expression tree.")
         end
     end
-end
-
-"""
-    construct_affine_vector(m)
-
-Construct a vector of affine expressions for all linear functions using the derivative
-"""
-function construct_affine_vector(m)
-    js = MathProgBase.jac_structure(m.d)
-
-    jg = zeros(length(js[1]))
-    MathProgBase.eval_jac_g(m.d, jg, ones(m.num_var))
-
-    # Construct the data structure for our affine constraints
-    aff = Vector{Aff}(m.num_l_constr)
-    for i=1:m.num_l_constr
-        aff[i] = Aff()
-        aff[i].var_idx = []
-        aff[i].coeff = []
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        aff[i].rhs = constr_expr.args[3]
-        aff[i].sense = constr_expr.args[1]
-    end
-
-    # if linear constraint the derivative are the coeffs
-    idx = 1
-    lconstr2constr = Vector{Int64}()
-    constr2lconstr = Vector{Int64}()
-    c = 1
-    for i=1:m.num_constr
-        if m.isconstrlinear[i]
-            push!(lconstr2constr,i)
-            push!(constr2lconstr,c)
-            c+=1
-        else
-            push!(constr2lconstr,0)
-        end
-    end
-
-    for row in js[1]
-        if m.isconstrlinear[row]
-            col = js[2][idx]
-            aidx = constr2lconstr[row]
-            push!(aff[row].var_idx, col)
-            push!(aff[row].coeff, jg[idx])
-        end
-        idx += 1
-    end
-    return aff
 end
 
 """
@@ -341,7 +283,7 @@ function fpump(m)
 
     # construct the linear constraints as a vector of Aff once
     if m.num_l_constr > 0
-        aff = construct_affine_vector(m)
+        aff = m.affs
     end
 
     last_table_arr = []
