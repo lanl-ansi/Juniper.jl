@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### v0.1.2
+### v0.2.0
 - Bugfix: Reset of `mu_init` in Ipopt options to have the default `mu_init` if `solve` is called again
 - Bugfix: Break on time limit in relaxation, fpump and strong branching
 - Bugfix: Infeasible in Reliability branching
