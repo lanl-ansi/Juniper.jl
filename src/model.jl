@@ -116,6 +116,8 @@ function MathProgBase.loadproblem!(
     l_constr::Vector{Float64}, u_constr::Vector{Float64},
     sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
+    srand(1)
+
     # initialise other fields
     m.num_var = num_var
     m.num_constr = num_constr
