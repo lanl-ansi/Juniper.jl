@@ -309,8 +309,6 @@ function MathProgBase.optimize!(m::JuniperModel)
     if m.num_int_bin_var > 0
         if m.num_l_constr > 0
             m.affs = construct_affine_vector(m)
-            mat = construct_disc_affine_matrix(m)
-            writedlm("/home/ole/GitHub/bnb_visual/data/mats/mat.csv", mat, ",")
         end
         if m.options.feasibility_pump 
             inc_sol, inc_obj = fpump(m)
