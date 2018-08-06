@@ -33,7 +33,11 @@ function new_integral!(tree, node)
     if update_incumbent!(tree,node) # returns if new 
         if tree.options.incumbent_constr
             if tree.options.processors > 1
-                for p=2:tree.options.processors
+                np = nprocs()  # determine the number of processes available
+                if tree.options.processors+1 < np
+                    np = tree.options.processors+1
+                end
+                for p=2:np
                     sendto(p, is_newincumbent=true)
                 end
             end

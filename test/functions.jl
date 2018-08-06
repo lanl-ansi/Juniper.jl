@@ -218,6 +218,7 @@ end
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
     @constraint(m, sum(w[i]*x[i] for i=1:5) <= 25)   
     @constraint(m, sum(w[i]*x[i] for i=1:2)+1*y <= 10)   
+    @constraint(m, 3*y <= 20)
 
     solve(m)
     
@@ -227,9 +228,15 @@ end
     @test complete_mat[1,:] == vcat(w, [0])
     @test complete_mat[2,:] == vcat(w[1:2],[0,0,0],[1])
 
+    disc_mat = Juniper.construct_disc_affine_matrix(model; only_non_zero=false)
+    @test disc_mat[1,:] == w
+    @test disc_mat[2,:] == vcat(w[1:2],[0,0,0])
+    @test disc_mat[3,:] == [0,0,0,0,0]
+
     disc_mat = Juniper.construct_disc_affine_matrix(model)
     @test disc_mat[1,:] == w
     @test disc_mat[2,:] == vcat(w[1:2],[0,0,0])
+    @test size(disc_mat)[1] == 2
 end
 
 end

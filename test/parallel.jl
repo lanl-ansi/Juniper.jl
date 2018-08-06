@@ -33,6 +33,32 @@ include("POD_experiment/blend029.jl")
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
+@testset "Knapsack Max Reliable incumbent_constr" begin
+    println("==================================")
+    println("KNAPSACK Reliable incumbent_constr")
+    println("==================================")
+
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,
+                                        incumbent_constr=true,processors=2))
+ 
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    status = solve(m)
+    println("Obj: ", getobjectivevalue(m))
+
+    @test status == :Optimal
+    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
+    @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
+    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+end
+
+
 @testset "Batch.mod reliable parallel > processors" begin
     println("==================================")
     println("BATCH.MOD reliable more processors than available")
