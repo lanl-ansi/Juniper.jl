@@ -233,16 +233,9 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
     atol = opts.atol
     reasonable_int_vars = get_reasonable_int_vars(node, m.var_type, int_vars,  int2var_idx, atol)
     if num_strong_var < length(reasonable_int_vars)
-        if m.num_l_constr > 0
-            mat = construct_disc_affine_matrix(m)
-            reasonable_int_vars = get_diverse_variables(mat, num_strong_var; possible_vars=reasonable_int_vars)
-        else
-            shuffle!(reasonable_int_vars)
-            reasonable_int_vars = reasonable_int_vars[1:num_strong_var]
-        end
+        shuffle!(reasonable_int_vars)
+        reasonable_int_vars = reasonable_int_vars[1:num_strong_var]
     end
-
-    
 
     # compute the gain for each reasonable candidate and choose the highest
     left_node = nothing

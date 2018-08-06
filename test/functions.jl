@@ -205,4 +205,31 @@ end
 
 end
 
+@testset "LSE matrix" begin
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible))
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Int)
+    @variable(m, y)
+
+    @objective(m, Max, dot(v,x)+100*y)
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @constraint(m, sum(w[i]*x[i] for i=1:5) <= 25)   
+    @constraint(m, sum(w[i]*x[i] for i=1:2)+1*y <= 10)   
+
+    solve(m)
+    
+    model = m.internalModel
+    
+    complete_mat = Juniper.construct_complete_affine_matrix(model)
+    @test complete_mat[1,:] == vcat(w, [0])
+    @test complete_mat[2,:] == vcat(w[1:2],[0,0,0],[1])
+
+    disc_mat = Juniper.construct_disc_affine_matrix(model)
+    @test disc_mat[1,:] == w
+    @test disc_mat[2,:] == vcat(w[1:2],[0,0,0])
+end
+
 end

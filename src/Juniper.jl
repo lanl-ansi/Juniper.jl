@@ -38,6 +38,7 @@ type SolverOptions
     force_parallel                      :: Bool
     debug                               :: Bool
     debug_write                         :: Bool
+    debug_file_path                     :: String
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

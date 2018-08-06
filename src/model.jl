@@ -1,4 +1,4 @@
-include("tree.jl")
+include("debug.jl")
 include("fpump.jl")
 
 type SolutionObj
@@ -261,6 +261,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     m.status = solve(m.model)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
+    m.options.debug && debug_init(m.debugDict)
     while m.status != :Optimal && m.status != :LocalOptimal && 
         restarts < max_restarts && time()-m.start_time < m.options.time_limit
 
@@ -269,6 +270,7 @@ function MathProgBase.optimize!(m::JuniperModel)
             MathProgBase.freemodel!(internal_model)
         end
         restart_values = generate_random_restart(m)
+        m.options.debug && debug_restart_values(m.debugDict,restart_values)
         for i=1:m.num_var      
             setvalue(m.x[i], restart_values[i])
         end
@@ -282,10 +284,10 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     m.soltime = time()-m.start_time
     m.relaxation_time = time()-m.start_time
-    m.options.debug && debug_init(m.debugDict,m,restarts)
+    m.options.debug && debug_fill_basic(m.debugDict,m,restarts)
     if m.status != :Optimal && m.status != :LocalOptimal
         if m.options.debug && m.options.debug_write
-            write("debug.json", JSON.json(m.debugDict))
+            write(m.options.debug_file_path, JSON.json(m.debugDict))
         end
         return m.status
     end
@@ -307,6 +309,8 @@ function MathProgBase.optimize!(m::JuniperModel)
     if m.num_int_bin_var > 0
         if m.num_l_constr > 0
             m.affs = construct_affine_vector(m)
+            mat = construct_disc_affine_matrix(m)
+            writedlm("/home/ole/GitHub/bnb_visual/data/mats/mat.csv", mat, ",")
         end
         if m.options.feasibility_pump 
             inc_sol, inc_obj = fpump(m)
@@ -330,7 +334,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     
     m.options.debug && debug_set_solution(m.debugDict,m)
     if m.options.debug && m.options.debug_write
-        write("debug.json", JSON.json(m.debugDict))
+        write(m.options.debug_file_path, JSON.json(m.debugDict))
     end
     return m.status
 end

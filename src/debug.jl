@@ -80,22 +80,33 @@ function push_step2treeDict!(d, step_obj)
     return d
 end
 
-function debug_init(d,m,restarts)
+function debug_init(d)
     d[:relaxation] = Dict{Symbol,Any}()
     d[:info] = Dict{Symbol,Any}()
+end 
+
+function debug_fill_basic(d,m,restarts)
     d[:relaxation][:status] = m.status
     d[:relaxation][:time] = m.relaxation_time
-    d[:relaxation][:restarts] = restarts
+    d[:relaxation][:nrestarts] = restarts
     d[:info][:sense] = m.obj_sense
     d[:info][:nintvars] = m.nintvars
     d[:info][:nbinvars] = m.nbinvars
-end 
+end
+
 
 function debug_objective(d,m)
     d[:relaxation][:objval] = m.objval
     d[:relaxation][:solution] = m.solution
 end 
     
+function debug_restart_values(d,restart_vals)
+    if !haskey(d[:relaxation], :restarts)
+        d[:relaxation][:restarts] = []
+    end
+    push!(d[:relaxation][:restarts], restart_vals)
+end
+
 function debug_set_solution(d,m)
     d[:solution] = Dict{Symbol,Any}()
     d[:solution][:objval] = m.objval

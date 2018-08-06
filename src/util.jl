@@ -117,44 +117,38 @@ function construct_complete_affine_matrix(m)
 end
 
 """ 
-    construct_disc_affine_matrix(m)
+    construct_disc_affine_matrix(m; only_non_zero=true)
 
 Construct full affine matrix by using m.affs and only discrete variables 
 use construct_complete_affine_matrix if interested in all variables
+if only_non_zero is set to true all rows with all zeros are removed
 """
-function construct_disc_affine_matrix(m)
+function construct_disc_affine_matrix(m; only_non_zero=true)
     mat = zeros(length(m.affs),m.num_int_bin_var)
     i = 1
+    non_zero_idx = []
     for aff in m.affs
+        non_zero = false
         for part_idx in 1:length(aff.var_idx)
             var = aff.var_idx[part_idx]
             if m.var_type[var] != :Cont
                 coeff = aff.coeff[part_idx]
                 int_var = m.var2int_idx[var]
                 mat[i,int_var] = coeff
+                non_zero = true
             end
+        end
+        if non_zero
+            push!(non_zero_idx,i)
         end
         i += 1
     end
-    return mat
-end
 
-
-"""
-    get_diverse_disc_variables(aff_matrix, nvars)
-
-Get a list of most diverse discrete variables based on linear constraints and the correlation matrix.
-"""
-function get_diverse_variables(aff_matrix, nvars; possible_vars=:All)
-    if possible_vars == :All
-        possible_vars = collect(1:size(aff_matrix)[2]) # all 
+    if only_non_zero
+        return mat[non_zero_idx,:]
     end
-    C = cor(aff_matrix[:,possible_vars])
-    # get the minimum column nvars columns
-    csum = sum(C,1)
-    csum = reshape(csum, length(csum))
-    int_vars = selectperm(csum, 1:nvars)
-    return possible_vars[int_vars] 
+
+    return mat
 end
 
 """
