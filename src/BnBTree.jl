@@ -136,14 +136,14 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
 end
 
 """
-    process_node!(m, step_obj, cnode, int2_var_idx, temp)
+    process_node!(m, step_obj, cnode, int2var_idx, temp)
 
 Solve a child node `cnode` by relaxation.
 Set the state and best_bound property.
 Push integrals and new branch nodes to the step object
 Return state
 """
-function process_node!(m, step_obj, cnode, int2_var_idx, temp)
+function process_node!(m, step_obj, cnode, int2var_idx, temp)
      # set bounds
     for i=1:m.num_var
         JuMP.setlowerbound(m.x[i], cnode.l_var[i])    
@@ -185,7 +185,10 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
         cnode.state = :Error
     elseif status == :Optimal
         cnode.best_bound = objval
-        push_integral_or_branch!(m, step_obj, cnode, int2_var_idx, temp)
+        set_cnode_state!(cnode, m, step_obj, int2var_idx)
+        if !temp
+            push_integral_or_branch!(step_obj, cnode)
+        end
     else
         cnode.state = :Infeasible
     end
@@ -212,7 +215,7 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     if !temp && node.state != :Branch
         for cnode in [step_obj.l_nd,step_obj.r_nd]
             if cnode.state == :Branch || cnode.state == :Integral
-                push_integral_or_branch!(m, step_obj, cnode, int2var_idx, false)
+                push_integral_or_branch!(step_obj, cnode)
             end
         end
         return step_obj.l_nd,step_obj.r_nd

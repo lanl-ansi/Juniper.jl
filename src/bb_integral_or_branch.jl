@@ -1,20 +1,28 @@
 """
-    push_integral_or_branch!(m, step_obj, cnode, int2var_idx, temp)
+    push_integral_or_branch!(step_obj, cnode)
 
 Add integral or branch node to step_obj
 """
-function push_integral_or_branch!(m, step_obj, cnode, int2var_idx, temp)
+function push_integral_or_branch!(step_obj, cnode)
+    # check if all int vars are int
+    if cnode.state == :Integral
+        push!(step_obj.integral, cnode)
+    else
+        push!(step_obj.branch, cnode)
+    end
+end
+
+"""
+    set_cnode_state!(cnode, m, step_obj, int2var_idx)
+
+Set the state of the current node to :Integral or :Branch
+"""
+function set_cnode_state!(cnode, m, step_obj, int2var_idx)
     # check if all int vars are int
     if are_type_correct(cnode.solution, m.var_type, int2var_idx, m.options.atol)
         cnode.state = :Integral
-        if !temp
-            push!(step_obj.integral, cnode)
-        end
     else
         cnode.state = :Branch
-        if !temp
-            push!(step_obj.branch, cnode)
-        end
     end
 end
 
