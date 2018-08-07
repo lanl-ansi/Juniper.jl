@@ -159,6 +159,8 @@ function MathProgBase.optimize!(m::JuniperModel)
 end
 
 function create_root_model!(m::JuniperModel)
+    ps = m.options.log_levels
+    
     m.model = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
