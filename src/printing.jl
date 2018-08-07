@@ -53,3 +53,8 @@ function print_options(m::JuniperModel;all=true)
     end
     println()
 end
+
+function print_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+    ln, arr = get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+    println(ln)
+end

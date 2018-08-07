@@ -97,51 +97,9 @@ function MathProgBase.optimize!(m::JuniperModel)
         warn("Julia was started with less processors then you define in your options")
     end
 
-    m.model = Model(solver=m.nl_solver)
-    lb = m.l_var
-    ub = m.u_var
-    # all continuous we solve relaxation first
-    @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
-
-    # define the objective function
-    obj_expr = MathProgBase.obj_expr(m.d)
-    expr_dereferencing!(obj_expr, m.model)
-    JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
-
-    divide_nl_l_constr(m)
-    (:All in ps || :Info in ps) && print_info(m)
-
-    # add all constraints
-    for i=1:m.num_constr
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing!(constr_expr, m.model)
-        # add NL constraint (even if linear because .addconstraint doesn't work with expression)
-        JuMP.addNLconstraint(m.model, constr_expr)
-    end
-
-    m.x = x
+    create_root_model!(m)
     m.start_time = time()
-    m.status = solve(m.model)
-    restarts = 0
-    max_restarts = m.options.num_resolve_root_relaxation
-    m.options.debug && debug_init(m.debugDict)
-    while m.status != :Optimal && m.status != :LocalOptimal && 
-        restarts < max_restarts && time()-m.start_time < m.options.time_limit
-
-        internal_model = internalmodel(m.model)
-        if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-            MathProgBase.freemodel!(internal_model)
-        end
-        restart_values = generate_random_restart(m)
-        m.options.debug && debug_restart_values(m.debugDict,restart_values)
-        for i=1:m.num_var      
-            setvalue(m.x[i], restart_values[i])
-        end
-        m.status = solve(m.model)
-        restarts += 1
-    end
-
-   
+    restarts = solve_root_model!(m) 
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
@@ -198,6 +156,55 @@ function MathProgBase.optimize!(m::JuniperModel)
         write(m.options.debug_file_path, JSON.json(m.debugDict))
     end
     return m.status
+end
+
+function create_root_model!(m::JuniperModel)
+    m.model = Model(solver=m.nl_solver)
+    lb = m.l_var
+    ub = m.u_var
+    # all continuous we solve relaxation first
+    @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
+
+    # define the objective function
+    obj_expr = MathProgBase.obj_expr(m.d)
+    expr_dereferencing!(obj_expr, m.model)
+    JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
+
+    divide_nl_l_constr(m)
+    (:All in ps || :Info in ps) && print_info(m)
+
+    # add all constraints
+    for i=1:m.num_constr
+        constr_expr = MathProgBase.constr_expr(m.d,i)
+        expr_dereferencing!(constr_expr, m.model)
+        # add NL constraint (even if linear because .addconstraint doesn't work with expression)
+        JuMP.addNLconstraint(m.model, constr_expr)
+    end
+
+    m.x = x
+end
+
+function solve_root_model!(m::JuniperModel)
+    m.status = solve(m.model)
+    restarts = 0
+    max_restarts = m.options.num_resolve_root_relaxation
+    m.options.debug && debug_init(m.debugDict)
+    while m.status != :Optimal && m.status != :LocalOptimal && 
+        restarts < max_restarts && time()-m.start_time < m.options.time_limit
+
+        internal_model = internalmodel(m.model)
+        if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+            MathProgBase.freemodel!(internal_model)
+        end
+        restart_values = generate_random_restart(m)
+        m.options.debug && debug_restart_values(m.debugDict,restart_values)
+        for i=1:m.num_var      
+            setvalue(m.x[i], restart_values[i])
+        end
+        m.status = solve(m.model)
+        restarts += 1
+    end
+    return restarts
 end
 
 MathProgBase.setwarmstart!(m::JuniperModel, x) = x

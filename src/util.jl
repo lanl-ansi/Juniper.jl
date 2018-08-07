@@ -17,6 +17,30 @@ function expr_dereferencing!(expr, m)
 end
 
 """
+    expr_dereferencing_fixing!(expr, m, var_types, sol)
+
+Fix the value of discrete variables in an expression 
+"""
+function expr_dereferencing_fixing!(expr, m, var_types, sol)
+    for i in 2:length(expr.args)
+        if isa(expr.args[i], Union{Float64,Int64})
+            k = 0
+        elseif expr.args[i].head == :ref
+            @assert isa(expr.args[i].args[2], Int)
+            if var_types[expr.args[i].args[2]] != :Cont
+                expr.args[i] = sol[expr.args[i].args[2]]
+            else
+                expr.args[i] = Variable(m, expr.args[i].args[2])
+            end
+        elseif expr.args[i].head == :call
+            expr_dereferencing_fixing!(expr.args[i], m, var_types, sol)
+        else
+            error("expr_dereferencing :: Unexpected term in expression tree.")
+        end
+    end
+end
+
+"""
     divide_nl_l_constr(m::JuniperModel)
 
 Get # of linear and non linear constraints and save for each index if linear or non linear    

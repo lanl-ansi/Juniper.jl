@@ -1,7 +1,6 @@
-include("table_log.jl")
-
 importall Base.Operators
 
+include("table_log.jl")
 include("bb_inits_and_defaults.jl")
 include("bb_strategies.jl")
 include("bb_user_limits.jl")

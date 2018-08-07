@@ -1,22 +1,3 @@
-function expr_dereferencing_fixing!(expr, m, var_types, sol)
-    for i in 2:length(expr.args)
-        if isa(expr.args[i], Union{Float64,Int64})
-            k = 0
-        elseif expr.args[i].head == :ref
-            @assert isa(expr.args[i].args[2], Int)
-            if var_types[expr.args[i].args[2]] != :Cont
-                expr.args[i] = sol[expr.args[i].args[2]]
-            else
-                expr.args[i] = Variable(m, expr.args[i].args[2])
-            end
-        elseif expr.args[i].head == :call
-            expr_dereferencing_fixing!(expr.args[i], m, var_types, sol)
-        else
-            error("expr_dereferencing :: Unexpected term in expression tree.")
-        end
-    end
-end
-
 """
     generate_mip(m, nlp_sol, aff, tabu_list)
 
@@ -243,11 +224,6 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
     return ln, arr
 end
 
-function print_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
-    ln, arr = get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
-    println(ln)
-end
-
 """
     fpump(m)
 
@@ -273,11 +249,6 @@ function fpump(m)
         push!(tabu_list.sols, NaN*ones(m.num_disc_var)) 
     end
 
-    # construct the linear constraints as a vector of Aff once
-    if m.num_l_constr > 0
-        aff = m.affs
-    end
-
     last_table_arr = []
     fields = []
     field_chars = []
@@ -301,7 +272,7 @@ function fpump(m)
 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
-            mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, aff, tabu_list) 
+            mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, m.affs, tabu_list) 
         else
             # if no linear constraints just round the discrete variables
             mip_obj = NaN
