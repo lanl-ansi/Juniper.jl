@@ -140,6 +140,8 @@ function branch_strong_on!(m,opts,step_obj,
             if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
                 # TODO: Might be Error/UserLimit instead of infeasible
                 status = :GlobalInfeasible
+                left_node = l_nd
+                right_node = r_nd
                 break
             end
 
@@ -148,6 +150,8 @@ function branch_strong_on!(m,opts,step_obj,
                 if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
                     # TODO: Might be Error/UserLimit instead of infeasible
                     status = :LocalInfeasible
+                    left_node = l_nd
+                    right_node = r_nd
                     break
                 end
                 restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart)
@@ -250,7 +254,7 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
     step_obj.obj_gain.plus += gains_p
     step_obj.obj_gain.plus_counter += gains_pc
 
-    if status != :GlobalInfeasible && status != :LocalInfeasible && status != :Resolve
+    if status != :Resolve
         step_obj.l_nd = left_node
         step_obj.r_nd = right_node
     
