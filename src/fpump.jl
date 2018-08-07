@@ -54,9 +54,9 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
         end
     end
 
-    @variable(mip_model, mabsx[i=1:m.num_int_bin_var] >= 0)
-    for i=1:m.num_int_bin_var
-        vi = m.int2var_idx[i]
+    @variable(mip_model, mabsx[i=1:m.num_disc_var] >= 0)
+    for i=1:m.num_disc_var
+        vi = m.disc2var_idx[i]
         @constraint(mip_model, mabsx[i] >= mx[vi]-nlp_sol[vi])
         @constraint(mip_model, mabsx[i] >= -mx[vi]+nlp_sol[vi])
     end
@@ -73,11 +73,11 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
 
     # If there solutions in the tabu list => avoid them
     if num_sols > 0
-        @variable(mip_model, z1[j=1:m.num_int_bin_var,k=1:num_sols], Bin)
-        @variable(mip_model, z2[j=1:m.num_int_bin_var,k=1:num_sols], Bin)
+        @variable(mip_model, z1[j=1:m.num_disc_var,k=1:num_sols], Bin)
+        @variable(mip_model, z2[j=1:m.num_disc_var,k=1:num_sols], Bin)
         v = tabu_list.sols
-        for k=1:num_sols, j=1:m.num_int_bin_var
-            i = m.int2var_idx[j]
+        for k=1:num_sols, j=1:m.num_disc_var
+            i = m.disc2var_idx[j]
             lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
             ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
             @constraint(mip_model, z1[j,k]+z2[j,k] <= 1)
@@ -85,11 +85,11 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
             @constraint(mip_model, mx[i] <= v[k][j] - z1[j,k] + (ubi-v[k][j])*z2[j,k])
         end
         for k=1:num_sols
-            @constraint(mip_model, sum(z1[j,k]+z2[j,k] for j=1:m.num_int_bin_var) >= 1)
+            @constraint(mip_model, sum(z1[j,k]+z2[j,k] for j=1:m.num_disc_var) >= 1)
         end
     end
 
-    @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_int_bin_var))
+    @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
     
     # Break the mip solver if it takes too long or throw a warning when this option isn't available
     try 
@@ -102,8 +102,8 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
 
     # round mip values
     values = getvalue(mx)
-    for i=1:m.num_int_bin_var
-        vi = m.int2var_idx[i]
+    for i=1:m.num_disc_var
+        vi = m.disc2var_idx[i]
         values[vi] = round(values[vi])
     end
     return status, values, getobjectivevalue(mip_model)
@@ -136,7 +136,7 @@ function generate_nlp(m, mip_sol; random_start=false)
         JuMP.addNLconstraint(nlp_model, constr_expr)
     end
 
-    @objective(nlp_model, Min, sum((nx[m.int2var_idx[i]]-mip_sol[m.int2var_idx[i]])^2 for i=1:m.num_int_bin_var))
+    @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
     setsolver(nlp_model, m.nl_solver)
     status = solve(nlp_model)
     nlp_sol = getvalue(nx)
@@ -157,7 +157,7 @@ end
 Generate the orignal nlp and get the objective for that
 """
 function generate_real_nlp(m, sol; random_start=false)
-    if m.num_var == m.num_int_bin_var
+    if m.num_var == m.num_disc_var
         nlp_obj = MathProgBase.eval_f(m.d, sol)
         status = :Optimal
         return status, sol, nlp_obj
@@ -176,8 +176,8 @@ function generate_real_nlp(m, sol; random_start=false)
             end # discrete will be fixed anyway
         end
     end
-    for i=1:m.num_int_bin_var
-        vi = m.int2var_idx[i]
+    for i=1:m.num_disc_var
+        vi = m.disc2var_idx[i]
         JuMP.fix(rx[vi], sol[vi])
     end
 
@@ -210,7 +210,7 @@ end
 Add a solution to the tabu list (includes only the discrete variables)
 """
 function add!(t::TabuList, m, sol)
-    t.sols[t.pointer] = [sol[m.int2var_idx[i]] for i=1:m.num_int_bin_var]
+    t.sols[t.pointer] = [sol[m.disc2var_idx[i]] for i=1:m.num_disc_var]
     t.pointer += 1
     if t.pointer > t.length
         t.pointer = 1
@@ -264,7 +264,7 @@ Run the feasibility pump
 function fpump(m)
     srand(1)
 
-    if are_type_correct(m.solution, m.var_type, m.int2var_idx, m.options.atol)
+    if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
         return m.solution, m.objval 
     end
 
@@ -278,7 +278,7 @@ function fpump(m)
     tabu_list.pointer = 1
     tabu_list.sols = []
     for i=1:tabu_list.length
-        push!(tabu_list.sols, NaN*ones(m.num_int_bin_var)) 
+        push!(tabu_list.sols, NaN*ones(m.num_disc_var)) 
     end
 
     # construct the linear constraints as a vector of Aff once
@@ -304,7 +304,7 @@ function fpump(m)
     # the tolerance can be changed => current atol
     catol = m.options.atol
     atol_counter = 0
-    while !are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol) && time()-start_fpump < tl && 
+    while !are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol) && time()-start_fpump < tl && 
         time()-m.start_time < m.options.time_limit
 
         # generate a mip or just round if no linear constraints
@@ -315,8 +315,8 @@ function fpump(m)
             mip_obj = NaN
             mip_sol = copy(nlp_sol)
             mip_status = :Optimal
-            for vi=1:m.num_int_bin_var
-                vidx = m.int2var_idx[vi]
+            for vi=1:m.num_disc_var
+                vidx = m.disc2var_idx[vi]
                 mip_sol[vidx] = round(mip_sol[vidx])
             end
         end
@@ -361,7 +361,7 @@ function fpump(m)
 
         # if the difference is near 0 => try to improve the obj by using the original obj
         # set atol for type correct to a low value as it is checked with real_nlp anyway
-        if are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
+        if are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && 
@@ -374,7 +374,7 @@ function fpump(m)
                 nlp_sol = real_sol
                 iscorrect = true
                 break
-            elseif are_type_correct(nlp_sol, m.var_type, m.int2var_idx, catol)
+            elseif are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol)
                 nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
                 iscorrect = true
                 warn("Real objective wasn't solved to optimality")

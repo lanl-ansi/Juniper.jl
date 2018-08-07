@@ -27,14 +27,14 @@ type JuniperModel <: MathProgBase.AbstractNonlinearModel
 
     affs            :: Vector{Aff}
 
-    int2var_idx     :: Vector{Int64}
-    var2int_idx     :: Vector{Int64}
+    disc2var_idx    :: Vector{Int64}
+    var2disc_idx    :: Vector{Int64}
 
     var_type        :: Vector{Symbol}
     isconstrlinear  :: Vector{Bool}
     obj_sense       :: Symbol
     d               :: MathProgBase.AbstractNLPEvaluator
-    num_int_bin_var :: Int64
+    num_disc_var :: Int64
 
     solution        :: Vector{Float64}
 
@@ -89,7 +89,7 @@ function JuniperNonlinearModel(s::JuniperSolverObj)
     m.solution = Float64[]
     m.nsolutions = 0
     m.solutions = []
-    m.num_int_bin_var = 0
+    m.num_disc_var = 0
     m.nintvars = 0
     m.nbinvars = 0
     m.nnodes = 1 # is set to one for the root node
@@ -178,7 +178,7 @@ end
 
 function print_info(m::JuniperModel)
     println("#Variables: ", m.num_var)
-    println("#IntBinVar: ", m.num_int_bin_var)
+    println("#IntBinVar: ", m.num_disc_var)
     println("#Constraints: ", m.num_constr)
     println("#Linear Constraints: ", m.num_l_constr)
     println("#NonLinear Constraints: ", m.num_nl_constr)
@@ -309,7 +309,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", m.objval)
 
     inc_sol, inc_obj = nothing, nothing
-    if m.num_int_bin_var > 0
+    if m.num_disc_var > 0
         if m.num_l_constr > 0
             m.affs = construct_affine_vector(m)
         end
@@ -346,26 +346,26 @@ MathProgBase.setwarmstart!(m::JuniperModel, x) = x
     MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol}) 
 
 Is called between loadproblem! and optimize! and has a vector v of types for each variable.
-The number of int/bin variables is saved in num_int_bin_var
+The number of int/bin variables is saved in num_disc_var
 """
 function MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol}) 
     m.var_type = v
     m.nintvars = count(i->(i==:Int), v)
     m.nbinvars = count(i->(i==:Bin), v)
-    m.num_int_bin_var =  m.nintvars + m.nbinvars
+    m.num_disc_var =  m.nintvars + m.nbinvars
     for (i,s) in enumerate(v)
         if s==:Bin
             m.l_var[i] = 0
             m.u_var[i] = 1
         end
     end
-    m.int2var_idx = zeros(m.num_int_bin_var)
-    m.var2int_idx = zeros(m.num_var)
+    m.disc2var_idx = zeros(m.num_disc_var)
+    m.var2disc_idx = zeros(m.num_var)
     int_i = 1
     for i=1:m.num_var
         if m.var_type[i] != :Cont
-            m.int2var_idx[int_i] = i
-            m.var2int_idx[i] = int_i
+            m.disc2var_idx[int_i] = i
+            m.var2disc_idx[i] = int_i
             int_i += 1
         end
     end

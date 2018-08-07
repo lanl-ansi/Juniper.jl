@@ -2,18 +2,18 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     srand(1)
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval,[],hash_val)
-    obj_gain_m = zeros(m.num_int_bin_var)
-    obj_gain_p = zeros(m.num_int_bin_var)
-    obj_gain_mc = zeros(Int64, m.num_int_bin_var)
-    obj_gain_pc = zeros(Int64, m.num_int_bin_var)
+    obj_gain_m = zeros(m.num_disc_var)
+    obj_gain_p = zeros(m.num_disc_var)
+    obj_gain_mc = zeros(Int64, m.num_disc_var)
+    obj_gain_pc = zeros(Int64, m.num_disc_var)
     obj_gain = GainObj(obj_gain_m, obj_gain_p, obj_gain_mc, obj_gain_pc)
-    int2var_idx = zeros(m.num_int_bin_var)
-    var2int_idx = zeros(m.num_var)
+    disc2var_idx = zeros(m.num_disc_var)
+    var2disc_idx = zeros(m.num_var)
     int_i = 1
     for i=1:m.num_var
         if m.var_type[i] != :Cont
-            int2var_idx[int_i] = i
-            var2int_idx[i] = int_i
+            disc2var_idx[int_i] = i
+            var2disc_idx[i] = int_i
             int_i += 1
         end
     end
@@ -24,8 +24,8 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     bnbTree = BnBTreeObj()
     bnbTree.m           = m
     bnbTree.obj_gain    = obj_gain
-    bnbTree.int2var_idx = int2var_idx
-    bnbTree.var2int_idx = var2int_idx
+    bnbTree.disc2var_idx = disc2var_idx
+    bnbTree.var2disc_idx = var2disc_idx
     bnbTree.options     = m.options
     bnbTree.obj_fac     = factor
     bnbTree.start_time  = start_time
@@ -61,10 +61,10 @@ function init_time_obj()
 end
 
 function new_default_step_obj(m,node)
-    gains_m = zeros(m.num_int_bin_var)
-    gains_mc = zeros(Int64, m.num_int_bin_var)
-    gains_p = zeros(m.num_int_bin_var)
-    gains_pc = zeros(Int64, m.num_int_bin_var)
+    gains_m = zeros(m.num_disc_var)
+    gains_mc = zeros(Int64, m.num_disc_var)
+    gains_p = zeros(m.num_disc_var)
+    gains_pc = zeros(Int64, m.num_disc_var)
     gains = GainObj(gains_m, gains_p, gains_mc, gains_pc)
     idx_time = 0.0
     node_idx_time = 0.0

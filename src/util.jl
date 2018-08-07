@@ -139,7 +139,7 @@ use construct_complete_affine_matrix if interested in all variables
 if only_non_zero is set to true all rows with all zeros are removed
 """
 function construct_disc_affine_matrix(m; only_non_zero=true)
-    mat = zeros(length(m.affs),m.num_int_bin_var)
+    mat = zeros(length(m.affs),m.num_disc_var)
     i = 1
     non_zero_idx = []
     for aff in m.affs
@@ -148,7 +148,7 @@ function construct_disc_affine_matrix(m; only_non_zero=true)
             var = aff.var_idx[part_idx]
             if m.var_type[var] != :Cont
                 coeff = aff.coeff[part_idx]
-                int_var = m.var2int_idx[var]
+                int_var = m.var2disc_idx[var]
                 mat[i,int_var] = coeff
                 non_zero = true
             end
@@ -167,14 +167,14 @@ function construct_disc_affine_matrix(m; only_non_zero=true)
 end
 
 """
-    get_reasonable_int_vars(node, var_type, int_vars, int2var_idx, atol)
+    get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
 
 Get all discrete variables which aren't close to discrete yet based on atol 
 """
-function get_reasonable_int_vars(node, var_type, int_vars, int2var_idx, atol)
+function get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
     reasonable_int_vars = zeros(Int64,0)
     for i=1:int_vars
-        idx = int2var_idx[i]
+        idx = disc2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
         if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],var_type[idx],atol)

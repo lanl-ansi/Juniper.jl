@@ -6,7 +6,7 @@ Update the objective gains for the branch variable used for node
 function update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
     gain_l = sigma_minus(parent, l_nd, parent.solution[parent.var_idx])
     gain_r = sigma_plus(parent,  r_nd, parent.solution[parent.var_idx])
-    idx = tree.var2int_idx[parent.var_idx]
+    idx = tree.var2disc_idx[parent.var_idx]
 
     gain = 0.0
     gain_c = 0
@@ -47,7 +47,7 @@ function upd_gains_step!(tree, step_obj)
             # all other variables that haven't been checked get the median value of the others
             med_gain_m = median(tree.obj_gain.minus[strong_int_vars])
             med_gain_p = median(tree.obj_gain.plus[strong_int_vars])
-            rest = filter(i->!(i in strong_int_vars),1:tree.m.num_int_bin_var)
+            rest = filter(i->!(i in strong_int_vars),1:tree.m.num_disc_var)
             tree.obj_gain.minus[rest] = med_gain_m
             tree.obj_gain.plus[rest] = med_gain_p
             tree.obj_gain.minus_counter[rest] = 1
@@ -67,7 +67,7 @@ end
 
 function guess_gain(tree, step_obj)
     i = step_obj.var_idx
-    inti = tree.var2int_idx[i]
+    inti = tree.var2disc_idx[i]
     x = step_obj.node.solution
     g_minus, g_minus_c = tree.obj_gain.minus,tree.obj_gain.minus_counter
     g_plus, g_plus_c = tree.obj_gain.plus,tree.obj_gain.plus_counter
