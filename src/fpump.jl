@@ -1,11 +1,3 @@
-type TabuList
-    sols      :: Vector{Vector{Float64}}
-    length    :: Int64
-    pointer   :: Int64
-
-    TabuList() = new()
-end
-
 function expr_dereferencing_fixing!(expr, m, var_types, sol)
     for i in 2:length(expr.args)
         if isa(expr.args[i], Union{Float64,Int64})

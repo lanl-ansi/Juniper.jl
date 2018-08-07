@@ -4,11 +4,6 @@ export JuniperSolver
 A solver for MINLP problems using a NLP solver and Branch and Bound
 """
 
-type JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
-    nl_solver   :: MathProgBase.AbstractMathProgSolver
-    options     :: Juniper.SolverOptions
-end
-
 function get_default_options()
     log_levels                          = [:Options,:Table,:Info]
     atol                                = 1e-6

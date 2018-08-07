@@ -1,69 +1,6 @@
 include("debug.jl")
 include("fpump.jl")
 
-type SolutionObj
-    solution    :: Vector{Float64}
-    objval      :: Float64
-end
-
-type JuniperModel <: MathProgBase.AbstractNonlinearModel
-    nl_solver       :: MathProgBase.AbstractMathProgSolver
-   
-    model           :: JuMP.Model
-        
-    status          :: Symbol
-    objval          :: Float64
-    best_bound      :: Float64
-
-    x               :: Vector{JuMP.Variable}
-    num_constr      :: Int64
-    num_nl_constr   :: Int64
-    num_l_constr    :: Int64
-    num_var         :: Int64
-    l_var           :: Vector{Float64}
-    u_var           :: Vector{Float64}
-    l_constr        :: Vector{Float64}
-    u_constr        :: Vector{Float64}
-
-    affs            :: Vector{Aff}
-
-    disc2var_idx    :: Vector{Int64}
-    var2disc_idx    :: Vector{Int64}
-
-    var_type        :: Vector{Symbol}
-    isconstrlinear  :: Vector{Bool}
-    obj_sense       :: Symbol
-    d               :: MathProgBase.AbstractNLPEvaluator
-    num_disc_var :: Int64
-
-    solution        :: Vector{Float64}
-
-    soltime         :: Float64
-    options         :: SolverOptions
-    solutions       :: Vector{SolutionObj}
-    nsolutions      :: Int64
-
-    mip_solver      :: MathProgBase.AbstractMathProgSolver
-
-    relaxation_time :: Float64
-    start_time      :: Float64
-
-    # Info
-    nintvars        :: Int64
-    nbinvars        :: Int64
-    nnodes          :: Int64
-    ncuts           :: Int64
-    nbranches       :: Int64
-    nlevels         :: Int64
-
-    fpump_info      :: Dict{Symbol,Float64}
-
-    # debug
-    debugDict        :: Dict{Symbol,Any}
-
-    JuniperModel() = new()
-end
-
 """
     MathProgBase.NonlinearModel(s::JuniperSolverObj)
 
@@ -133,88 +70,11 @@ function MathProgBase.loadproblem!(
     MathProgBase.initialize(m.d, [:ExprGraph,:Jac,:Grad])
 end
 
-#=
-    Used from https://github.com/lanl-ansi/POD.jl
-=# 
-function expr_dereferencing!(expr, m)
-    for i in 2:length(expr.args)
-        if isa(expr.args[i], Union{Float64,Int64})
-            k = 0
-        elseif expr.args[i].head == :ref
-            @assert isa(expr.args[i].args[2], Int)
-            expr.args[i] = Variable(m, expr.args[i].args[2])
-        elseif expr.args[i].head == :call
-            expr_dereferencing!(expr.args[i], m)
-        else
-            error("expr_dereferencing :: Unexpected term in expression tree.")
-        end
-    end
-end
-
-"""
-    divide_nl_l_constr(m::JuniperModel)
-
-Get # of linear and non linear constraints and save for each index if linear or non linear    
-"""
-function divide_nl_l_constr(m::JuniperModel)
-    isconstrlinear = Array{Bool}(m.num_constr)
-    m.num_l_constr = 0
-    for i = 1:m.num_constr
-        isconstrlinear[i] = MathProgBase.isconstrlinear(m.d, i)
-        if isconstrlinear[i]
-            m.num_l_constr += 1
-        end
-    end
-    m.num_nl_constr = m.num_constr - m.num_l_constr  
-    m.isconstrlinear = isconstrlinear
-end
-
 function replace_solution!(m::JuniperModel, best_known)
     m.solution = best_known.solution
     m.objval = best_known.objval
     m.status = best_known.status
     m.best_bound = best_known.best_bound # is reasonable for gap or time limit
-end
-
-function print_info(m::JuniperModel)
-    println("#Variables: ", m.num_var)
-    println("#IntBinVar: ", m.num_disc_var)
-    println("#Constraints: ", m.num_constr)
-    println("#Linear Constraints: ", m.num_l_constr)
-    println("#NonLinear Constraints: ", m.num_nl_constr)
-    println("Obj Sense: ", m.obj_sense)
-    println()
-end
-
-function print_dict(d)
-    longest_key_name = maximum([length(string(key)) for key in keys(d)])+2
-    for key in keys(d)
-        skey = string(key)
-        pkey = skey*repeat(" ", longest_key_name-length(skey))
-        println(pkey, ": ",d[key])
-    end
-end
-
-function get_non_default_options(options)
-    defaults = Juniper.get_default_options()
-    non_defaults = Dict{Symbol,Any}()
-    for fname in fieldnames(SolverOptions)
-        # doesn't work for arrays but the only array atm is log_levels 
-        # and the default doesn't include :Options therefore !== should work...
-        if getfield(options,fname) !== getfield(defaults,fname)
-            non_defaults[fname] = getfield(options,fname)
-        end
-    end
-    return non_defaults
-end
-
-function print_options(m::JuniperModel;all=true)
-    if all
-        println(m.options)
-    else
-        print_dict(get_non_default_options(m.options))
-    end
-    println()
 end
 
 """
