@@ -30,7 +30,7 @@ function get_entry_dict(step_obj)
     n_l[:best_bound] =step_obj.l_nd.best_bound
     n_l[:relaxation_state] =step_obj.l_nd.relaxation_state
     if n_l[:state] == :Integral
-        n_l[:solution] =step_obj.l_nd.solution
+        n_l[:solution] = step_obj.l_nd.solution
     end
     d_r[:hash] = step_obj.r_nd.hash
     n_r[:state] =step_obj.r_nd.state
