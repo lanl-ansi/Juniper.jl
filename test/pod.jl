@@ -69,7 +69,8 @@ end
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_restart = true
+            strong_restart = true,
+            mip_solver=CbcSolver(logLevel=0)
     ))
     status = solve(m)
 
@@ -85,7 +86,8 @@ end
 
     setsolver(m, DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_restart = false
+            strong_restart = false,
+            mip_solver=CbcSolver(logLevel=0)
     ))
     status = solve(m)
 
