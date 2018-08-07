@@ -39,6 +39,8 @@ type SolverOptions
     debug                               :: Bool
     debug_write                         :: Bool
     debug_file_path                     :: String
+
+    fixed_gain_mu                       :: Bool
 end
 
 function Base.show(io::IO, opts::SolverOptions) 

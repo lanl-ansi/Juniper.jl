@@ -625,7 +625,7 @@ end
     println("==================================")
 
     m = Model(solver=DefaultTestSolver(;branch_strategy=:Reliability,
-              strong_restart=false,strong_branching_approx_time_limit=1))
+              strong_restart=false,strong_branching_approx_time_limit=1,gain_mu=0.5))
  
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
