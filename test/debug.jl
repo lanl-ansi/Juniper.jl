@@ -19,23 +19,6 @@ function traverse(entry,callback,params,results)
 end
 
 """
-    traverse_sum(entry,callback,params,result)
-
-Traverse over the debug dict and call callback for every entry with the hash, step_obj
-as well as parameters.
-Returns the aggregated summation result in the end.
-"""
-function traverse_sum(entry,callback,params,result)
-    new_result = callback(entry[:hash],entry[:step_obj],params)
-    result += new_result
-    if haskey(entry,:children)
-        result = traverse_sum(entry[:children][1], callback, params, result)
-        result = traverse_sum(entry[:children][2], callback, params, result)
-    end
-    return result
-end
-
-"""
     c_isstate(hash,entry,params)
 
 A callback function for traverse which checks whether a given state (params[:state]) is present

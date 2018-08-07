@@ -206,7 +206,7 @@ end
 end
 
 @testset "LSE matrix" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible))
+    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,log_levels=[:All]))
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]

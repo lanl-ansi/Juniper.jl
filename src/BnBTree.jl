@@ -94,15 +94,6 @@ function Base.:+(a::GainObj, b::GainObj)
     return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter)
 end
 
-function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
-    for v in vec
-        if v in ps
-            return true
-        end
-    end
-    return false
-end
-
 """
     upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::Int64=1)    
 
@@ -748,8 +739,8 @@ function solvemip(tree::BnBTreeObj)
     tree.m.nbranches = counter
 
     time_bnb_solve = time()-time_bnb_solve_start
-    (:Table in tree.options.log_levels) && println("")
-    (:Info in tree.options.log_levels) && println("#branches: ", counter)
+    check_print(ps,[:Table]) && println("")
+    check_print(ps,[:All,:Info]) && println("#branches: ", counter)
 
     if tree.options.debug
         tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_int_bin_var)
@@ -759,7 +750,8 @@ function solvemip(tree::BnBTreeObj)
         tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
     end
 
-    if :Timing in tree.options.log_levels
+   
+    if check_print(ps,[:All,:Timing])
         println("BnB time: ", round(time_bnb_solve,2))
         println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
         println("Solve node time get idx: ", round(time_obj.solve_leaves_get_idx,2))

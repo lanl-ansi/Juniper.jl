@@ -7,6 +7,21 @@ type Aff
     Aff() = new()
 end
 
+"""
+    check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
+
+Check whether something should get printed. Only if the log_levels option
+include the necessary level 
+"""
+function check_print(log_levels::Vector{Symbol}, necessary::Vector{Symbol})
+    for v in log_levels
+        if v in necessary
+            return true
+        end
+    end
+    return false
+end
+
 function generate_random_restart(m; cont=true)
     values = []
     for i=1:m.num_var
