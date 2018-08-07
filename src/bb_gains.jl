@@ -43,6 +43,7 @@ function upd_gains_step!(tree, step_obj)
         if step_obj.counter == 1
             cum_counter = tree.obj_gain.minus_counter .+ tree.obj_gain.plus_counter
             strong_int_vars = find(cum_counter .> 0)
+            step_obj.strong_int_vars = strong_int_vars
             # all other variables that haven't been checked get the median value of the others
             med_gain_m = median(tree.obj_gain.minus[strong_int_vars])
             med_gain_p = median(tree.obj_gain.plus[strong_int_vars])

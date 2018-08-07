@@ -47,6 +47,9 @@ function get_default_options()
 
     # Only for testing
     force_parallel                      = false
+    debug                               = false
+    debug_write                         = false
+    debug_file_path                     = "debug.json"
 
     fixed_gain_mu                       = false
 
@@ -57,7 +60,7 @@ function get_default_options()
         list_of_solutions,processors,traverse_strategy,
         feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
         tabu_list_length,num_resolve_nlp_feasibility_pump,
-        mip_solver, force_parallel, fixed_gain_mu)
+        mip_solver, force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
 end
 
 function combine_options(options)

@@ -1,6 +1,7 @@
 function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     srand(1)
-    node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval)
+    hash_val = string(hash(hcat(m.l_var,m.u_var)))
+    node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval,[],hash_val)
     obj_gain_m = zeros(m.num_int_bin_var)
     obj_gain_p = zeros(m.num_int_bin_var)
     obj_gain_mc = zeros(Int64, m.num_int_bin_var)
@@ -46,12 +47,13 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
 end
 
 function new_default_node(idx, level, l_var, u_var, solution;
-                            var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN)
+                            var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
 
     l_var = copy(l_var)
     u_var = copy(u_var)
     solution = copy(solution)
-    return BnBNode(idx, level, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound)
+    hash_val = string(hash(hcat(l_var,u_var)))
+    return BnBNode(idx, level, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound, path, hash_val)
 end
 
 function init_time_obj()
@@ -85,5 +87,6 @@ function new_default_step_obj(m,node)
     step_obj.branch           = []   
     step_obj.counter          = 0   
     step_obj.upd_gains        = :None
+    step_obj.strong_int_vars  = Int64[]
     return step_obj
 end

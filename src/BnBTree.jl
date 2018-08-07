@@ -1,4 +1,5 @@
 include("table_log.jl")
+
 importall Base.Operators
 
 type BnBNode
@@ -11,6 +12,8 @@ type BnBNode
     state               :: Symbol
     relaxation_state    :: Symbol
     best_bound          :: Float64
+    path                :: Vector{BnBNode}
+    hash                :: String
 end
 
 type Incumbent
@@ -63,6 +66,7 @@ type StepObj
     r_nd                :: BnBNode
     counter             :: Int64
     upd_gains           :: Symbol
+    strong_int_vars     :: Vector{Int64}
 
     StepObj() = new()
 end
@@ -88,15 +92,6 @@ function Base.:+(a::GainObj, b::GainObj)
     new_minus_counter = a.minus_counter + b.minus_counter 
     new_plus_counter = a.plus_counter + b.plus_counter 
     return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter)
-end
-
-function check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
-    for v in vec
-        if v in ps
-            return true
-        end
-    end
-    return false
 end
 
 """
@@ -132,14 +127,14 @@ function upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter::I
 end
 
 """
-    process_node!(m, step_obj, cnode, int2_var_idx, temp)
+    process_node!(m, step_obj, cnode, int2var_idx, temp)
 
 Solve a child node `cnode` by relaxation.
 Set the state and best_bound property.
 Push integrals and new branch nodes to the step object
 Return state
 """
-function process_node!(m, step_obj, cnode, int2_var_idx, temp)
+function process_node!(m, step_obj, cnode, int2var_idx, temp)
      # set bounds
     for i=1:m.num_var
         JuMP.setlowerbound(m.x[i], cnode.l_var[i])    
@@ -181,7 +176,10 @@ function process_node!(m, step_obj, cnode, int2_var_idx, temp)
         cnode.state = :Error
     elseif status == :Optimal
         cnode.best_bound = objval
-        push_integral_or_branch!(m, step_obj, cnode, int2_var_idx, temp)
+        set_cnode_state!(cnode, m, step_obj, int2var_idx)
+        if !temp
+            push_integral_or_branch!(step_obj, cnode)
+        end
     else
         cnode.state = :Infeasible
     end
@@ -208,7 +206,7 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     if !temp && node.state != :Branch
         for cnode in [step_obj.l_nd,step_obj.r_nd]
             if cnode.state == :Branch || cnode.state == :Integral
-                push_integral_or_branch!(m, step_obj, cnode, int2var_idx, false)
+                push_integral_or_branch!(step_obj, cnode)
             end
         end
         return step_obj.l_nd,step_obj.r_nd
@@ -218,8 +216,18 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     r_nd_l_var = copy(node.l_var)
     l_nd_u_var[vidx] = floor(node.solution[vidx])
     r_nd_l_var[vidx] = ceil(node.solution[vidx])
-    l_nd = new_default_node(node.idx*2,   node.level+1, node.l_var, l_nd_u_var, node.solution)
-    r_nd = new_default_node(node.idx*2+1, node.level+1, r_nd_l_var, node.u_var, node.solution)
+
+    if opts.debug
+        path_l = copy(node.path)
+        path_r = copy(node.path)
+        push!(path_l,node)
+        push!(path_r,node)
+    else
+        path_l = []
+        path_r = []
+    end
+    l_nd = new_default_node(node.idx*2,   node.level+1, node.l_var, l_nd_u_var, node.solution; path=path_l)
+    r_nd = new_default_node(node.idx*2+1, node.level+1, r_nd_l_var, node.u_var, node.solution; path=path_r)
 
 
     # save that this node branches on this particular variable
@@ -238,9 +246,7 @@ function branch!(m, opts, step_obj, counter, int2var_idx; temp=false)
     r_state = process_node!(m, step_obj, r_nd, int2var_idx, temp)
     node_time = time() - start_process
 
-    if temp
-        step_obj.node_idx_time += node_time
-    else
+    if !temp
         step_obj.node_branch_time += node_time
     end
 
@@ -397,7 +403,9 @@ function one_branch_step!(m1, incumbent, opts, step_obj, int2var_idx, gains, cou
     step_obj.counter = counter
 
 # get branch variable    
+    node_idx_start = time()
     upd_int_variable_idx!(m, step_obj, opts, int2var_idx, gains, counter)
+    step_obj.node_idx_time = time()-node_idx_start
     if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, int2var_idx, opts.atol)
         push!(step_obj.integral, node)
     else         
@@ -483,6 +491,8 @@ function solve_sequential(tree,
     int2var_idx = tree.int2var_idx
     counter = 0
     ps = tree.options.log_levels
+        
+    dictTree = Dict{Any,Any}()
     while true
         # the _ is only needed for parallel
         exists, _, step_obj = get_next_branch_node!(tree)
@@ -498,6 +508,7 @@ function solve_sequential(tree,
         node = step_obj.node
 
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
+        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
         
         if check_print(ps,[:Table]) 
             last_table_arr = print_table(1,tree,node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
@@ -507,6 +518,8 @@ function solve_sequential(tree,
             break
         end
     end
+
+    tree.options.debug && (tree.m.debugDict[:tree] = dictTree)
     return counter
 end
 
@@ -550,8 +563,10 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     for p=3:np
         remotecall(dummysolve, p)
     end
+    
+    proc_counter = zeros(np)
 
-    p_counter = zeros(np)
+    dictTree = Dict{Any,Any}() 
 
     branch_strat = tree.options.branch_strategy
     opts = tree.options
@@ -595,11 +610,11 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
-                        p_counter[p] += 1
                         
                         !still_running && break
-                    
+                        
                         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
+                        tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
 
                         if run_counter == 0 && length(tree.branch_nodes) == 0
                             still_running = false 
@@ -625,6 +640,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
             end
         end
     end
+    tree.options.debug && (tree.m.debugDict[:tree] = dictTree)
     return counter
 end
 
@@ -641,6 +657,7 @@ function solvemip(tree::BnBTreeObj)
     time_bnb_solve_start = time()
 
     ps = tree.options.log_levels
+    
 
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.int2var_idx, tree.options.atol)
@@ -722,9 +739,19 @@ function solvemip(tree::BnBTreeObj)
     tree.m.nbranches = counter
 
     time_bnb_solve = time()-time_bnb_solve_start
-    (:Table in tree.options.log_levels) && println("")
-    (:Info in tree.options.log_levels) && println("#branches: ", counter)
-    if :Timing in tree.options.log_levels
+    check_print(ps,[:Table]) && println("")
+    check_print(ps,[:All,:Info]) && println("#branches: ", counter)
+
+    if tree.options.debug
+        tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_int_bin_var)
+        tree.m.debugDict[:obj_gain][1,:] = tree.obj_gain.minus
+        tree.m.debugDict[:obj_gain][2,:] = tree.obj_gain.plus
+        tree.m.debugDict[:obj_gain][3,:] = tree.obj_gain.minus_counter
+        tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
+    end
+
+   
+    if check_print(ps,[:All,:Timing])
         println("BnB time: ", round(time_bnb_solve,2))
         println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
         println("Solve node time get idx: ", round(time_obj.solve_leaves_get_idx,2))

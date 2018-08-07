@@ -230,19 +230,12 @@ function branch_strong!(m,opts,int2var_idx,step_obj,counter)
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
     int_vars = m.num_int_bin_var
-    reasonable_int_vars = zeros(Int64,0)
     atol = opts.atol
-    for i=1:int_vars
-        idx = int2var_idx[i]
-        u_b = node.u_var[idx]
-        l_b = node.l_var[idx]
-        if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx],atol)
-            continue
-        end
-        push!(reasonable_int_vars,i)
+    reasonable_int_vars = get_reasonable_int_vars(node, m.var_type, int_vars,  int2var_idx, atol)
+    if num_strong_var < length(reasonable_int_vars)
+        shuffle!(reasonable_int_vars)
+        reasonable_int_vars = reasonable_int_vars[1:num_strong_var]
     end
-    shuffle!(reasonable_int_vars)
-    reasonable_int_vars = reasonable_int_vars[1:minimum([num_strong_var,length(reasonable_int_vars)])]
 
     # compute the gain for each reasonable candidate and choose the highest
     left_node = nothing

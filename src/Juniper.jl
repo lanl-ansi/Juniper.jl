@@ -2,6 +2,7 @@ module Juniper
 
 using MathProgBase
 using JuMP
+using JSON
 
 # Options for the solver (more details like defaults in solver.jl)
 type SolverOptions
@@ -35,6 +36,9 @@ type SolverOptions
     
     # only for testing
     force_parallel                      :: Bool
+    debug                               :: Bool
+    debug_write                         :: Bool
+    debug_file_path                     :: String
 
     fixed_gain_mu                       :: Bool
 end

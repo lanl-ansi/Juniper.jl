@@ -10,7 +10,8 @@ include("basic/gamsworld.jl")
         branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
-        strong_restart = true
+        strong_restart = true,
+        debug = true
     )
 
     m = Model(solver=juniper_all_solutions)
@@ -30,6 +31,10 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
     status = solve(m)
+    debugDict = internalmodel(m).debugDict
+    @test getnstate(debugDict,:Integral) == 24
+    @test different_hashes(debugDict) == true
+    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
 
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
@@ -252,6 +257,7 @@ end
     @NLconstraint(m, y==2*cos(2*x))
 
     status = solve(m)
+
     println("Status: ", status)
 
     @test status == :Infeasible
@@ -305,7 +311,7 @@ end
     println("==================================")
     println("Infeasible relaxation")
     println("==================================")
-    m = Model(solver=juniper_strong_no_restart)
+    m = Model(solver=DefaultTestSolver(;debug=true))
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -315,6 +321,28 @@ end
     @NLconstraint(m, x[1]*x[2]*x[3] >= 10)
 
     status = solve(m)
+    debug1 = m.internalModel.debugDict
+
+    m = Model(solver=DefaultTestSolver(;debug=true))
+
+    @variable(m, 0 <= x[1:10] <= 2, Int)
+
+    @objective(m, Min, sum(x))
+
+    @constraint(m, sum(x[1:5]) <= 20)
+    @NLconstraint(m, x[1]*x[2]*x[3] >= 10)
+
+    status = solve(m)
+
+    debug2 = m.internalModel.debugDict
+    opts = m.internalModel.options
+
+    # should be deterministic
+    @test debug1[:relaxation][:nrestarts] == debug2[:relaxation][:nrestarts] == opts.num_resolve_root_relaxation
+    for i=1:debug1[:relaxation][:nrestarts]
+        @test debug1[:relaxation][:restarts][i] == debug2[:relaxation][:restarts][i]
+    end
+
     println("Status: ", status)
 
     @test status == :Infeasible
