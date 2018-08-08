@@ -55,6 +55,24 @@ function new_default_node(idx, level, l_var, u_var, solution;
     return BnBNode(idx, level, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound, path, hash_val)
 end
 
+function new_left_node(node, u_var; 
+                       var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
+    l_var = copy(node.l_var)
+    u_var = copy(u_var)
+    solution = NaN*ones(length(node.solution))
+    hash_val = string(hash(hcat(l_var,u_var)))
+    return BnBNode(node.idx*2, node.level+1, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound, path, hash_val)
+end
+
+function new_right_node(node, l_var; 
+                       var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
+    l_var = copy(l_var)
+    u_var = copy(node.u_var)
+    solution = NaN*ones(length(node.solution))
+    hash_val = string(hash(hcat(l_var,u_var)))
+    return BnBNode(node.idx*2+1, node.level+1, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound, path, hash_val)
+end
+
 function init_time_obj()
     return TimeObj(0.0,0.0,0.0,0.0,0.0)
 end

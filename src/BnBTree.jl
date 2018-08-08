@@ -138,9 +138,8 @@ function branch!(m, opts, step_obj, counter, disc2var_idx; temp=false)
         path_l = []
         path_r = []
     end
-    l_nd = new_default_node(node.idx*2,   node.level+1, node.l_var, l_nd_u_var, node.solution; path=path_l)
-    r_nd = new_default_node(node.idx*2+1, node.level+1, r_nd_l_var, node.u_var, node.solution; path=path_r)
-
+    l_nd = new_left_node(node, l_nd_u_var; path=path_l)
+    r_nd = new_right_node(node, r_nd_l_var; path=path_r)
 
     # save that this node branches on this particular variable
     node.var_idx = vidx
