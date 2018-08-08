@@ -62,14 +62,14 @@ Update obj_gain for the variables tried and average the other ones.
 function branch_strong_on!(m,opts,step_obj,
     reasonable_int_vars, disc2var_idx, strong_restart, counter)
 
-    function set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
+    function set_temp_gains!(gains, gain_l, gain_r, int_var_idx)
         if !isinf(gain_l)
-            gains_m[int_var_idx] = gain_l
-            gains_mc[int_var_idx] = 1
+            gains.minus[int_var_idx] = gain_l
+            gains.minus_counter[int_var_idx] = 1
         end
         if !isinf(gain_r)
-            gains_p[int_var_idx] = gain_r
-            gains_pc[int_var_idx] = 1
+            gains.plus[int_var_idx] = gain_r
+            gains.plus_counter[int_var_idx] = 1
         end
     end
 
@@ -105,11 +105,8 @@ function branch_strong_on!(m,opts,step_obj,
     status = :Normal
     node = step_obj.node
     infeasible_int_vars = zeros(Int64,0)
-    gains_m = zeros(m.num_disc_var)
-    gains_p = zeros(m.num_disc_var)
-    gains_mc = zeros(Int64,m.num_disc_var)
-    gains_pc = zeros(Int64,m.num_disc_var)
-
+    gains = init_gains(m.num_disc_var)
+  
     left_node, right_node = nothing, nothing
     atol = opts.atol
 
@@ -168,7 +165,7 @@ function branch_strong_on!(m,opts,step_obj,
                     need_to_resolve = false
                     gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
                     max_gain = gain
-                    set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
+                    set_temp_gains!(gains, gain_l, gain_r, int_var_idx)
                     break
                 end
 
@@ -188,7 +185,7 @@ function branch_strong_on!(m,opts,step_obj,
                 # selection might not work anymore => we have to resolve it later
                 need_to_resolve = false
             end
-            set_temp_gains!(gains_m,gains_mc,gains_p,gains_pc,gain_l,gain_r,int_var_idx)
+            set_temp_gains!(gains, gain_l, gain_r, int_var_idx)
             if restart
                 break
             end
@@ -204,8 +201,7 @@ function branch_strong_on!(m,opts,step_obj,
         status = :Resolve
     end
 
-    return status, max_gain_var, left_node, right_node, 
-    (gains_m, gains_mc, gains_p, gains_pc), strong_restarts
+    return status, max_gain_var, left_node, right_node, gains, strong_restarts
 end
 
 """
@@ -248,11 +244,7 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
     status, max_gain_var,  left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
         reasonable_int_vars, disc2var_idx, opts.strong_restart, counter)
 
-    gains_m, gains_mc, gains_p, gains_pc = gains
-    step_obj.obj_gain.minus += gains_m
-    step_obj.obj_gain.minus_counter += gains_mc
-    step_obj.obj_gain.plus += gains_p
-    step_obj.obj_gain.plus_counter += gains_pc
+    step_obj.obj_gain += gains
 
     if status != :Resolve
         step_obj.l_nd = left_node
@@ -313,14 +305,11 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
         num_reasonable = num_strong_var < length(reasonable_int_vars) ? num_strong_var : length(reasonable_int_vars)
         reasonable_int_vars = reasonable_int_vars[1:num_reasonable]
         
-        status, max_gain_var,  left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
+        status, max_gain_var, left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
             reasonable_int_vars, disc2var_idx, opts.strong_restart, counter)
         
-        gains_m, gains_mc, gains_p, gains_pc = gains
-        step_obj.obj_gain.minus += gains_m
-        step_obj.obj_gain.minus_counter += gains_mc
-        step_obj.obj_gain.plus += gains_p
-        step_obj.obj_gain.plus_counter += gains_pc
+        step_obj.obj_gain += gains
+        
         step_obj.upd_gains = :GainsToTree
         new_gains = GainObj(step_obj.obj_gain.minus, step_obj.obj_gain.plus, 
                             step_obj.obj_gain.minus_counter, step_obj.obj_gain.plus_counter)

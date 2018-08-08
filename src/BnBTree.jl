@@ -1,5 +1,3 @@
-importall Base.Operators
-
 include("table_log.jl")
 include("bb_inits_and_defaults.jl")
 include("bb_strategies.jl")
@@ -7,14 +5,6 @@ include("bb_user_limits.jl")
 include("bb_type_correct.jl")
 include("bb_integral_or_branch.jl")
 include("bb_gains.jl")
-
-function Base.:+(a::GainObj, b::GainObj)
-    new_minus = a.minus + b.minus
-    new_plus = a.plus + b.plus 
-    new_minus_counter = a.minus_counter + b.minus_counter 
-    new_plus_counter = a.plus_counter + b.plus_counter 
-    return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter)
-end
 
 """
     upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)    
@@ -320,6 +310,8 @@ function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, co
     node_idx_start = time()
     upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter)
     step_obj.node_idx_time = time()-node_idx_start
+    # if no variable got selected might be true that all variables are already type correct
+    # node.solution can be updated if one child is infeasible and the other optimal (can result in discrete)
     if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, disc2var_idx, opts.atol)
         push!(step_obj.integral, node)
     else         

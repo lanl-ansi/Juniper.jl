@@ -1,3 +1,20 @@
+importall Base.Operators
+function Base.:+(a::GainObj, b::GainObj)
+    new_minus = a.minus + b.minus
+    new_plus = a.plus + b.plus 
+    new_minus_counter = a.minus_counter + b.minus_counter 
+    new_plus_counter = a.plus_counter + b.plus_counter 
+    return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter)
+end
+
+function init_gains(num_disc_var)
+    gains_m = zeros(num_disc_var)
+    gains_p = zeros(num_disc_var)
+    gains_mc = zeros(Int64,num_disc_var)
+    gains_pc = zeros(Int64,num_disc_var)
+    return GainObj(gains_m, gains_p, gains_mc, gains_pc)
+end
+
 """
     update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
 
