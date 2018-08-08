@@ -115,3 +115,11 @@ function debug_set_solution(d,m)
     d[:solution][:solution] = m.solution
     d[:solution][:time] = m.soltime
 end
+
+function debug_set_tree_obj_gain!(tree::BnBTreeObj)
+    tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_disc_var)
+    tree.m.debugDict[:obj_gain][1,:] = tree.obj_gain.minus
+    tree.m.debugDict[:obj_gain][2,:] = tree.obj_gain.plus
+    tree.m.debugDict[:obj_gain][3,:] = tree.obj_gain.minus_counter
+    tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
+end

@@ -169,7 +169,6 @@ type BnBTreeObj
     nsolutions      :: Int64
     branch_nodes    :: Vector{BnBNode}
     best_bound      :: Float64
-    mutex_get_node  :: Bool # false => open, true => block
 
     BnBTreeObj() = new()
 end

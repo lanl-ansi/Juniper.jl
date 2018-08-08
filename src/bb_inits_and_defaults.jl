@@ -32,7 +32,6 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     bnbTree.nsolutions  = 0
     bnbTree.branch_nodes = [node]
     bnbTree.best_bound  = m.objval
-    bnbTree.mutex_get_node = false
 
     if inc_sol != nothing
         bnbTree.incumbent = Incumbent(inc_obj, inc_sol, :Optimal, m.objval)

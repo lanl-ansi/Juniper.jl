@@ -272,34 +272,26 @@ Return true,step_obj if there is a branch node and
 false, nothing otherwise
 """
 function get_next_branch_node!(tree)
-    if !tree.mutex_get_node 
-        tree.mutex_get_node = true
-        if length(tree.branch_nodes) == 0
-            tree.mutex_get_node = false
-            return false, false, nothing
-        end
-        bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-
-        trav_strat = tree.options.traverse_strategy
-        if trav_strat == :DFS || (trav_strat == :DBFS && !isdefined(tree,:incumbent))
-            _value, nidx = findmax([n.level for n in tree.branch_nodes])
-        end
-
-        tree.best_bound = tree.obj_fac*bvalue
-        bbreak = isbreak_mip_gap(tree)
-        if bbreak 
-            tree.mutex_get_node = false
-            return false, true, nothing
-        end
-
-        node = tree.branch_nodes[nidx]
-        deleteat!(tree.branch_nodes, nidx)
-
-        tree.mutex_get_node = false
-        return true, false, new_default_step_obj(tree.m,node)
-    else
+    if length(tree.branch_nodes) == 0
         return false, false, nothing
     end
+    bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
+
+    trav_strat = tree.options.traverse_strategy
+    if trav_strat == :DFS || (trav_strat == :DBFS && !isdefined(tree,:incumbent))
+        _value, nidx = findmax([n.level for n in tree.branch_nodes])
+    end
+
+    tree.best_bound = tree.obj_fac*bvalue
+    bbreak = isbreak_mip_gap(tree)
+    if bbreak 
+        return false, true, nothing
+    end
+
+    node = tree.branch_nodes[nidx]
+    deleteat!(tree.branch_nodes, nidx)
+
+    return true, false, new_default_step_obj(tree.m,node)
 end
 
 
@@ -580,17 +572,17 @@ function solvemip(tree::BnBTreeObj)
 
     ps = tree.options.log_levels
     
-
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
         objval = getobjectivevalue(tree.m.model)
         sol = getvalue(tree.m.x)
         bbound = getobjectivebound(tree.m.model)
-        return Incumbent(objval,sol,:Optimal,bbound)
+        tree.incumbent = Incumbent(objval,sol,:Optimal,bbound)
+        return tree.incumbent
     end
 
-    # check if incumbent and if mip gap already fulfilled
+    # check if incumbent and if mip gap already fulfilled (i.e found by fp)
     if isbreak_mip_gap(tree)
         return tree.incumbent
     end
@@ -664,23 +656,8 @@ function solvemip(tree::BnBTreeObj)
     check_print(ps,[:Table]) && println("")
     check_print(ps,[:All,:Info]) && println("#branches: ", counter)
 
-    if tree.options.debug
-        tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_disc_var)
-        tree.m.debugDict[:obj_gain][1,:] = tree.obj_gain.minus
-        tree.m.debugDict[:obj_gain][2,:] = tree.obj_gain.plus
-        tree.m.debugDict[:obj_gain][3,:] = tree.obj_gain.minus_counter
-        tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
-    end
-
-   
-    if check_print(ps,[:All,:Timing])
-        println("BnB time: ", round(time_bnb_solve,2))
-        println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
-        println("Solve node time get idx: ", round(time_obj.solve_leaves_get_idx,2))
-        println("Solve node time branch: ", round(time_obj.solve_leaves_branch,2))
-        println("Branch time: ", round(time_obj.branch,2))
-        println("Get idx time: ", round(time_obj.get_idx,2))
-        println("Upd gains time: ", round(time_obj.upd_gains,2))
-    end
+    tree.options.debug && debug_set_tree_obj_gain!(tree)
+    check_print(ps,[:All,:Timing]) && print_final_timing(time_bnb_solve, time_obj)
+       
     return tree.incumbent
 end
