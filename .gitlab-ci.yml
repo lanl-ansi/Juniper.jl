@@ -37,7 +37,7 @@ cache:
     - cp -r /root/.julia/v0.6/. vendor/julia/
 
 
-test:0.6.2:
-  image: julia:0.6.2
+test:0.6.4:
+  image: julia:0.6.4
   <<: *test_6
 
