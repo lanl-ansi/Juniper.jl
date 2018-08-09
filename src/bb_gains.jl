@@ -4,7 +4,12 @@ function Base.:+(a::GainObj, b::GainObj)
     new_plus = a.plus + b.plus 
     new_minus_counter = a.minus_counter + b.minus_counter 
     new_plus_counter = a.plus_counter + b.plus_counter 
-    return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter)
+    new_inf_counter = a.inf_counter + b.inf_counter
+    return GainObj(new_minus, new_plus, new_minus_counter, new_plus_counter, new_inf_counter)
+end
+
+function Base.copy(a::GainObj) 
+    return GainObj(a.minus, a.plus, a.minus_counter, a.plus_counter, a.inf_counter)
 end
 
 function init_gains(num_disc_var)
@@ -12,7 +17,8 @@ function init_gains(num_disc_var)
     gains_p = zeros(num_disc_var)
     gains_mc = zeros(Int64,num_disc_var)
     gains_pc = zeros(Int64,num_disc_var)
-    return GainObj(gains_m, gains_p, gains_mc, gains_pc)
+    gains_inf = zeros(Int64,num_disc_var)
+    return GainObj(gains_m, gains_p, gains_mc, gains_pc, gains_inf)
 end
 
 """
@@ -22,7 +28,7 @@ Update the objective gains for the branch variable used for node
 """
 function update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
     gain_l = sigma_minus(parent, l_nd, parent.solution[parent.var_idx])
-    gain_r = sigma_plus(parent,  r_nd, parent.solution[parent.var_idx])
+    gain_r = sigma_plus( parent, r_nd, parent.solution[parent.var_idx])
     idx = tree.var2disc_idx[parent.var_idx]
 
     gain = 0.0
@@ -32,6 +38,8 @@ function update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
         tree.obj_gain.minus_counter[idx] += 1
         gain += gain_l
         gain_c += 1
+    else
+        tree.obj_gain.inf_counter[idx] += 1
     end
 
     if !isinf(gain_r) 
@@ -39,6 +47,12 @@ function update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
         tree.obj_gain.plus_counter[idx] += 1
         gain += gain_r
         gain_c += 1
+    else
+        tree.obj_gain.inf_counter[idx] += 1
+    end
+
+    if !isinf(gain_l) && !isinf(gain_r) && tree.obj_gain.inf_counter[idx] > 0
+        tree.obj_gain.inf_counter[idx] -= 1
     end
     if gain_c == 0
         return 0
@@ -57,6 +71,7 @@ function upd_gains_step!(tree, step_obj)
     opts = tree.options
     if step_obj.upd_gains == :GainsToTree || (branch_strat == :StrongPseudoCost && step_obj.counter <= opts.strong_branching_nsteps)
         tree.obj_gain += step_obj.obj_gain
+        tree.obj_gain.inf_counter[tree.obj_gain.inf_counter .< 0] = 0
         if step_obj.counter == 1
             cum_counter = tree.obj_gain.minus_counter .+ tree.obj_gain.plus_counter
             strong_int_vars = find(cum_counter .> 0)

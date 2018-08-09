@@ -6,7 +6,8 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     obj_gain_p = zeros(m.num_disc_var)
     obj_gain_mc = zeros(Int64, m.num_disc_var)
     obj_gain_pc = zeros(Int64, m.num_disc_var)
-    obj_gain = GainObj(obj_gain_m, obj_gain_p, obj_gain_mc, obj_gain_pc)
+    obj_gain_inf = zeros(Int64, m.num_disc_var)
+    obj_gain = GainObj(obj_gain_m, obj_gain_p, obj_gain_mc, obj_gain_pc, obj_gain_inf)
     disc2var_idx = zeros(m.num_disc_var)
     var2disc_idx = zeros(m.num_var)
     int_i = 1
@@ -82,7 +83,8 @@ function new_default_step_obj(m,node)
     gains_mc = zeros(Int64, m.num_disc_var)
     gains_p = zeros(m.num_disc_var)
     gains_pc = zeros(Int64, m.num_disc_var)
-    gains = GainObj(gains_m, gains_p, gains_mc, gains_pc)
+    gains_inf = zeros(Int64, m.num_disc_var)
+    gains = GainObj(gains_m, gains_p, gains_mc, gains_pc, gains_inf)
     idx_time = 0.0
     node_idx_time = 0.0
     upd_gains_time = 0.0

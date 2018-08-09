@@ -153,8 +153,11 @@ end
 type GainObj
     minus           :: Vector{Float64} # gain of objective per variable on left node
     plus            :: Vector{Float64} # gain of objective per variable on right node
-    minus_counter   :: Vector{Float64} # obj_gain_m / obj_gain_mc => average gain on left node
-    plus_counter    :: Vector{Float64} # obj_gain_p / obj_gain_pc => average gain on right node
+    minus_counter   :: Vector{Int64} # obj_gain_m / obj_gain_mc => average gain on left node
+    plus_counter    :: Vector{Int64} # obj_gain_p / obj_gain_pc => average gain on right node
+    # counter of how often one child is infeasible (>= 0) subtract 1 if both Optimal
+    # can be negative temporately in step_obj but not in tree.obj_gain_
+    inf_counter     :: Vector{Int64} 
 end
 
 type BnBTreeObj

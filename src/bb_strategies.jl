@@ -66,10 +66,18 @@ function branch_strong_on!(m,opts,step_obj,
         if !isinf(gain_l)
             gains.minus[int_var_idx] = gain_l
             gains.minus_counter[int_var_idx] = 1
+        else 
+            gains.inf_counter[int_var_idx] = 1
         end
         if !isinf(gain_r)
             gains.plus[int_var_idx] = gain_r
             gains.plus_counter[int_var_idx] = 1
+        else 
+            gains.inf_counter[int_var_idx] = 1
+        end
+
+        if !isinf(gain_l) && !isinf(gain_r)
+            gains.inf_counter[int_var_idx] -= 1
         end
     end
 
@@ -311,16 +319,14 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
         step_obj.obj_gain += gains
         
         step_obj.upd_gains = :GainsToTree
-        new_gains = GainObj(step_obj.obj_gain.minus, step_obj.obj_gain.plus, 
-                            step_obj.obj_gain.minus_counter, step_obj.obj_gain.plus_counter)
+        new_gains = copy(step_obj.obj_gain)
         
         if status == :GlobalInfeasible
             return :GlobalInfeasible, 0, strong_restarts
         end
     else 
         step_obj.upd_gains = :GuessAndUpdate
-        new_gains = GainObj(gains.minus, gains.plus, 
-                            gains.minus_counter, gains.plus_counter)
+        new_gains = copy(gains)
     end
     idx = branch_pseudo(m, node, disc2var_idx, new_gains, mu, atol)
     return :Normal, idx, strong_restarts
@@ -351,7 +357,8 @@ function sorted_score_idx(x, gains, i2v, mu)
     g_plus_c += map(i -> (i == 0) && (i = 1), g_plus_c)
     scores = [score(f_minus(x[i2v[i]])*g_minus[i]/g_minus_c[i],f_plus(x[i2v[i]])*g_plus[i]/g_plus_c[i],mu) for i=1:length(g_minus)]
     sortedidx = sortperm(scores; rev=true)
-    return scores,sortedidx
+    infsortedidx = sortperm(gains.inf_counter[sortedidx]; rev=true)
+    return scores,sortedidx[infsortedidx]
 end
 
 """
