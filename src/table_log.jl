@@ -78,6 +78,33 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
     nrestarts = step_obj.nrestarts
     i = 1
     ln = ""
+
+    # check if incumbent and best bound should be printed and get the shorted field_chars
+    found_both = 0
+    min_field_chars = Inf
+    j = 0
+    for f in fields
+        j += 1
+        if f == :Incumbent || f ==:BestBound
+            found_both += 1
+            if field_chars[j] < min_field_chars
+                min_field_chars = field_chars[j] 
+            end
+        end
+    end
+    precision = 2
+    if isdefined(tree,:incumbent) && found_both == 2
+        while round(tree.incumbent.objval,precision) == round(tree.best_bound,precision) 
+            if length(string(tree.incumbent.objval,precision+1)) > min_field_chars-2
+                break
+            end
+            if length(string(tree.best_bound,precision+1)) > min_field_chars-2
+                break
+            end
+            precision += 1
+        end
+    end
+
     for f in fields
         val = ""
         if f == :p
@@ -87,12 +114,12 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
         elseif f == :Incumbent
             if isdefined(tree,:incumbent) 
                 incu = tree.incumbent
-                val = string(round(incu.objval,2))
+                val = string(round(incu.objval,precision))
             else 
                 val = "-"
             end
         elseif f == :BestBound
-            val = string(round(tree.best_bound,2))
+            val = string(round(tree.best_bound,precision))
         elseif f == :Gap
             if isdefined(tree,:incumbent)
                 b = tree.best_bound
