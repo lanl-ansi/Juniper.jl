@@ -46,7 +46,7 @@ end
 Get # of linear and non linear constraints and save for each index if linear or non linear    
 """
 function divide_nl_l_constr(m::JuniperModel)
-    isconstrlinear = Array{Bool}(m.num_constr)
+    isconstrlinear = Array{Bool}(undef, m.num_constr)
     m.num_l_constr = 0
     for i = 1:m.num_constr
         isconstrlinear[i] = MathProgBase.isconstrlinear(m.d, i)
@@ -109,7 +109,7 @@ function construct_affine_vector(m)
     MathProgBase.eval_jac_g(m.d, jg, ones(m.num_var))
 
     # Construct the data structure for our affine constraints
-    aff = Vector{Aff}(m.num_l_constr)
+    aff = Vector{Aff}(undef, m.num_l_constr)
     for i=1:m.num_l_constr
         aff[i] = Aff()
         aff[i].var_idx = []

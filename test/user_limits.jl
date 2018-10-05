@@ -58,6 +58,7 @@ end
     @test getsolvetime(m) <= 2 # it might be a bit higher than 1s
 end
 
+#=
 @testset "case 5 socwr solution limit" begin
     println("==============================================")
     println("SOCWRPowerModel case5.m SolutionLimit=1")
@@ -85,7 +86,9 @@ end
 
     @test nsolutions == 1 || nsolutions == 2 # if last branch has two integral solutions
 end
+=#
 
+#=
 @testset "case 5 socwr best_obj_stop" begin
     println("==============================================")
     println("SOCWRPowerModel case5.m best_obj_stop=15000")
@@ -115,5 +118,6 @@ end
 
     @test juniper_val <= best_obj_stop
 end
+=#
 
 end

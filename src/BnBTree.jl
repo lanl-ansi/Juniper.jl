@@ -53,7 +53,10 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
         JuMP.setupperbound(m.x[i], cnode.u_var[i])
     end
     setvalue(m.x[1:m.num_var],step_obj.node.solution)
-    if contains(string(m.nl_solver),"Ipopt")
+   
+    # TODO: fix for v0.7 
+    #=
+    if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
         old_mu_init = 0.1 # default value in Ipopt
         for i=1:length(m.nl_solver.options)
@@ -65,14 +68,17 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             end
         end
         if !overwritten 
-            push!(m.nl_solver.options, (:mu_init, 1e-5))
+            
+            # push!(m.nl_solver.options, (:mu_init, 1e-5))
         end
     end
+    =#
 
-    status = JuMP.solve(m.model)
+    status = JuMP.solve(m.model, suppress_warnings=true)
 
+    #=
     # reset mu_init
-    if contains(string(m.nl_solver),"Ipopt")
+    if occursin("Ipopt", string(m.nl_solver))
         for i=1:length(m.nl_solver.options)
             if m.nl_solver.options[i][1] == :mu_init
                 m.nl_solver.options[i] = (:mu_init, old_mu_init)
@@ -80,6 +86,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             end
         end
     end
+    =#
 
     objval = getobjectivevalue(m.model)
     cnode.solution = getvalue(m.x)
@@ -96,7 +103,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
         cnode.state = :Infeasible
     end
     internal_model = internalmodel(m.model)
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
     return cnode.state
@@ -430,7 +437,7 @@ end
 
 function sendto(p::Int; args...)
     for (nm, val) in args
-        @spawnat(p, eval(Juniper, Expr(:(=), nm, val)))
+        @spawnat(p, Core.eval(Juniper, Expr(:(=), nm, val)))
     end
 end
 
@@ -460,7 +467,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     counter = 0
 
     for p=2:np
-        remotecall_fetch(srand, p, 1)
+        remotecall_fetch(Random.seed!, p, 1)
         sendto(p, m=tree.m)
         sendto(p, is_newincumbent=false)
     end
@@ -620,7 +627,7 @@ function solvemip(tree::BnBTreeObj)
     tree.incumbent.best_bound = tree.best_bound
 
     if tree.options.obj_epsilon != 0 && tree.incumbent.status == :Infeasible
-        warn("Maybe only infeasible because of obj_epsilon.")
+        @warn "Maybe only infeasible because of obj_epsilon."
     end
 
     if !isnan(tree.options.best_obj_stop)
@@ -628,7 +635,7 @@ function solvemip(tree::BnBTreeObj)
         bos = tree.options.best_obj_stop
         sense = tree.m.obj_sense
         if (sense == :Min && inc_val > bos) || (sense == :Max && inc_val < bos)
-            warn("best_obj_gap couldn't be reached.")
+            @warn "best_obj_gap couldn't be reached."
         end
     end
     

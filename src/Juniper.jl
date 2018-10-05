@@ -3,6 +3,10 @@ module Juniper
 using MathProgBase
 using JuMP
 using JSON
+using LinearAlgebra
+using Random
+using Distributed
+using Statistics
 
 include("types.jl")
 
@@ -11,7 +15,11 @@ function Base.show(io::IO, opts::SolverOptions)
     for name in fieldnames(SolverOptions)
         sname = string(name)
         pname = sname*repeat(" ", longest_field_name-length(sname))
-        println(io, pname, ": ", getfield(opts,name))
+        if getfield(opts,name) == nothing
+            println(io, pname, ": NA")
+        else
+            println(io, pname, ": ", getfield(opts,name))
+        end
     end
 end
 

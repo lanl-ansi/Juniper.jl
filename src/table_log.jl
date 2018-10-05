@@ -9,8 +9,8 @@ function get_table_config(opts)
     end
 
     if opts.processors > 1
-        unshift!(fields,:p)
-        unshift!(field_chars, 3)
+        pushfirst!(fields,:p)
+        pushfirst!(field_chars, 3)
     end
 
     if opbs == :StrongPseudoCost || opbs == :PseudoCost || opbs == :Reliability
@@ -46,7 +46,7 @@ function is_table_diff(fields, last_arr, new_arr)
     end    
 
     time_idx = findfirst(fields .== :Time)
-    if time_idx != 0
+    if time_idx != nothing
         last_arr = vcat(last_arr[1:time_idx-1],last_arr[time_idx+1:end])
         new_arr = vcat(new_arr[1:time_idx-1],new_arr[time_idx+1:end])
     end
@@ -94,7 +94,7 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
     end
     precision = 2
     if isdefined(tree,:incumbent) && found_both == 2
-        while round(tree.incumbent.objval,precision) == round(tree.best_bound,precision) 
+        while round(tree.incumbent.objval; digits=precision) == round(tree.best_bound; digits=precision) 
             if length(string(tree.incumbent.objval,precision+1)) > min_field_chars-2
                 break
             end
@@ -114,17 +114,17 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
         elseif f == :Incumbent
             if isdefined(tree,:incumbent) 
                 incu = tree.incumbent
-                val = string(round(incu.objval,precision))
+                val = string(round(incu.objval; digits=precision))
             else 
                 val = "-"
             end
         elseif f == :BestBound
-            val = string(round(tree.best_bound,precision))
+            val = string(round(tree.best_bound; digits=precision))
         elseif f == :Gap
             if isdefined(tree,:incumbent)
                 b = tree.best_bound
                 o = tree.incumbent.objval
-                val = round(abs(b-o)/abs(o)*100,2)
+                val = round(abs(b-o)/abs(o)*100; digits=2)
                 if length(string(val)) > field_chars[i]
                     if val > 0 && val < tree.options.mip_gap*100
                         val = "< "*string(tree.options.mip_gap*100)*"%"
@@ -140,7 +140,7 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
                 val = "-"
             end
         elseif f == :Time
-            val = string(round(time()-start_time,1))
+            val = string(round(time()-start_time; digits=1))
         elseif f == :Restarts
             if nrestarts == -1
                 val = "-"
@@ -155,7 +155,7 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
             elseif gain_gap == -1.0
                 val = "-"
             else
-                val = string(round(gain_gap*100,1))*"%"
+                val = string(round(gain_gap*100; digits=1))*"%"
             end
             if length(val) > field_chars[i]
                 val = ">>"

@@ -28,7 +28,11 @@ function print_dict(d)
     for key in keys(d)
         skey = string(key)
         pkey = skey*repeat(" ", longest_key_name-length(skey))
-        println(pkey, ": ",d[key])
+        if d[key] == nothing
+            println(pkey, ": NA")
+        else
+            println(pkey, ": ",d[key])
+        end
     end
 end
 
@@ -45,7 +49,7 @@ function get_non_default_options(options)
     return non_defaults
 end
 
-function print_options(m::JuniperModel;all=true)
+function print_options(m::JuniperModel; all=true)
     if all
         println(m.options)
     else
@@ -60,11 +64,11 @@ function print_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
 end
 
 function print_final_timing(time_bnb_solve::Float64, time_obj::TimeObj)
-    println("BnB time: ", round(time_bnb_solve,2))
-    println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100,1))
-    println("Solve node time get idx: ", round(time_obj.solve_leaves_get_idx,2))
-    println("Solve node time branch: ", round(time_obj.solve_leaves_branch,2))
-    println("Branch time: ", round(time_obj.branch,2))
-    println("Get idx time: ", round(time_obj.get_idx,2))
-    println("Upd gains time: ", round(time_obj.upd_gains,2))
+    println("BnB time: ", round(time_bnb_solve; digits=2))
+    println("% solve child time: ", round((time_obj.solve_leaves_get_idx+time_obj.solve_leaves_branch)/time_bnb_solve*100; digits=1))
+    println("Solve node time get idx: ", round(time_obj.solve_leaves_get_idx; digits=2))
+    println("Solve node time branch: ", round(time_obj.solve_leaves_branch; digits=2))
+    println("Branch time: ", round(time_obj.branch; digits=2))
+    println("Get idx time: ", round(time_obj.get_idx; digits=2))
+    println("Upd gains time: ", round(time_obj.upd_gains; digits=2))
 end

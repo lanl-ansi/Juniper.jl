@@ -1,4 +1,3 @@
-importall Base.Operators
 function Base.:+(a::GainObj, b::GainObj)
     new_minus = a.minus + b.minus
     new_plus = a.plus + b.plus 
@@ -71,19 +70,19 @@ function upd_gains_step!(tree, step_obj)
     opts = tree.options
     if step_obj.upd_gains == :GainsToTree || (branch_strat == :StrongPseudoCost && step_obj.counter <= opts.strong_branching_nsteps)
         tree.obj_gain += step_obj.obj_gain
-        tree.obj_gain.inf_counter[tree.obj_gain.inf_counter .< 0] = 0
+        tree.obj_gain.inf_counter[tree.obj_gain.inf_counter .< 0] .= 0
         if step_obj.counter == 1
             cum_counter = tree.obj_gain.minus_counter .+ tree.obj_gain.plus_counter
-            strong_int_vars = find(cum_counter .> 0)
+            strong_int_vars = findall(cum_counter .> 0)
             step_obj.strong_int_vars = strong_int_vars
             # all other variables that haven't been checked get the median value of the others
             med_gain_m = median(tree.obj_gain.minus[strong_int_vars])
             med_gain_p = median(tree.obj_gain.plus[strong_int_vars])
             rest = filter(i->!(i in strong_int_vars),1:tree.m.num_disc_var)
-            tree.obj_gain.minus[rest] = med_gain_m
-            tree.obj_gain.plus[rest] = med_gain_p
-            tree.obj_gain.minus_counter[rest] = 1
-            tree.obj_gain.plus_counter[rest] = 1
+            tree.obj_gain.minus[rest] .= med_gain_m
+            tree.obj_gain.plus[rest] .= med_gain_p
+            tree.obj_gain.minus_counter[rest] .= 1
+            tree.obj_gain.plus_counter[rest] .= 1
         end
     elseif step_obj.upd_gains == :GuessAndUpdate || branch_strat == :PseudoCost || (branch_strat == :StrongPseudoCost && step_obj.counter > opts.strong_branching_nsteps)
         upd_start = time()

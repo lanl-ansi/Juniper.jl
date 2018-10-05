@@ -231,7 +231,7 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
         new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
         new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
         if new_num_strong_var < num_strong_var
-            warn("Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit")
+            @warn "Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit"
             num_strong_var = new_num_strong_var
         end
     end
@@ -284,7 +284,7 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
         new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
         new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
         if new_num_strong_var < num_strong_var
-            warn("Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit")
+            @warn "Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit"
             num_strong_var = new_num_strong_var
         end
     end

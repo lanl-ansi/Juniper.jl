@@ -3,12 +3,11 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
   - 0.7
+  - 1.0
   - nightly
 matrix:
   allow_failures:
-    - julia: 0.7
     - julia: nightly
 cache:
  directories:

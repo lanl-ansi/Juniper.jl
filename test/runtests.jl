@@ -1,9 +1,6 @@
 using Base,Logging
 
-# suppress warnings during testing
-Logging.configure(level=ERROR)
-
-using Base.Test
+using Test, Distributed
 
 if nworkers() > 1
     rmprocs(workers())
@@ -22,9 +19,11 @@ using JuMP
 
 using Ipopt
 using Cbc
-using PowerModels
+# using PowerModels
 
 using Juniper
+using LinearAlgebra
+using Statistics
 
 opt_rtol = 1e-6
 opt_atol = 1e-6
@@ -83,6 +82,6 @@ include("user_limits.jl")
 include("parallel.jl")
 include("fpump.jl")
 include("pod.jl")
-include("power_models_acp.jl")
-include("power_models_socwr.jl")
+# include("power_models_acp.jl")
+# include("power_models_socwr.jl")
 println("Time for all tests: ", time()-start)

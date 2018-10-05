@@ -68,7 +68,7 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
     try 
         MathProgBase.setparameters!(m.mip_solver, TimeLimit=m.options.feasibility_pump_time_limit)
     catch
-        warn("Set parameters is not supported")
+       @warn "Set parameters is not supported"
     end
     
     status = solve(mip_model)
@@ -117,7 +117,7 @@ function generate_nlp(m, mip_sol; random_start=false)
     nlp_obj = getobjectivevalue(nlp_model)
 
     internal_model = internalmodel(nlp_model)
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
 
@@ -171,7 +171,7 @@ function generate_real_nlp(m, sol; random_start=false)
     obj_val = getobjectivevalue(rmodel)
     
     internal_model = internalmodel(rmodel)
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
     return status, real_sol, obj_val
@@ -200,12 +200,12 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
             if isnan(mip_obj)
                 val = "-"
             else
-                val = string(round(mip_obj, 4))
+                val = string(round(mip_obj; digits=4))
             end
         elseif f == :NLPobj
-            val = string(round(nlp_obj,4))
+            val = string(round(nlp_obj; digits=4))
         elseif f == :Time
-            val = string(round(t,1))
+            val = string(round(t; digits=1))
         end
 
         if length(val) > field_chars[i]
@@ -230,7 +230,7 @@ end
 Run the feasibility pump 
 """
 function fpump(m)
-    srand(1)
+    Random.seed!(1)
 
     if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
         return m.solution, m.objval 
@@ -284,13 +284,13 @@ function fpump(m)
             end
         end
         if mip_status != :Optimal
-            warn("MIP couldn't be solved to optimality")
+            @warn "MIP couldn't be solved to optimality"
             break
         end
         
         # If a cycle is detected which wasn't able to prevent by the tabu list (maybe too short)
         if haskey(mip_sols, hash(mip_sol))
-            warn("Cycle detected")
+            @warn "Cycle detected"
             break
         end
         add!(tabu_list, m, mip_sol)
@@ -305,7 +305,7 @@ function fpump(m)
                 cnlpinf += 1
             end
             if nlp_status != :Optimal
-                warn("NLP couldn't be solved to optimality")
+                @warn "NLP couldn't be solved to optimality"
                 break
             end
         end
@@ -318,7 +318,7 @@ function fpump(m)
         # => If reasonable should be an option
         if atol_counter >= m.options.feasibility_pump_tolerance_counter
             catol *= 10
-            warn("FPump tolerance changed to: ",catol)
+            @warn "FPump tolerance changed to: ",catol
             atol_counter = 0
         end
 
@@ -340,7 +340,7 @@ function fpump(m)
             elseif are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol)
                 nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
                 iscorrect = true
-                warn("Real objective wasn't solved to optimality")
+                @warn "Real objective wasn't solved to optimality"
                 break
             end
         end

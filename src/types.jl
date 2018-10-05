@@ -1,6 +1,6 @@
 
 # Options for the solver (more details like defaults in solver.jl)
-type SolverOptions
+mutable struct SolverOptions
     log_levels                          :: Vector{Symbol}
     atol                                :: Float64
     num_resolve_root_relaxation         :: Int64
@@ -27,7 +27,7 @@ type SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Void, MathProgBase.AbstractMathProgSolver}
+    mip_solver                          :: Union{Nothing, MathProgBase.AbstractMathProgSolver}
     
     # only for testing
     force_parallel                      :: Bool
@@ -38,17 +38,17 @@ type SolverOptions
     fixed_gain_mu                       :: Bool
 end
 
-type JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
+mutable struct JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
     nl_solver   :: MathProgBase.AbstractMathProgSolver
     options     :: Juniper.SolverOptions
 end
 
-type SolutionObj
+mutable struct SolutionObj
     solution    :: Vector{Float64}
     objval      :: Float64
 end
 
-type Aff
+mutable struct Aff
     sense     :: Symbol
     var_idx   :: Vector{Int64}
     coeff     :: Vector{Float64}
@@ -57,7 +57,7 @@ type Aff
     Aff() = new()
 end
 
-type JuniperModel <: MathProgBase.AbstractNonlinearModel
+mutable struct JuniperModel <: MathProgBase.AbstractNonlinearModel
     nl_solver       :: MathProgBase.AbstractMathProgSolver
    
     model           :: JuMP.Model
@@ -118,7 +118,7 @@ end
 ###########################################################################
 ########################## FPump ##########################################
 ###########################################################################
-type TabuList
+mutable struct TabuList
     sols      :: Vector{Vector{Float64}}
     length    :: Int64
     pointer   :: Int64
@@ -129,7 +129,7 @@ end
 ############################################################################
 ######################## Tree structure ####################################
 ############################################################################
-type BnBNode
+mutable struct BnBNode
     idx                 :: Int64
     level               :: Int64
     l_var               :: Vector{Float64}
@@ -143,14 +143,14 @@ type BnBNode
     hash                :: String
 end
 
-type Incumbent
+mutable struct Incumbent
     objval      :: Float64
     solution    :: Vector{Float64}
     status      :: Symbol
     best_bound  :: Float64
 end
 
-type GainObj
+mutable struct GainObj
     minus           :: Vector{Float64} # gain of objective per variable on left node
     plus            :: Vector{Float64} # gain of objective per variable on right node
     minus_counter   :: Vector{Int64} # obj_gain_m / obj_gain_mc => average gain on left node
@@ -160,7 +160,7 @@ type GainObj
     inf_counter     :: Vector{Int64} 
 end
 
-type BnBTreeObj
+mutable struct BnBTreeObj
     m               :: Juniper.JuniperModel
     incumbent       :: Incumbent
     obj_gain        :: GainObj
@@ -177,7 +177,7 @@ type BnBTreeObj
 end
 
 # the object holds information for the current step
-type StepObj
+mutable struct StepObj
     node                :: BnBNode # current branch node
     var_idx             :: Int64   # variable to branch on
     state               :: Symbol  # if infeasible => break (might be set by strong branching)
@@ -200,7 +200,7 @@ type StepObj
     StepObj() = new()
 end
 
-type TimeObj
+mutable struct TimeObj
     solve_leaves_get_idx :: Float64
     solve_leaves_branch :: Float64
     branch :: Float64

@@ -64,10 +64,10 @@ function push_step2treeDict!(d, step_obj)
     else 
         path = copy(node.path)
         cd = d
-        pnode = shift!(path)
+        pnode = popfirst!(path)
         push!(path,step_obj.node)
         while length(path) > 0
-            pnode = shift!(path)
+            pnode = popfirst!(path)
             phash = pnode.hash
             if cd[:children][1][:hash] == phash
                 cd = cd[:children][1]

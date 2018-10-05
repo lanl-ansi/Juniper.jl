@@ -1,7 +1,4 @@
-julia 0.5
-
 Ipopt
-PowerModels
 JSON 0.16
 Cbc
 

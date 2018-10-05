@@ -53,7 +53,7 @@ function MathProgBase.loadproblem!(
     l_constr::Vector{Float64}, u_constr::Vector{Float64},
     sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
-    srand(1)
+    Random.seed!(1)
 
     # initialise other fields
     m.num_var = num_var
@@ -94,7 +94,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     nw = nworkers()
     if nw < m.options.processors
         m.options.processors = nw
-        warn("Julia was started with less processors then you define in your options")
+        @warn "Julia was started with less processors then you define in your options"
     end
 
     create_root_model!(m)
@@ -120,7 +120,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     m.options.debug && debug_objective(m.debugDict,m)
 
     internal_model = internalmodel(m.model)
-    if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
 
@@ -141,7 +141,8 @@ function MathProgBase.optimize!(m::JuniperModel)
         m.nsolutions = bnbtree.nsolutions
     else
         m.nsolutions = 1
-        m.best_bound = getobjbound(m)
+        # TODO should be getobjbound but that is not working
+        m.best_bound = getobjectivevalue(m.model)
     end
     m.soltime = time()-m.start_time
     
@@ -187,7 +188,7 @@ function create_root_model!(m::JuniperModel)
 end
 
 function solve_root_model!(m::JuniperModel)
-    m.status = solve(m.model)
+    m.status = solve(m.model; suppress_warnings=true)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
     m.options.debug && debug_init(m.debugDict)
@@ -195,7 +196,7 @@ function solve_root_model!(m::JuniperModel)
         restarts < max_restarts && time()-m.start_time < m.options.time_limit
 
         internal_model = internalmodel(m.model)
-        if method_exists(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
+        if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
             MathProgBase.freemodel!(internal_model)
         end
         restart_values = generate_random_restart(m)

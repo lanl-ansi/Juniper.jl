@@ -1,5 +1,5 @@
 function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
-    srand(1)
+    Random.seed!(1)
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval,[],hash_val)
     obj_gain_m = zeros(m.num_disc_var)
