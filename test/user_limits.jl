@@ -55,7 +55,7 @@ end
     println("gap_val: ", gap_val)
 
     @test best_bound_val >= objval
-    @test getsolvetime(m) <= 2 # it might be a bit higher than 1s
+    @test getsolvetime(m) <= 4 # it might be a bit higher than 1s
 end
 
 #=

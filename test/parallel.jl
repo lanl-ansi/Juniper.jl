@@ -323,7 +323,7 @@ end
     println("Status: ", status)
     
     @test status == :UserLimit
-    @test getsolvetime(m) <= 8 # some seconds more are allowed
+    @test getsolvetime(m) <= 13 # some seconds more are allowed
 end
 
 @testset "infeasible cos" begin
