@@ -9,15 +9,18 @@ julia:
 matrix:
   allow_failures:
     - julia: nightly
-cache:
- directories:
-   - /home/travis/.julia
-addons:
-  apt_packages:
-    - gfortran
-
+#cache:
+# directories:
+#   - /home/travis/.julia
+#addons:
+#  apt_packages:
+#    - gfortran
+script:
+  - julia --project --color=yes -e "import Pkg; Pkg.instantiate(); Pkg.build();"
+  - julia --check-bounds=yes --depwarn=no --color=yes --project -e "import Pkg; Pkg.test(coverage=true);";
 after_success:
-    - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Coveralls.submit(process_folder()); Codecov.submit(process_folder())'
+#    - julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Coveralls.submit(process_folder()); Codecov.submit(process_folder())'
+    - julia -e  'using Coverage; import Juniper; joinpath(dirname(pathof(Juniper)); LCOV.writefile("lcov.info", process_folder(".")); run(pipeline(`curl -s https://codecov.io/bash`, `bash`))'
 jobs:
   include:
     - stage: "Documentation"
