@@ -12,9 +12,9 @@ matrix:
 #cache:
 # directories:
 #   - /home/travis/.julia
-#addons:
-#  apt_packages:
-#    - gfortran
+addons:
+  apt_packages:
+    - gfortran
 script:
   - julia --project --color=yes -e "import Pkg; Pkg.instantiate(); Pkg.build();"
   - julia --check-bounds=yes --depwarn=no --color=yes --project -e "import Pkg; Pkg.test(coverage=true);";
