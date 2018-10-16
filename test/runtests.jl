@@ -75,13 +75,15 @@ juniper_pseudo = DefaultTestSolver(
 
 start = time()
 
-include("debug.jl")
-include("functions.jl")
-include("basic.jl")
-include("user_limits.jl")
-include("parallel.jl")
-include("fpump.jl")
-include("pod.jl")
-# include("power_models_acp.jl")
-# include("power_models_socwr.jl")
+@testset "Juniper" begin
+    include("debug.jl")
+    include("functions.jl")
+    include("basic.jl")
+    include("user_limits.jl")
+    include("parallel.jl")
+    include("fpump.jl")
+    include("pod.jl")
+    # include("power_models_acp.jl")
+    # include("power_models_socwr.jl")
+end
 println("Time for all tests: ", time()-start)
