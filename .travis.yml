@@ -23,7 +23,7 @@ after_success:
     if [[ "$TRAVIS_JULIA_VERSION" == "0.6" ]]; then
       julia -e  'Pkg.add("Coverage"); using Coverage; cd(Pkg.dir("Juniper")); LCOV.writefile("lcov.info", process_folder(".")); run(pipeline(`curl -s https://codecov.io/bash`, `bash`))'
     else
-      julia -e 'Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Codecov.submit(process_folder())'
+      julia -e 'using Pkg; Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Codecov.submit(process_folder())'
     fi
 jobs:
   include:
