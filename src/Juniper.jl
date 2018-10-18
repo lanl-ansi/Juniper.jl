@@ -3,10 +3,22 @@ module Juniper
 using MathProgBase
 using JuMP
 using JSON
-using LinearAlgebra
-using Random
-using Distributed
-using Statistics
+
+if VERSION < v"0.7.0-"
+    #import Compat: occursin
+    import Compat: Nothing
+    #import Compat: round
+    import Compat: @warn
+end
+
+if VERSION > v"0.7.0-"
+    using LinearAlgebra
+    using Random
+    using Distributed
+    using Statistics
+end
+
+
 
 include("types.jl")
 

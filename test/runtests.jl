@@ -1,6 +1,14 @@
 using Base,Logging
 
-using Test, Distributed
+
+if VERSION > v"0.7.0-"
+    using Test, Distributed
+end
+
+if VERSION < v"0.7.0-"
+    using Base.Test
+end
+
 
 if nworkers() > 1
     rmprocs(workers())
@@ -15,6 +23,19 @@ end
 
 println("Workers:", nworkers())
 
+
+if VERSION > v"0.7.0-"
+    using LinearAlgebra
+    using Statistics
+    using Random
+    srand(x) = Random.seed!(x)
+end
+
+if VERSION < v"0.7.0-"
+    
+end
+
+
 using JuMP
 
 using Ipopt
@@ -22,8 +43,6 @@ using Cbc
 # using PowerModels
 
 using Juniper
-using LinearAlgebra
-using Statistics
 
 opt_rtol = 1e-6
 opt_atol = 1e-6
