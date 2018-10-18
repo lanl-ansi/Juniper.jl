@@ -308,6 +308,8 @@ end
 end
 
 
+#=
+# remove for cross platform stability
 @testset "time limit 5s" begin
     println("==================================")
     println("time imit 5s")
@@ -328,6 +330,7 @@ end
     @test status == :UserLimit
     @test getsolvetime(m) <= 13 # some seconds more are allowed
 end
+=#
 
 @testset "infeasible cos" begin
     println("==================================")
