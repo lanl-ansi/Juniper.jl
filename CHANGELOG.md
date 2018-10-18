@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.2.1
+- Add support for Julia v0.6 and v0.7
+
 ### v0.2.0
 - Bugfix: Reset of `mu_init` in Ipopt options to have the default `mu_init` if `solve` is called again
 - Bugfix: Break on time limit in relaxation, fpump and strong branching
