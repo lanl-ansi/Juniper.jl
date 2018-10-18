@@ -16,7 +16,7 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
             setcategory(mx[i], :Bin)
         end
     end
-    
+
     for c in aff
         if c.sense == :(>=)
             @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) >= c.rhs)
@@ -33,13 +33,13 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
         @constraint(mip_model, mabsx[i] >= mx[vi]-nlp_sol[vi])
         @constraint(mip_model, mabsx[i] >= -mx[vi]+nlp_sol[vi])
     end
-      
-    # How long is the tabu list 
+
+    # How long is the tabu list
     num_sols = 0
     for i=1:tabu_list.length
-        if !isnan(tabu_list.sols[i][1]) 
+        if !isnan(tabu_list.sols[i][1])
             num_sols += 1
-        else 
+        else
             break
         end
     end
@@ -63,14 +63,14 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
     end
 
     @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
-    
+
     # Break the mip solver if it takes too long or throw a warning when this option isn't available
-    try 
+    try
         MathProgBase.setparameters!(m.mip_solver, TimeLimit=m.options.feasibility_pump_time_limit)
     catch
        @warn "Set parameters is not supported"
     end
-    
+
     status = solve(mip_model)
 
     # round mip values
@@ -95,7 +95,7 @@ function generate_nlp(m, mip_sol; random_start=false)
     @variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
     if random_start
         restart_values = generate_random_restart(m)
-        for i=1:m.num_var      
+        for i=1:m.num_var
             setvalue(nx[i], restart_values[i])
         end
     else
@@ -143,8 +143,8 @@ function generate_real_nlp(m, sol; random_start=false)
     @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
     if random_start
         restart_values = generate_random_restart(m)
-        for i=1:m.num_var   
-            if m.var_type[i] == :Cont   
+        for i=1:m.num_var
+            if m.var_type[i] == :Cont
                 setvalue(rx[i], restart_values[i])
             end # discrete will be fixed anyway
         end
@@ -169,7 +169,7 @@ function generate_real_nlp(m, sol; random_start=false)
     status = solve(rmodel)
     real_sol = getvalue(rx)
     obj_val = getobjectivevalue(rmodel)
-    
+
     internal_model = internalmodel(rmodel)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
@@ -211,7 +211,7 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
         if length(val) > field_chars[i]
             # too long to display shouldn't happen normally but is better than error
             # if it happens
-            val = "t.l." 
+            val = "t.l."
         end
 
         padding = field_chars[i]-length(val)
@@ -227,13 +227,13 @@ end
 """
     fpump(m)
 
-Run the feasibility pump 
+Run the feasibility pump
 """
 function fpump(m)
-    Random.seed!(1)
+    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
 
     if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
-        return m.solution, m.objval 
+        return m.solution, m.objval
     end
 
     start_fpump = time()
@@ -246,7 +246,7 @@ function fpump(m)
     tabu_list.pointer = 1
     tabu_list.sols = []
     for i=1:tabu_list.length
-        push!(tabu_list.sols, NaN*ones(m.num_disc_var)) 
+        push!(tabu_list.sols, NaN*ones(m.num_disc_var))
     end
 
     last_table_arr = []
@@ -254,9 +254,9 @@ function fpump(m)
     field_chars = []
     ps = m.options.log_levels
     # Print table init
-    if check_print(ps,[:Table]) 
+    if check_print(ps,[:Table])
         fields, field_chars = [:MIPobj,:NLPobj,:Time], [20,20,5]
-        print_table_header(fields,field_chars)        
+        print_table_header(fields,field_chars)
     end
 
 
@@ -267,12 +267,12 @@ function fpump(m)
     # the tolerance can be changed => current atol
     catol = m.options.atol
     atol_counter = 0
-    while !are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol) && time()-start_fpump < tl && 
+    while !are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol) && time()-start_fpump < tl &&
         time()-m.start_time < m.options.time_limit
 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
-            mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, m.affs, tabu_list) 
+            mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, m.affs, tabu_list)
         else
             # if no linear constraints just round the discrete variables
             mip_obj = NaN
@@ -287,7 +287,7 @@ function fpump(m)
             @warn "MIP couldn't be solved to optimality"
             break
         end
-        
+
         # If a cycle is detected which wasn't able to prevent by the tabu list (maybe too short)
         if haskey(mip_sols, hash(mip_sol))
             @warn "Cycle detected"
@@ -298,8 +298,8 @@ function fpump(m)
 
         nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
         if nlp_status != :Optimal
-            cnlpinf = 0 
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal && 
+            cnlpinf = 0
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol; random_start=true)
                 cnlpinf += 1
@@ -310,11 +310,11 @@ function fpump(m)
             end
         end
 
-        if check_print(ps,[:Table]) 
+        if check_print(ps,[:Table])
             print_fp_table(mip_obj, nlp_obj, time()-start_fpump, fields, field_chars)
         end
 
-        # if the current tolerance was nearly reached 5 times 
+        # if the current tolerance was nearly reached 5 times
         # => If reasonable should be an option
         if atol_counter >= m.options.feasibility_pump_tolerance_counter
             catol *= 10
@@ -327,7 +327,7 @@ function fpump(m)
         if are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal && 
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol; random_start=true)
                 cnlpinf += 1
@@ -346,24 +346,24 @@ function fpump(m)
         end
         if !isapprox(nlp_obj, 0.0; atol=catol) && isapprox(nlp_obj, 0.0; atol=10*catol)
             atol_counter += 1
-        else 
+        else
             atol_counter = 0
         end
         c += 1
     end
-    
-    if check_print(ps,[:Table]) 
+
+    if check_print(ps,[:Table])
         println()
     end
 
-    if check_print(ps,[:Info]) 
+    if check_print(ps,[:Info])
         println("FP: ", time()-start_fpump, " s")
         println("FP: ", c == 1 ? "$c round" : "$c rounds")
-    end 
+    end
     m.fpump_info = Dict{Symbol,Float64}()
     m.fpump_info[:time] = time()-start_fpump
     m.fpump_info[:rounds] = c
-    
+
     if iscorrect
         check_print(ps,[:Info]) && println("FP: Obj: ", nlp_obj)
         m.fpump_info[:obj] = nlp_obj

@@ -7,11 +7,11 @@ include("bb_integral_or_branch.jl")
 include("bb_gains.jl")
 
 """
-    upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)    
+    upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)  
+function upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)
     start = time()
     node = step_obj.node
     idx = 0
@@ -28,7 +28,7 @@ function upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::
         else
             idx = branch_pseudo(m, node, disc2var_idx, gains, opts.gain_mu, opts.atol)
         end
-    elseif branch_strat == :Reliability 
+    elseif branch_strat == :Reliability
         status, idx, strong_restarts = branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
     end
     step_obj.state = status
@@ -49,12 +49,12 @@ Return state
 function process_node!(m, step_obj, cnode, disc2var_idx, temp)
      # set bounds
     for i=1:m.num_var
-        JuMP.setlowerbound(m.x[i], cnode.l_var[i])    
+        JuMP.setlowerbound(m.x[i], cnode.l_var[i])
         JuMP.setupperbound(m.x[i], cnode.u_var[i])
     end
     setvalue(m.x[1:m.num_var],step_obj.node.solution)
-   
-    # TODO: fix for v0.7 
+
+    # TODO: fix for v0.7
     #=
     if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
@@ -67,8 +67,8 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
                 break
             end
         end
-        if !overwritten 
-            
+        if !overwritten
+
             # push!(m.nl_solver.options, (:mu_init, 1e-5))
         end
     end
@@ -130,7 +130,7 @@ function branch!(m, opts, step_obj, counter, disc2var_idx; temp=false)
         end
         return step_obj.l_nd,step_obj.r_nd
     end
-    
+
     l_nd_u_var = copy(node.u_var)
     r_nd_l_var = copy(node.l_var)
     l_nd_u_var[vidx] = floor(node.solution[vidx])
@@ -152,7 +152,7 @@ function branch!(m, opts, step_obj, counter, disc2var_idx; temp=false)
     node.var_idx = vidx
 
     check_print(ps,[:All,:FuncCall]) && println("branch")
-    
+
     if !temp
         step_obj.l_nd = l_nd
         step_obj.r_nd = r_nd
@@ -187,7 +187,7 @@ end
 """
     update_incumbent!(tree::BnBTreeObj, node::BnBNode)
 
-Get's called if new integral solution was found. 
+Get's called if new integral solution was found.
 Check whether it's a new incumbent and update if necessary
 """
 function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
@@ -200,12 +200,12 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
         solution = copy(node.solution)
         status = :Optimal
         tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
-        if !tree.options.all_solutions 
+        if !tree.options.all_solutions
             bound!(tree)
         end
         return true
     end
- 
+
     return false
 end
 
@@ -225,7 +225,7 @@ end
 """
     add_incumbent_constr(m, incumbent)
 
-Add a constraint >=/<= incumbent 
+Add a constraint >=/<= incumbent
 """
 function add_incumbent_constr(m, incumbent)
     obj_expr = MathProgBase.obj_expr(m.d)
@@ -234,8 +234,8 @@ function add_incumbent_constr(m, incumbent)
     else
         obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
     end
-    Juniper.expr_dereferencing!(obj_constr, m.model)            
-    # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)    
+    Juniper.expr_dereferencing!(obj_constr, m.model)
+    # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)
     JuMP.addNLconstraint(m.model, obj_constr)
 end
 
@@ -254,7 +254,7 @@ function add_obj_epsilon_constr(tree)
         else
             obj_constr = Expr(:call, :>=, obj_expr, (1-ϵ)*tree.m.objval)
         end
-        Juniper.expr_dereferencing!(obj_constr, tree.m.model)            
+        Juniper.expr_dereferencing!(obj_constr, tree.m.model)
         JuMP.addNLconstraint(tree.m.model, obj_constr)
         tree.m.ncuts += 1
     end
@@ -280,7 +280,7 @@ function get_next_branch_node!(tree)
 
     tree.best_bound = tree.obj_fac*bvalue
     bbreak = isbreak_mip_gap(tree)
-    if bbreak 
+    if bbreak
         return false, true, nothing
     end
 
@@ -294,7 +294,7 @@ end
 """
     one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, counter)
 
-Get a branch variable using the specified strategy and branch on the node in step_obj 
+Get a branch variable using the specified strategy and branch on the node in step_obj
 using that variable. Return the new updated step_obj
 """
 function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, counter)
@@ -305,14 +305,14 @@ function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, co
             is_newincumbent = false
             add_incumbent_constr(m, incumbent)
         end
-    else 
+    else
         m = m1
     end
-    
+
     node = step_obj.node
     step_obj.counter = counter
 
-# get branch variable    
+# get branch variable
     node_idx_start = time()
     upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter)
     step_obj.node_idx_time = time()-node_idx_start
@@ -320,7 +320,7 @@ function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, co
     # node.solution can be updated if one child is infeasible and the other optimal (can result in discrete)
     if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, disc2var_idx, opts.atol)
         push!(step_obj.integral, node)
-    else         
+    else
         if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
             @assert step_obj.var_idx != 0
             branch!(m, opts, step_obj, counter, disc2var_idx)
@@ -357,20 +357,20 @@ function upd_tree_obj!(tree, step_obj, time_obj)
     end
 
     if step_obj.state == :GlobalInfeasible
-        # if there is no incumbent yet 
+        # if there is no incumbent yet
         if !isdefined(tree,:incumbent)
             tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
         end # it will terminate and use the current solution as optimal (might want to rerun as an option)
-        still_running = false 
+        still_running = false
     end
-   
+
     if still_running
         upd_gains_step!(tree, step_obj)
     end
 
     bbreak = upd_integral_branch!(tree, step_obj)
-    if bbreak 
-        still_running = false 
+    if bbreak
+        still_running = false
     end
 
     upd_time_obj!(time_obj, step_obj)
@@ -388,7 +388,7 @@ end
         fields,
         field_chars,
         time_obj)
-    
+
 Run branch and bound on a single processor
 """
 function solve_sequential(tree,
@@ -403,7 +403,7 @@ function solve_sequential(tree,
     disc2var_idx = tree.disc2var_idx
     counter = 0
     ps = tree.options.log_levels
-        
+
     dictTree = Dict{Any,Any}()
     while true
         # the _ is only needed for parallel
@@ -411,9 +411,9 @@ function solve_sequential(tree,
         !exists && break
         isbreak_after_step!(tree) && break
         counter += 1
-        if isdefined(tree,:incumbent) 
+        if isdefined(tree,:incumbent)
             step_obj = one_branch_step!(m, tree.incumbent, opts, step_obj, disc2var_idx, tree.obj_gain, counter)
-        else 
+        else
             step_obj = one_branch_step!(m, nothing, opts, step_obj, disc2var_idx, tree.obj_gain, counter)
         end
         m.nnodes += 2 # two nodes explored per branch
@@ -421,12 +421,12 @@ function solve_sequential(tree,
 
         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
         tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
-        
-        if check_print(ps,[:Table]) 
+
+        if check_print(ps,[:Table])
             last_table_arr = print_table(1,tree,node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
         end
 
-        if bbreak 
+        if bbreak
             break
         end
     end
@@ -467,7 +467,8 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     counter = 0
 
     for p=2:np
-        remotecall_fetch(Random.seed!, p, 1)
+        VERSION > v"0.7.0-" ? (const seed = Random.seed!) : (const seed = srand)
+        remotecall_fetch(seed, p, 1)
         sendto(p, m=tree.m)
         sendto(p, is_newincumbent=false)
     end
@@ -475,10 +476,10 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     for p=3:np
         remotecall(dummysolve, p)
     end
-    
+
     proc_counter = zeros(np)
 
-    dictTree = Dict{Any,Any}() 
+    dictTree = Dict{Any,Any}()
 
     branch_strat = tree.options.branch_strategy
     opts = tree.options
@@ -505,15 +506,15 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         if !still_running
                             break
                         end
-                        
-                        if isbreak_after_step!(tree) 
-                            still_running = false 
+
+                        if isbreak_after_step!(tree)
+                            still_running = false
                             break
                         end
-                        
+
                         run_counter += 1
                         counter += 1
-                        if isdefined(tree,:incumbent) 
+                        if isdefined(tree,:incumbent)
                             step_obj = remotecall_fetch(f, p, nothing, tree.incumbent, tree.options, step_obj,
                                                         tree.disc2var_idx, tree.obj_gain, counter)
                         else
@@ -522,21 +523,21 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                         end
                         tree.m.nnodes += 2 # two nodes explored per branch
                         run_counter -= 1
-                        
+
                         !still_running && break
-                        
+
                         bbreak = upd_tree_obj!(tree,step_obj,time_obj)
                         tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
 
                         if run_counter == 0 && length(tree.branch_nodes) == 0
-                            still_running = false 
+                            still_running = false
                         end
 
                         if bbreak
                             still_running = false
                         end
 
-                        if check_print(ps,[:Table]) 
+                        if check_print(ps,[:Table])
                             if length(tree.branch_nodes) > 0
                                 bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
                                 tree.best_bound = tree.obj_fac*bvalue
@@ -569,7 +570,7 @@ function solvemip(tree::BnBTreeObj)
     time_bnb_solve_start = time()
 
     ps = tree.options.log_levels
-    
+
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
@@ -589,14 +590,14 @@ function solvemip(tree::BnBTreeObj)
     fields = []
     field_chars = []
     # Print table init
-    if check_print(ps,[:Table]) 
+    if check_print(ps,[:Table])
         fields, field_chars = get_table_config(tree.options)
-        print_table_header(fields,field_chars)        
+        print_table_header(fields,field_chars)
     end
-    
-    
+
+
     check_print(ps,[:All,:FuncCall]) && println("Solve Tree")
-    
+
     branch_strat = tree.options.branch_strategy
 
     add_obj_epsilon_constr(tree)
@@ -609,7 +610,7 @@ function solvemip(tree::BnBTreeObj)
             fields,
             field_chars,
             time_obj)
-    else 
+    else
         counter = solve_sequential(tree,
             last_table_arr,
             time_bnb_solve_start,
@@ -638,10 +639,10 @@ function solvemip(tree::BnBTreeObj)
             @warn "best_obj_gap couldn't be reached."
         end
     end
-    
+
     if length(tree.branch_nodes) > 0
         bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-        tree.incumbent.best_bound = tree.obj_fac*bvalue 
+        tree.incumbent.best_bound = tree.obj_fac*bvalue
     else
         if !isnan(tree.incumbent.objval)
             tree.incumbent.best_bound = tree.incumbent.objval
@@ -656,6 +657,6 @@ function solvemip(tree::BnBTreeObj)
 
     tree.options.debug && debug_set_tree_obj_gain!(tree)
     check_print(ps,[:All,:Timing]) && print_final_timing(time_bnb_solve, time_obj)
-       
+
     return tree.incumbent
 end

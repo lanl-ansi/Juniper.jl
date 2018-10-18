@@ -1,5 +1,7 @@
 function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
-    Random.seed!(1)
+
+    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval,[],hash_val)
     obj_gain_m = zeros(m.num_disc_var)
@@ -56,7 +58,7 @@ function new_default_node(idx, level, l_var, u_var, solution;
     return BnBNode(idx, level, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound, path, hash_val)
 end
 
-function new_left_node(node, u_var; 
+function new_left_node(node, u_var;
                        var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
     l_var = copy(node.l_var)
     u_var = copy(u_var)
@@ -65,7 +67,7 @@ function new_left_node(node, u_var;
     return BnBNode(node.idx*2, node.level+1, l_var, u_var, solution, var_idx, state, relaxation_state, best_bound, path, hash_val)
 end
 
-function new_right_node(node, l_var; 
+function new_right_node(node, l_var;
                        var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
     l_var = copy(l_var)
     u_var = copy(node.u_var)
@@ -91,20 +93,20 @@ function new_default_step_obj(m,node)
     node_branch_time = 0.0
     branch_time = 0.0
     step_obj = StepObj()
-    step_obj.node             = node    
-    step_obj.var_idx          = 0    
-    step_obj.state            = :None   
-    step_obj.nrestarts        = 0   
-    step_obj.gain_gap         = 0.0   
+    step_obj.node             = node
+    step_obj.var_idx          = 0
+    step_obj.state            = :None
+    step_obj.nrestarts        = 0
+    step_obj.gain_gap         = 0.0
     step_obj.obj_gain         = gains
-    step_obj.idx_time         = idx_time   
-    step_obj.node_idx_time    = node_idx_time   
-    step_obj.upd_gains_time   = upd_gains_time   
-    step_obj.node_branch_time = node_branch_time   
-    step_obj.branch_time      = branch_time   
-    step_obj.integral         = []   
-    step_obj.branch           = []   
-    step_obj.counter          = 0   
+    step_obj.idx_time         = idx_time
+    step_obj.node_idx_time    = node_idx_time
+    step_obj.upd_gains_time   = upd_gains_time
+    step_obj.node_branch_time = node_branch_time
+    step_obj.branch_time      = branch_time
+    step_obj.integral         = []
+    step_obj.branch           = []
+    step_obj.counter          = 0
     step_obj.upd_gains        = :None
     step_obj.strong_int_vars  = Int64[]
     return step_obj

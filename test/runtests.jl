@@ -28,11 +28,10 @@ if VERSION > v"0.7.0-"
     using LinearAlgebra
     using Statistics
     using Random
-    srand(x) = Random.seed!(x)
 end
 
 if VERSION < v"0.7.0-"
-    
+    using Compat
 end
 
 
@@ -65,7 +64,7 @@ juniper_strong_restart_2 = DefaultTestSolver(
             strong_branching_nsteps = 2,
             strong_restart = true
             )
-        
+
 juniper_reliable_restart = DefaultTestSolver(
             branch_strategy=:Reliability,
             reliability_branching_perc = 25,
@@ -86,11 +85,11 @@ juniper_strong_no_restart = DefaultTestSolver(
 
 juniper_mosti = DefaultTestSolver(
                 branch_strategy=:MostInfeasible,
-            )  
+            )
 
 juniper_pseudo = DefaultTestSolver(
                 branch_strategy=:PseudoCost,
-            )                               
+            )
 
 start = time()
 

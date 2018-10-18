@@ -53,7 +53,7 @@ function MathProgBase.loadproblem!(
     l_constr::Vector{Float64}, u_constr::Vector{Float64},
     sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
-    Random.seed!(1)
+    srand(x) = VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
 
     # initialise other fields
     m.num_var = num_var
@@ -86,7 +86,7 @@ function MathProgBase.optimize!(m::JuniperModel)
     ps = m.options.log_levels
     m.debugDict = Dict{Any,Any}()
     if !m.options.fixed_gain_mu && m.obj_sense == :Max
-        m.options.gain_mu = 1-m.options.gain_mu   
+        m.options.gain_mu = 1-m.options.gain_mu
     end
     (:All in ps || :AllOptions in ps) && print_options(m;all=true)
     (:Options in ps) && print_options(m;all=false)
@@ -99,7 +99,7 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     create_root_model!(m)
     m.start_time = time()
-    restarts = solve_root_model!(m) 
+    restarts = solve_root_model!(m)
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
@@ -112,7 +112,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         end
         return m.status
     end
-    
+
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(m.x)
@@ -131,7 +131,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         if m.num_l_constr > 0
             m.affs = construct_affine_vector(m)
         end
-        if m.options.feasibility_pump 
+        if m.options.feasibility_pump
             inc_sol, inc_obj = fpump(m)
         end
         bnbtree = init(m.start_time, m; inc_sol = inc_sol, inc_obj = inc_obj)
@@ -145,13 +145,13 @@ function MathProgBase.optimize!(m::JuniperModel)
         m.best_bound = getobjectivevalue(m.model)
     end
     m.soltime = time()-m.start_time
-    
+
     (:All in ps || :Info in ps) && println("Obj: ",m.objval)
 
     if length(m.solutions) == 0
         push!(m.solutions, SolutionObj(m.solution, m.objval))
     end
-    
+
     m.options.debug && debug_set_solution(m.debugDict,m)
     if m.options.debug && m.options.debug_write
         write(m.options.debug_file_path, JSON.json(m.debugDict))
@@ -161,7 +161,7 @@ end
 
 function create_root_model!(m::JuniperModel)
     ps = m.options.log_levels
-    
+
     m.model = Model(solver=m.nl_solver)
     lb = m.l_var
     ub = m.u_var
@@ -192,7 +192,7 @@ function solve_root_model!(m::JuniperModel)
     restarts = 0
     max_restarts = m.options.num_resolve_root_relaxation
     m.options.debug && debug_init(m.debugDict)
-    while m.status != :Optimal && m.status != :LocalOptimal && 
+    while m.status != :Optimal && m.status != :LocalOptimal &&
         restarts < max_restarts && time()-m.start_time < m.options.time_limit
 
         internal_model = internalmodel(m.model)
@@ -201,7 +201,7 @@ function solve_root_model!(m::JuniperModel)
         end
         restart_values = generate_random_restart(m)
         m.options.debug && debug_restart_values(m.debugDict,restart_values)
-        for i=1:m.num_var      
+        for i=1:m.num_var
             setvalue(m.x[i], restart_values[i])
         end
         m.status = solve(m.model)
@@ -213,12 +213,12 @@ end
 MathProgBase.setwarmstart!(m::JuniperModel, x) = x
 
 """
-    MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol}) 
+    MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol})
 
 Is called between loadproblem! and optimize! and has a vector v of types for each variable.
 The number of int/bin variables is saved in num_disc_var
 """
-function MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol}) 
+function MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol})
     m.var_type = v
     m.nintvars = count(i->(i==:Int), v)
     m.nbinvars = count(i->(i==:Bin), v)
