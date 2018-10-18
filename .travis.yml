@@ -36,7 +36,7 @@ after_success:
 jobs:
   include:
     - stage: "Documentation"
-      julia: 1.0
+      julia: 0.7
       os: linux
       script:
         - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()))'
