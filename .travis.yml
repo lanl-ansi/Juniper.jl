@@ -3,6 +3,7 @@ os:
   - linux
   - osx
 julia:
+  - 0.6
   - 0.7
   - 1.0
   - nightly
@@ -16,8 +17,16 @@ addons:
   apt_packages:
     - gfortran
 script:
-  - julia --project --color=yes -e "import Pkg; Pkg.instantiate(); Pkg.build();"
-  - julia --check-bounds=yes --depwarn=no --color=yes --project -e "import Pkg; Pkg.test(coverage=true);";
+- if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+- |
+    if [[ "$TRAVIS_JULIA_VERSION" == "0.6" ]]; then
+      julia -e "Pkg.clone(pwd())"
+      julia -e 'Pkg.test("Juniper", coverage=true)'
+    else
+      julia --project --color=yes -e "import Pkg; Pkg.instantiate(); Pkg.build();" #make sure the depedencies are working properly
+      julia --check-bounds=yes --depwarn=no --color=yes --project -e "import Pkg; Pkg.test(coverage=true);";
+    fi
+
 after_success:
 - |
     if [[ "$TRAVIS_JULIA_VERSION" == "0.6" ]]; then
