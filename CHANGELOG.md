@@ -3,6 +3,9 @@
 ### Staged
 - nothing
 
+### v0.2.2
+- Add support for Julia v1.0
+
 ### v0.2.1
 - Add support for Julia v0.6 and v0.7
 
