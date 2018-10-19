@@ -83,7 +83,7 @@ function counter_test(d, nbranches)
     results = Vector{Int64}()
     results = traverse(dictTree, c_counter, [], results)
     sort!(results)
-    results = results[findlast(results,0)+1:end]
+    results = results[something(findlast(isequal(0), results), 0)+1:end]
     @assert length(Set(results)) == length(results)
     @assert results[1] == 1
     @assert results[end] == length(results)

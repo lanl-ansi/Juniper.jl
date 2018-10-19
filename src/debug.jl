@@ -64,10 +64,10 @@ function push_step2treeDict!(d, step_obj)
     else 
         path = copy(node.path)
         cd = d
-        pnode = shift!(path)
+        pnode = popfirst!(path)
         push!(path,step_obj.node)
         while length(path) > 0
-            pnode = shift!(path)
+            pnode = popfirst!(path)
             phash = pnode.hash
             if cd[:children][1][:hash] == phash
                 cd = cd[:children][1]
@@ -114,4 +114,12 @@ function debug_set_solution(d,m)
     d[:solution][:status] = m.status
     d[:solution][:solution] = m.solution
     d[:solution][:time] = m.soltime
+end
+
+function debug_set_tree_obj_gain!(tree::BnBTreeObj)
+    tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_disc_var)
+    tree.m.debugDict[:obj_gain][1,:] = tree.obj_gain.minus
+    tree.m.debugDict[:obj_gain][2,:] = tree.obj_gain.plus
+    tree.m.debugDict[:obj_gain][3,:] = tree.obj_gain.minus_counter
+    tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
 end

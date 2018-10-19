@@ -1,13 +1,8 @@
 export JuniperSolver
 
-"""
+#=
 A solver for MINLP problems using a NLP solver and Branch and Bound
-"""
-
-type JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
-    nl_solver   :: MathProgBase.AbstractMathProgSolver
-    options     :: Juniper.SolverOptions
-end
+=#
 
 function get_default_options()
     log_levels                          = [:Options,:Table,:Info]
@@ -77,7 +72,7 @@ function combine_options(options)
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))
-            warn("Option "*string(kv[1])*" is not available")
+            @warn "Option "*string(kv[1])*" is not available"
         end
         options_dict[kv[1]] = kv[2]
     end
@@ -101,7 +96,7 @@ function combine_options(options)
             # check that mip_solver is defined if feasibile pump should be used
             if fname == :feasibility_pump && options_dict[:feasibility_pump] == true
                 if !haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing
-                    warn("The feasibility pump can only be used if a mip solver is defined.")
+                    @warn "The feasibility pump can only be used if a mip solver is defined."
                     options_dict[:feasibility_pump] = false
                 end
             end

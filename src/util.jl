@@ -1,25 +1,61 @@
-type Aff
-    sense     :: Symbol
-    var_idx   :: Vector{Int64}
-    coeff     :: Vector{Float64}
-    rhs       :: Float64
-
-    Aff() = new()
+#=
+    Used from https://github.com/lanl-ansi/POD.jl
+=# 
+function expr_dereferencing!(expr, m)
+    for i in 2:length(expr.args)
+        if isa(expr.args[i], Union{Float64,Int64})
+            k = 0
+        elseif expr.args[i].head == :ref
+            @assert isa(expr.args[i].args[2], Int)
+            expr.args[i] = Variable(m, expr.args[i].args[2])
+        elseif expr.args[i].head == :call
+            expr_dereferencing!(expr.args[i], m)
+        else
+            error("expr_dereferencing :: Unexpected term in expression tree.")
+        end
+    end
 end
 
 """
-    check_print(vec::Vector{Symbol}, ps::Vector{Symbol})
+    expr_dereferencing_fixing!(expr, m, var_types, sol)
 
-Check whether something should get printed. Only if the log_levels option
-include the necessary level 
+Fix the value of discrete variables in an expression 
 """
-function check_print(log_levels::Vector{Symbol}, necessary::Vector{Symbol})
-    for v in log_levels
-        if v in necessary
-            return true
+function expr_dereferencing_fixing!(expr, m, var_types, sol)
+    for i in 2:length(expr.args)
+        if isa(expr.args[i], Union{Float64,Int64})
+            k = 0
+        elseif expr.args[i].head == :ref
+            @assert isa(expr.args[i].args[2], Int)
+            if var_types[expr.args[i].args[2]] != :Cont
+                expr.args[i] = sol[expr.args[i].args[2]]
+            else
+                expr.args[i] = Variable(m, expr.args[i].args[2])
+            end
+        elseif expr.args[i].head == :call
+            expr_dereferencing_fixing!(expr.args[i], m, var_types, sol)
+        else
+            error("expr_dereferencing :: Unexpected term in expression tree.")
         end
     end
-    return false
+end
+
+"""
+    divide_nl_l_constr(m::JuniperModel)
+
+Get # of linear and non linear constraints and save for each index if linear or non linear    
+"""
+function divide_nl_l_constr(m::JuniperModel)
+    isconstrlinear = Array{Bool}(undef, m.num_constr)
+    m.num_l_constr = 0
+    for i = 1:m.num_constr
+        isconstrlinear[i] = MathProgBase.isconstrlinear(m.d, i)
+        if isconstrlinear[i]
+            m.num_l_constr += 1
+        end
+    end
+    m.num_nl_constr = m.num_constr - m.num_l_constr  
+    m.isconstrlinear = isconstrlinear
 end
 
 function generate_random_restart(m; cont=true)
@@ -73,7 +109,7 @@ function construct_affine_vector(m)
     MathProgBase.eval_jac_g(m.d, jg, ones(m.num_var))
 
     # Construct the data structure for our affine constraints
-    aff = Vector{Aff}(m.num_l_constr)
+    aff = Vector{Aff}(undef, m.num_l_constr)
     for i=1:m.num_l_constr
         aff[i] = Aff()
         aff[i].var_idx = []
@@ -139,7 +175,7 @@ use construct_complete_affine_matrix if interested in all variables
 if only_non_zero is set to true all rows with all zeros are removed
 """
 function construct_disc_affine_matrix(m; only_non_zero=true)
-    mat = zeros(length(m.affs),m.num_int_bin_var)
+    mat = zeros(length(m.affs),m.num_disc_var)
     i = 1
     non_zero_idx = []
     for aff in m.affs
@@ -148,7 +184,7 @@ function construct_disc_affine_matrix(m; only_non_zero=true)
             var = aff.var_idx[part_idx]
             if m.var_type[var] != :Cont
                 coeff = aff.coeff[part_idx]
-                int_var = m.var2int_idx[var]
+                int_var = m.var2disc_idx[var]
                 mat[i,int_var] = coeff
                 non_zero = true
             end
@@ -167,14 +203,14 @@ function construct_disc_affine_matrix(m; only_non_zero=true)
 end
 
 """
-    get_reasonable_int_vars(node, var_type, int_vars, int2var_idx, atol)
+    get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
 
 Get all discrete variables which aren't close to discrete yet based on atol 
 """
-function get_reasonable_int_vars(node, var_type, int_vars, int2var_idx, atol)
+function get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
     reasonable_int_vars = zeros(Int64,0)
     for i=1:int_vars
-        idx = int2var_idx[i]
+        idx = disc2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
         if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],var_type[idx],atol)

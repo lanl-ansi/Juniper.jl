@@ -230,13 +230,14 @@ end
     println("==================================")
     m = Model(solver=juniper_strong_restart)
 
+    println("Create variables/constr/obj")
     @variable(m, 1 <= x <= 5)
     @variable(m, -2 <= y <= 2)
 
     @objective(m, Min, -x-y)
 
     @NLconstraint(m, y==2*cos(2*x))
-
+    println("before solve")
     status = solve(m)
     println("Status: ", status)
 

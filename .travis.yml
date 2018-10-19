@@ -5,32 +5,40 @@ os:
 julia:
   - 0.6
   - 0.7
-  - nightly
+  - 1.0
 matrix:
   allow_failures:
-    - julia: 0.7
-    - julia: nightly
+    - julia: 1.0
 cache:
  directories:
    - /home/travis/.julia
 addons:
   apt_packages:
     - gfortran
-
-before_install:
-    # don't keep an old version of the code in the cache
-  - julia -e 'if "Juniper" in keys(Pkg.installed()) Pkg.rm("Juniper"); Pkg.rm("Juniper") end'
-  - julia -e 'Pkg.update()' #make sure we get the latest version of METADATA
-  - julia -e 'if !("Coverage" in keys(Pkg.installed())) Pkg.add("Coverage") end'
-  - julia -e 'if !("Documenter" in keys(Pkg.installed())) Pkg.add("Documenter") end'
-
 script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("Juniper"); Pkg.test("Juniper"; coverage=true)'
+- if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+- |
+    if [[ "$TRAVIS_JULIA_VERSION" == "0.6" ]]; then
+      julia -e "Pkg.clone(pwd())"
+      julia -e 'Pkg.test("Juniper", coverage=true)'
+    else
+      julia --project --color=yes -e "import Pkg; Pkg.instantiate(); Pkg.build();" #make sure the depedencies are working properly
+      julia --check-bounds=yes --depwarn=no --color=yes --project -e "import Pkg; Pkg.test(coverage=true);";
+    fi
 
 after_success:
-  - echo $TRAVIS_JULIA_VERSION
-
-  - julia -e 'using Coverage; cd(Pkg.dir("Juniper")); Codecov.submit(process_folder("."));'
-
-  - julia -e 'cd(Pkg.dir("Juniper")); include(joinpath("docs", "make.jl"));'
+- |
+    if [[ "$TRAVIS_JULIA_VERSION" == "0.6" ]]; then
+      julia -e  'Pkg.add("Coverage"); using Coverage; cd(Pkg.dir("Juniper")); LCOV.writefile("lcov.info", process_folder(".")); run(pipeline(`curl -s https://codecov.io/bash`, `bash`))'
+    else
+      julia -e 'using Pkg; Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Codecov.submit(process_folder())'
+    fi
+jobs:
+  include:
+    - stage: "Documentation"
+      julia: 0.7
+      os: linux
+      script:
+        - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()))'
+        - julia --project=docs --color=yes docs/make.jl
+      after_success: skip

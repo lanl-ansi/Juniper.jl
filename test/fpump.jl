@@ -1,11 +1,13 @@
-include("POD_experiment/blend029.jl")
+#include("POD_experiment/blend029.jl")
 include("POD_experiment/tspn05.jl")
-include("POD_experiment/ndcc12persp.jl")
+#include("POD_experiment/ndcc12persp.jl")
 include("POD_experiment/FLay02H.jl")
 include("basic/gamsworld.jl")
 
 @testset "fp tests" begin
 
+#=
+# omit for test speed
 @testset "FP: blend029" begin
     println("==================================")
     println("FP: blend029")
@@ -23,7 +25,10 @@ include("basic/gamsworld.jl")
 
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
+=#
 
+#=
+# seems to be a copy of blend029
 @testset "FP: cvxnonsep_nsig20r_problem" begin
     println("==================================")
     println("FP: cvxnonsep_nsig20r_problem")
@@ -41,6 +46,7 @@ end
 
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
+=#
 
 @testset "FP: no linear" begin
     println("==================================")
@@ -167,6 +173,8 @@ end
 end
 
 
+#=
+# omit for test speed
 @testset "FP: ndcc12persp" begin
     println("==================================")
     println("FP: ndcc12persp")
@@ -185,6 +193,7 @@ end
 
     @test status == :Optimal || status == :UserLimit
 end
+=#
 
 @testset "FP: FLay02H" begin
     println("==================================")
