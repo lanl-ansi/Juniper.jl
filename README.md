@@ -16,7 +16,7 @@ You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.
 
 # Basic usage
 
-Version v0.2.0 can be installed via:
+Juniper can be installed via:
 
 `Pkg.add("Juniper")`
 

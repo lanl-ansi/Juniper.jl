@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### Staged
+- nothing
+
 ### v0.2.1
 - Add support for Julia v0.6 and v0.7
 
