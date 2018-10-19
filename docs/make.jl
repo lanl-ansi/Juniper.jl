@@ -9,7 +9,7 @@ makedocs(
         "Options" => "options.md",
         "Extras" => "extras.md",
 #        "Developer" => [],
-        # "Library" => "library.md"
+#        "Library" => "library.md"
     ]
 )
 
@@ -18,5 +18,5 @@ deploydocs(
     make = nothing,
     target = "build",
     repo = "github.com/lanl-ansi/Juniper.jl.git",
-    julia = "0.6"
+    julia = "1.0"
 )

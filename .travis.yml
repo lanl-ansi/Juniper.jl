@@ -6,9 +6,10 @@ julia:
   - 0.6
   - 0.7
   - 1.0
+  - nightly
 matrix:
   allow_failures:
-    - julia: 1.0
+    - julia: nightly
 cache:
  directories:
    - /home/travis/.julia
@@ -36,7 +37,7 @@ after_success:
 jobs:
   include:
     - stage: "Documentation"
-      julia: 0.7
+      julia: 1.0
       os: linux
       script:
         - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()))'
