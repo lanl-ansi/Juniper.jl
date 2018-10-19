@@ -121,25 +121,25 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#strong_branching_perc::Float64-[100]-1",
+    "location": "options.html#strong*branching*perc::Float64-[100]-1",
     "page": "Options",
-    "title": "strong_branching_perc::Float64 [100]",
+    "title": "strongbranchingperc::Float64 [100]",
     "category": "section",
     "text": "Defines the percentage of variables to consider for strong branching.  If set to 25 it means that strong branching is performed on 25% of all discrete variables. Variables which are discrete in the relaxation aren\'t considered again but count to the number of  all discrete variables. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn\'t make sense for one variable. Attention: strong_branching_approx_time_limit might change this value."
 },
 
 {
-    "location": "options.html#strong_branching_nsteps::Int64-[1]-1",
+    "location": "options.html#strong*branching*nsteps::Int64-[1]-1",
     "page": "Options",
-    "title": "strong_branching_nsteps::Int64 [1]",
+    "title": "strongbranchingnsteps::Int64 [1]",
     "category": "section",
     "text": "Defines the number of steps in which strong branching is used. :PseudoCost will be used for later steps."
 },
 
 {
-    "location": "options.html#strong_branching_approx_time_limit::Float64-[100]s-1",
+    "location": "options.html#strong*branching*approx*time*limit::Float64-[100]s-1",
     "page": "Options",
-    "title": "strong_branching_approx_time_limit::Float64 [100]s",
+    "title": "strongbranchingapproxtimelimit::Float64 [100]s",
     "category": "section",
     "text": "For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable to reduce the number of strong branching variables.A small example:strong_branching_perc is set to 100%.\nThe root relaxation takes 5 seconds and there are 100 discrete variables.\nNow the approximated time for strong branching (without considering restarts) is   2*5s*100 = 1000s because each discrete variable has two children.By using strong_branching_approx_time_limit = 100 the number of strong branching variables is reduced to 10 because 2*5s*10 = 100. If you don\'t want to use this time limit you can set it to Inf."
 },
@@ -161,17 +161,17 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#reliablility_branching_perc::Float64-[25]-1",
+    "location": "options.html#reliablility*branching*perc::Float64-[25]-1",
     "page": "Options",
-    "title": "reliablility_branching_perc::Float64 [25]",
+    "title": "reliablilitybranchingperc::Float64 [25]",
     "category": "section",
     "text": "Defines the percentage of variables to consider for the strong branching part of reliablity branching. If the number of variables is smaller than 2 it is fixed at 2 as strong branching doesn\'t make sense for one variable. "
 },
 
 {
-    "location": "options.html#reliablility_branching_threshold::Int64-[5]-1",
+    "location": "options.html#reliablility*branching*threshold::Int64-[5]-1",
     "page": "Options",
-    "title": "reliablility_branching_threshold::Int64 [5]",
+    "title": "reliablilitybranchingthreshold::Int64 [5]",
     "category": "section",
     "text": "Defines whether strong branching is used to improve the reliability of the gain score. If a variable was used less than reliablility_branching_threshold times for strong branching then strong branching is performed on some of those candidates. The amount of candidates used is calculated by reliablility_branching_perc."
 },
@@ -241,33 +241,33 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#feasibility_pump_time_limit::Int64-[60]s-1",
+    "location": "options.html#feasibility*pump*time_limit::Int64-[60]s-1",
     "page": "Options",
-    "title": "feasibility_pump_time_limit::Int64 [60]s",
+    "title": "feasibilitypumptime_limit::Int64 [60]s",
     "category": "section",
     "text": "The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not."
 },
 
 {
-    "location": "options.html#feasibility_pump_tolerance_counter::Int64-[5]-1",
+    "location": "options.html#feasibility*pump*tolerance_counter::Int64-[5]-1",
     "page": "Options",
-    "title": "feasibility_pump_tolerance_counter::Int64 [5]",
+    "title": "feasibilitypumptolerance_counter::Int64 [5]",
     "category": "section",
     "text": "In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution. If the default tolerance (atol) can\'t be reached for feasibility_pump_tolerance_counter consecutive times but the tolerance*10 can be reached. The tolerance will be switched after feasibility_pump_tolerance_counter and a warning will be thrown. If there is no warning like Real objective wasn\'t solved to optimality afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the  objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues.  If this can\'t be done a warning like Real objective wasn\'t solved to optimality is thrown. This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues.  You can set this value to a huge number (more than 100 should be enough) if you don\'t want to use this option."
 },
 
 {
-    "location": "options.html#tabu_list_length::Int64-[30]-1",
+    "location": "options.html#tabu*list*length::Int64-[30]-1",
     "page": "Options",
-    "title": "tabu_list_length::Int64 [30]",
+    "title": "tabulistlength::Int64 [30]",
     "category": "section",
     "text": "During the run of the feasibility pump it might happen that the alternating solve steps get into a cycle. By using a tabu list cycles can be avoided. The length determines the length of the cycle which will be avoided. If a cycle is encountered which is longer the feasibility pump terminates."
 },
 
 {
-    "location": "options.html#num_resolve_nlp_feasibility_pump::Int64-[1]-1",
+    "location": "options.html#num*resolve*nlp*feasibility*pump::Int64-[1]-1",
     "page": "Options",
-    "title": "num_resolve_nlp_feasibility_pump::Int64 [1]",
+    "title": "numresolvenlpfeasibilitypump::Int64 [1]",
     "category": "section",
     "text": "If the NLP is infeasible during the feasibility pump it can be restarted with a random starting point for the NL solver. This will be done as long as it is infeasible or num_resolve_nlp_feasibility_pump is reached."
 },
@@ -297,9 +297,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#best_obj_stop::Float-[NaN]-1",
+    "location": "options.html#best*obj*stop::Float-[NaN]-1",
     "page": "Options",
-    "title": "best_obj_stop::Float [NaN]",
+    "title": "bestobjstop::Float [NaN]",
     "category": "section",
     "text": "If an incumbent is found which is better than best_obj_stop the incumbent is returned. A warning gets thrown if best_obj_stop can\'t be reached."
 },
@@ -321,9 +321,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "options.html#num_resolve_root_relaxation::Int-[3]-1",
+    "location": "options.html#num*resolve*root_relaxation::Int-[3]-1",
     "page": "Options",
-    "title": "num_resolve_root_relaxation::Int [3]",
+    "title": "numresolveroot_relaxation::Int [3]",
     "category": "section",
     "text": "This especially bad if this happens for the root relaxation. If there is no optimal/local optimal solution in the root relaxation you can use this option to resolve a couple of time until a solution is found or the number of resolves exceeded this value."
 },
