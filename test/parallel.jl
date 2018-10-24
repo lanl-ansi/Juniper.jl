@@ -33,6 +33,37 @@ include("POD_experiment/blend029.jl")
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
 
+@testset "Knapsack solution limit and table print test" begin
+    println("==================================")
+    println("Knapsack solution limit and table print test")
+    println("==================================")
+
+    juniper_one_solution = DefaultTestSolver(
+        log_levels=[:Table],
+        branch_strategy=:MostInfeasible,
+        solution_limit=1,
+        mip_solver=CbcSolver(),
+        processors = 3
+    )
+    
+    m = Model()
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    setsolver(m, juniper_one_solution)
+    status = solve(m)
+    @test status == :UserLimit
+
+    # maybe 2 found at the same time
+    @test Juniper.getnsolutions(internalmodel(m)) <= 2
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+end
+
 @testset "Knapsack Max Reliable incumbent_constr" begin
     println("==================================")
     println("KNAPSACK Reliable incumbent_constr")
