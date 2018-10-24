@@ -5,7 +5,6 @@ Release: [![Juniper](http://pkg.julialang.org/badges/Juniper_0.5.svg)](http://pk
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Juniper.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/Juniper.jl) [![codecov](https://codecov.io/gh/lanl-ansi/Juniper.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper.jl)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/latest)
 
-
 # Idea
 
 You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
@@ -18,7 +17,9 @@ You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.
 
 Juniper can be installed via:
 
-`Pkg.add("Juniper")`
+`Pkg.add("Juniper")` 
+
+or `] add Juniper` for Julia v0.7 and v1.
 
 Then adding it to your project by
 

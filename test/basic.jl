@@ -782,17 +782,45 @@ end
     @test isapprox(juniper_val, 80.9493, atol=opt_atol, rtol=opt_rtol)
 end
 
-@testset "bruteforce obj_epsilon & solution_limit" begin
+@testset "Knapsack solution limit and table print test" begin
     println("==================================")
-    println("Bruteforce obj_epsilon & solution_limit")
+    println("Knapsack solution limit and table print test")
     println("==================================")
+
     juniper_one_solution = DefaultTestSolver(
-        branch_strategy=:StrongPseudoCost,
-        obj_epsilon=0.4,
+        log_levels=[:Table],
+        branch_strategy=:MostInfeasible,
         solution_limit=1
     )
+    
+    m = Model()
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Bin)
 
-    m = Model(solver=juniper_one_solution)
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    setsolver(m, juniper_one_solution)
+    status = solve(m)
+    @test status == :UserLimit
+
+    # maybe 2 found at the same time
+    @test Juniper.getnsolutions(internalmodel(m)) <= 2
+    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+end
+
+@testset "bruteforce obj_epsilon" begin
+    println("==================================")
+    println("Bruteforce obj_epsilon")
+    println("==================================")
+    juniper_obj_eps = DefaultTestSolver(
+        branch_strategy=:StrongPseudoCost,
+        obj_epsilon=0.4
+    )
+
+    m = Model(solver=juniper_obj_eps)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -811,20 +839,19 @@ end
     status = solve(m)
 
     # maybe 2 found at the same time
-    @test Juniper.getnsolutions(internalmodel(m)) <= 2
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
+    @test status == :Optimal
 end
 
 @testset "bruteforce best_obj_stop not reachable" begin
     println("==================================")
     println("Bruteforce best_obj_stop not reachable")
     println("==================================")
-    juniper_one_solution = DefaultTestSolver(
+    juniper_best_obj_stop = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         best_obj_stop=0.8
     )
 
-    m = Model(solver=juniper_one_solution)
+    m = Model(solver=juniper_best_obj_stop)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 

@@ -11,9 +11,13 @@ You have a really good solver for the relaxation and just want to solve problems
 
 # Basic usage
 
-Version v0.1.0 can be installed via:
+The latest version can be installed via:
 
 `Pkg.add("Juniper")`
+
+or for Julia v0.7 and v1:
+
+`] add Juniper` as `]` is used to get to interact with the package manager.
 
 Then adding it to your project by
 
