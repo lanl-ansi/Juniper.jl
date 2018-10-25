@@ -1,7 +1,7 @@
 # Juniper.jl Changelog
 
 ### Staged
-- nothing
+- Again support for `mu_init` in Ipopt
 
 ### v0.2.2
 - Add support for Julia v1.0

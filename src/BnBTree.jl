@@ -54,8 +54,6 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     end
     setvalue(m.x[1:m.num_var],step_obj.node.solution)
 
-    # TODO: fix for v0.7
-    #=
     if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
         old_mu_init = 0.1 # default value in Ipopt
@@ -68,15 +66,12 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             end
         end
         if !overwritten
-
-            # push!(m.nl_solver.options, (:mu_init, 1e-5))
+            push!(m.nl_solver.options, (:mu_init, 1e-5))
         end
     end
-    =#
 
     status = JuMP.solve(m.model, suppress_warnings=true)
 
-    #=
     # reset mu_init
     if occursin("Ipopt", string(m.nl_solver))
         for i=1:length(m.nl_solver.options)
@@ -86,7 +81,6 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             end
         end
     end
-    =#
 
     objval = getobjectivevalue(m.model)
     cnode.solution = getvalue(m.x)
