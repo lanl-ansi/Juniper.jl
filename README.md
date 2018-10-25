@@ -67,13 +67,16 @@ Then the feasibility pump is used to find a feasible solution before the branch 
 
 # Citing Juniper
 
-If you find Juniper useful in your work, we kindly request that you cite the following [paper](https://arxiv.org/abs/1804.07332):
+If you find Juniper useful in your work, we kindly request that you cite the following [paper](https://link.springer.com/chapter/10.1007/978-3-319-93031-2_27) or [technical report](https://arxiv.org/abs/1804.07332):
 
 ```
-@misc{1804.07332,
+@inproceedings{juniper,
      Author = {Ole Kröger and Carleton Coffrin and Hassan Hijazi and Harsha Nagarajan},
      Title = {Juniper: An Open-Source Nonlinear Branch-and-Bound Solver in Julia},
-     Year = {2018},
-     Eprint = {arXiv:1804.07332},
+     booktitle="Integration of Constraint Programming, Artificial Intelligence, and Operations Research",
+     pages="377--386",
+     year="2018",
+     publisher="Springer International Publishing",
+     isbn="978-3-319-93031-2"
 }
 ```
