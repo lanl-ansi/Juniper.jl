@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Basic usage",
     "category": "section",
-    "text": "Version v0.1.0 can be installed via:Pkg.add(\"Juniper\")Then adding it to your project byusing JuniperYou also have to import your NLP solver i.e.using Ipoptas well as JuMPDefine JuniperSolver as your solver:solver = JuniperSolver(IpoptSolver(print_level=0))And give it a go:m = Model(solver=solver)\n\nv = [10,20,12,23,42]\nw = [12,45,12,22,21]\n@variable(m, x[1:5], Bin)\n\n@objective(m, Max, dot(v,x))\n\n@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   \n\nstatus = solve(m)\nThis solver is a NLP solver therefore you should have at least one NLconstraint or NLobjective."
+    "text": "The latest version can be installed via:Pkg.add(\"Juniper\")or for Julia v0.7 and v1:] add Juniper as ] is used to get to interact with the package manager.Then adding it to your project byusing JuniperYou also have to import your NLP solver i.e.using Ipoptas well as JuMPDefine JuniperSolver as your solver:solver = JuniperSolver(IpoptSolver(print_level=0))And give it a go:m = Model(solver=solver)\n\nv = [10,20,12,23,42]\nw = [12,45,12,22,21]\n@variable(m, x[1:5], Bin)\n\n@objective(m, Max, dot(v,x))\n\n@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   \n\nstatus = solve(m)\nThis solver is a NLP solver therefore you should have at least one NLconstraint or NLobjective."
 },
 
 {
