@@ -1,6 +1,9 @@
 # Juniper.jl Changelog
 
 ### Staged
+- nothing
+
+### v0.2.3
 - Again support for `mu_init` in Ipopt
 
 ### v0.2.2
