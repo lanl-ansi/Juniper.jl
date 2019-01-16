@@ -59,8 +59,8 @@ end
     status = solve(m)
     @test status == :UserLimit
 
-    # maybe 2 found at the same time
-    @test Juniper.getnsolutions(internalmodel(m)) <= 2
+    # maybe all three found a solution at the same time
+    @test Juniper.getnsolutions(internalmodel(m)) <= 3 
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
