@@ -11,7 +11,7 @@ You have a non linear problem with discrete variables (MINLP) and want some more
 The relaxation should be solveable by any solver you prefer. Some solvers might not be able to solve the mixed integer part by themselves.
 
 Juniper (Jump Nonlinear Integer Program solver) is a heuristic for non convex problems.
-You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.jl)
+You need the global optimum? Check out [Alpine.jl](http://github.com/lanl-ansi/Alpine.jl)
 
 # Basic usage
 

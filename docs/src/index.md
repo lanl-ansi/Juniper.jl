@@ -2,7 +2,7 @@
 
 Juniper (Jump Non linear Integer Program solver) is a solver for MixedIntegerNonLinearPrograms (MINLPs) written in Julia.
 Juniper solves these kind of problems using a NLP solver and then branch and bound. If the NLP solver isn't global optimal then Juniper is a heuristic. 
-You need the global optimum? Check out [POD.jl](http://github.com/lanl-ansi/POD.jl)
+You need the global optimum? Check out [Alpine.jl](http://github.com/lanl-ansi/Alpine.jl)
 
 # Why?
 You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part? => Use Juniper
