@@ -3,6 +3,9 @@
 ### Staged
 - nothing
 
+### v0.2.4
+- Remove Julia version upper bound
+
 ### v0.2.3
 - Again support for `mu_init` in Ipopt
 
