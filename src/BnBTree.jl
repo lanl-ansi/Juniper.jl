@@ -268,6 +268,11 @@ function get_next_branch_node!(tree)
     bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
 
     trav_strat = tree.options.traverse_strategy
+    if trav_strat == :BFS
+        # use the one with highest depth
+        _value, nidx = findmax([if isapprox(tree.obj_fac*n.best_bound, bvalue) n.level else -1 end for n in tree.branch_nodes])
+    end
+
     if trav_strat == :DFS || (trav_strat == :DBFS && !isdefined(tree,:incumbent))
         _value, nidx = findmax([n.level for n in tree.branch_nodes])
     end
