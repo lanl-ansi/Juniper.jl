@@ -73,12 +73,12 @@ function upd_gains_step!(tree, step_obj)
         tree.obj_gain.inf_counter[tree.obj_gain.inf_counter .< 0] .= 0
         if step_obj.counter == 1
             cum_counter = tree.obj_gain.minus_counter .+ tree.obj_gain.plus_counter
-            strong_int_vars = findall(cum_counter .> 0)
-            step_obj.strong_int_vars = strong_int_vars
+            strong_disc_vars = findall(cum_counter .> 0)
+            step_obj.strong_disc_vars = strong_disc_vars
             # all other variables that haven't been checked get the median value of the others
-            med_gain_m = median(tree.obj_gain.minus[strong_int_vars])
-            med_gain_p = median(tree.obj_gain.plus[strong_int_vars])
-            rest = filter(i->!(i in strong_int_vars),1:tree.m.num_disc_var)
+            med_gain_m = median(tree.obj_gain.minus[strong_disc_vars])
+            med_gain_p = median(tree.obj_gain.plus[strong_disc_vars])
+            rest = filter(i->!(i in strong_disc_vars),1:tree.m.num_disc_var)
             tree.obj_gain.minus[rest] .= med_gain_m
             tree.obj_gain.plus[rest] .= med_gain_p
             tree.obj_gain.minus_counter[rest] .= 1
@@ -98,12 +98,12 @@ end
 
 function guess_gain(tree, step_obj)
     i = step_obj.var_idx
-    inti = tree.var2disc_idx[i]
+    disc_i = tree.var2disc_idx[i]
     x = step_obj.node.solution
     g_minus, g_minus_c = tree.obj_gain.minus,tree.obj_gain.minus_counter
     g_plus, g_plus_c = tree.obj_gain.plus,tree.obj_gain.plus_counter
     g_minus_c += map(i -> (i == 0) && (i = 1), g_minus_c)
     g_plus_c += map(i -> (i == 0) && (i = 1), g_plus_c)
     mu = tree.options.gain_mu
-    return score(f_minus(x[i])*g_minus[inti]/g_minus_c[inti],f_plus(x[i])*g_plus[inti]/g_plus_c[inti],mu)
+    return score(f_minus(x[i])*g_minus[disc_i]/g_minus_c[disc_i],f_plus(x[i])*g_plus[disc_i]/g_plus_c[disc_i],mu)
 end

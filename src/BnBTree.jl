@@ -7,11 +7,11 @@ include("bb_integral_or_branch.jl")
 include("bb_gains.jl")
 
 """
-    upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)
+    get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)
 
 Get the index of a variable to branch on.
 """
-function upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)
+function get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter::Int64=1)
     start = time()
     node = step_obj.node
     idx = 0
@@ -313,7 +313,7 @@ function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, co
 
 # get branch variable
     node_idx_start = time()
-    upd_int_variable_idx!(m, step_obj, opts, disc2var_idx, gains, counter)
+    get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter)
     step_obj.node_idx_time = time()-node_idx_start
     # if no variable got selected might be true that all variables are already type correct
     # node.solution can be updated if one child is infeasible and the other optimal (can result in discrete)
