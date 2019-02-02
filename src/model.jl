@@ -114,7 +114,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         return m.status
     end
 
-    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
+    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.relaxation_time)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(m.x)
 
