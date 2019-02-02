@@ -83,6 +83,7 @@ end
 Optimize by creating a model based on the variables saved in JuniperModel.
 """
 function MathProgBase.optimize!(m::JuniperModel)
+    m.start_time = time()
     ps = m.options.log_levels
     m.debugDict = Dict{Any,Any}()
     if !m.options.fixed_gain_mu && m.obj_sense == :Max
@@ -98,13 +99,13 @@ function MathProgBase.optimize!(m::JuniperModel)
     end
 
     create_root_model!(m)
-    m.start_time = time()
+    relaxation_start_time = time()
     restarts = solve_root_model!(m)
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     m.soltime = time()-m.start_time
-    m.relaxation_time = time()-m.start_time
+    m.relaxation_time = time()-relaxation_start_time
     m.options.debug && debug_fill_basic(m.debugDict,m,restarts)
     if m.status != :Optimal && m.status != :LocalOptimal
         if m.options.debug && m.options.debug_write
