@@ -46,6 +46,6 @@ include("printing.jl")
 include("solver.jl")
 include("model.jl")
 include("BnBTree.jl")
-
+include("MOI_wrapper.jl")
 
 end
