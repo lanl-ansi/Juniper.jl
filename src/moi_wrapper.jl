@@ -6,7 +6,7 @@ const MOIU = MathOptInterface.Utilities
 
 # JuniperProblem
 mutable struct JuniperProblem
-    nl_solver       :: MathProgBase.AbstractMathProgSolver
+    nl_solver       :: MOI.AbstractOptimizer
        
     model           :: JuMP.Model
             
@@ -14,7 +14,7 @@ mutable struct JuniperProblem
     objval          :: Float64
     best_bound      :: Float64
     
-    x               :: Vector{JuMP.Variable}
+    x               :: Vector{JuMP.VariableRef}
     num_constr      :: Int64
     num_nl_constr   :: Int64
     num_l_constr    :: Int64
