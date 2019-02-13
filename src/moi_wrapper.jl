@@ -3,9 +3,6 @@ MOI_wrapper.jl defines the Juniper.Optimizer struct
 with all mandatory MOI functions overloaded
 """
 
-using MathOptInterface
-const MOI = MathOptInterface
-const MOIU = MOI.Utilities
 
 """ 
 MOI functions, sets and, other type definitions

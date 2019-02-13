@@ -4,6 +4,10 @@ using MathProgBase
 using JuMP
 using JSON
 
+using MathOptInterface
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
+
 if VERSION < v"0.7.0-"
     import Compat: occursin
     import Compat: Nothing

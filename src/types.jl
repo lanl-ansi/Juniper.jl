@@ -27,7 +27,7 @@ mutable struct SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Nothing, MathProgBase.AbstractMathProgSolver}
+    mip_solver                          :: Union{Nothing, MOI.AbstractOptimzier}
     
     # only for testing
     force_parallel                      :: Bool
@@ -56,6 +56,13 @@ mutable struct Aff
 
     Aff() = new()
 end
+
+# Juniper MOI struct 
+
+mutable struct JuniperProblem 
+
+
+end 
 
 mutable struct JuniperModel <: MathProgBase.AbstractNonlinearModel
     nl_solver       :: MathProgBase.AbstractMathProgSolver
