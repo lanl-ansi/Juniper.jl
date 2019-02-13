@@ -60,7 +60,7 @@ end
 
 function combine_options(options)
     branch_strategies = Dict{Symbol,Bool}()
-    for strat in [:StrongPseudoCost,:PseudoCost,:Reliability,:MostInfeasible]
+    for strat in [:StrongPseudoCost, :PseudoCost, :Reliability, :MostInfeasible]
         branch_strategies[strat] = true
     end
 
@@ -87,7 +87,7 @@ function combine_options(options)
     end
 
     # if gain mu is specified we shouldn't change it later
-    if haskey(options_dict,:gain_mu)
+    if haskey(options_dict, :gain_mu)
         options_dict[:fixed_gain_mu] = true
     end
 
@@ -116,7 +116,7 @@ function combine_options(options)
             end
 
             if fieldtype(SolverOptions, fname) != typeof(options_dict[fname])
-                options_dict[fname] = convert(fieldtype(SolverOptions,fname), options_dict[fname])
+                options_dict[fname] = convert(fieldtype(SolverOptions, fname), options_dict[fname])
             end
             setfield!(defaults, fname, options_dict[fname])
         end
