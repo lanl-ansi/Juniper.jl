@@ -61,7 +61,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     linear_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
     linear_ge_constraints::Vector{Tuple{SAF, MOI.GreaterThan{Float64}}}
     linear_eq_constraints::Vector{Tuple{SAF, MOI.EqualTo{Float64}}}
-    quadratic_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
+    quadratic_le_constraints::Vector{Tuple{SQF, MOI.LessThan{Float64}}}
     quadratic_ge_constraints::Vector{Tuple{SQF, MOI.GreaterThan{Float64}}}
     quadratic_eq_constraints::Vector{Tuple{SQF, MOI.EqualTo{Float64}}}
     options::SolverOptions
