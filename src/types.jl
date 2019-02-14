@@ -27,7 +27,7 @@ mutable struct SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Nothing, MOI.AbstractOptimzier}
+    mip_solver                          :: Union{Nothing, MOI.AbstractOptimizer}
     
     # only for testing
     force_parallel                      :: Bool
@@ -73,7 +73,7 @@ mutable struct JuniperModel <: MathProgBase.AbstractNonlinearModel
     objval          :: Float64
     best_bound      :: Float64
 
-    x               :: Vector{JuMP.Variable}
+    x               :: Vector{JuMP.VariableRef}
     num_constr      :: Int64
     num_nl_constr   :: Int64
     num_l_constr    :: Int64
