@@ -187,7 +187,13 @@ function MOI.optimize!(model::Optimizer)
     num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
     num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
 
+    println("linear eq constraints: ")
     println(model.linear_eq_constraints)
+    println("Objective sense: ")
+    println(model.sense)
+    println("Objective: ")
+    println(model.objective)
+
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
 
