@@ -5,6 +5,7 @@ A solver for MINLP problems using a NLP solver and Branch and Bound
 =#
 
 function get_default_options()
+    nl_solver                           = nothing
     log_levels                          = [:Options,:Table,:Info]
     atol                                = 1e-6
     num_resolve_root_relaxation         = 3
@@ -48,7 +49,7 @@ function get_default_options()
 
     fixed_gain_mu                       = false
 
-    return SolverOptions(log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
+    return SolverOptions(nl_solver,log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
         strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
@@ -81,6 +82,11 @@ function combine_options(options)
             options_dict[:log_levels] = Symbol[]
         end
     end
+
+    if !haskey(options_dict, :nl_solver)
+        @error "The option nl_solver has to be set i.e with nl_solver = Ipopt.Optimizer"
+    end
+
     defaults = get_default_options()
     if defaults.feasibility_pump == true && (!haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing)
         defaults.feasibility_pump = false

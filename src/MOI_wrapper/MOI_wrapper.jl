@@ -39,9 +39,9 @@ Variable information struct definition
 """ 
 mutable struct VariableInfo
     lower_bound::Float64  # May be -Inf even if has_lower_bound == true
-    has_lower_bound::Bool # Implies lower_bound == Inf
+    has_lower_bound::Bool # false implies lower_bound == -Inf
     upper_bound::Float64  # May be Inf even if has_upper_bound == true
-    has_upper_bound::Bool # Implies upper_bound == Inf
+    has_upper_bound::Bool # false implies upper_bound == Inf
     is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
     is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
     is_integer::Bool      # Implies variable is MOI.Integer
@@ -187,6 +187,7 @@ function MOI.optimize!(model::Optimizer)
     num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
     num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
 
+    println(model.linear_eq_constraints)
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
 
