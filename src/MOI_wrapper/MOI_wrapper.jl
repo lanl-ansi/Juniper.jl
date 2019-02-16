@@ -196,8 +196,8 @@ function MOI.optimize!(model::Optimizer)
 
 end 
 
-include(joinpath("MOI_wrapper", "variables.jl"))
-include(joinpath("MOI_wrapper", "constraints.jl"))
-include(joinpath("MOI_wrapper", "objective.jl"))
-include(joinpath("MOI_wrapper", "results.jl"))
-include(joinpath("MOI_wrapper", "nlp.jl"))
+include("variables.jl")
+include("constraints.jl")
+include("objective.jl")
+include("results.jl")
+include("nlp.jl")

@@ -50,6 +50,6 @@ include("printing.jl")
 include("solver.jl")
 include("model.jl")
 include("BnBTree.jl")
-include("MOI_wrapper.jl")
+include("MOI_wrapper/MOI_wrapper.jl")
 
 end
