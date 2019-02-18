@@ -163,7 +163,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     ps = jp.options.log_levels
 
     # TODO: include options of the optimizer
-    jp.model = Model(with_optimizer(typeof(jp.nl_solver)))
+    jp.model = Model(with_optimizer(jp.nl_solver))
     lb = jp.l_var
     ub = jp.u_var
     # all continuous we solve relaxation first
@@ -171,6 +171,8 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     println("optimizer.objective: ", optimizer.objective)
     # TODO check whether it is supported
     MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
+    MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
+
     backend = JuMP.backend(jp.model);
     llc = optimizer.linear_le_constraints
     lgc = optimizer.linear_ge_constraints

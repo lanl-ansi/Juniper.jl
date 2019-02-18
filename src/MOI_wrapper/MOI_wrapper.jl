@@ -268,7 +268,6 @@ function MOI.optimize!(model::Optimizer)
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
     
     backend     = JuMP.backend(jp.model)
-    # TODO: doesn't work atm
     jp.objval   = JuMP.objective_value(jp.model)
     jp.solution = get_primal_values(backend)
     println("Objval: ", jp.objval)

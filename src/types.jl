@@ -61,7 +61,7 @@ end
 # Juniper MOI struct 
 
 mutable struct JuniperProblem 
-    nl_solver       :: MOI.AbstractOptimizer
+    nl_solver       :: JuMP.OptimizerFactory
    
     model           :: JuMP.Model
         
@@ -97,7 +97,7 @@ mutable struct JuniperProblem
     solutions       :: Vector{SolutionObj}
     nsolutions      :: Int64
 
-    mip_solver      :: MOI.AbstractOptimizer
+    mip_solver      :: JuMP.OptimizerFactory
 
     relaxation_time :: Float64
     start_time      :: Float64
