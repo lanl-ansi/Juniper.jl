@@ -189,7 +189,7 @@ end
 """
 ``MOI.optimize!()`` for Juniper
 """ 
-function MOI.optimize!(model::Optimizer)
+function MOI.optimize!(model::Optimizer)   
     num_variables = length(model.variable_info)
     num_linear_le_constraints = length(model.linear_le_constraints)
     num_linear_ge_constraints = length(model.linear_ge_constraints)
@@ -215,6 +215,8 @@ function MOI.optimize!(model::Optimizer)
     # fill JuniperProblem
     model.inner = JuniperProblem()
     @views jp = model.inner
+    jp.start_time = time()
+
     jp.nl_solver = model.options.nl_solver
     if model.options.mip_solver != nothing
         jp.mip_solver = model.options.mip_solver
@@ -246,9 +248,34 @@ function MOI.optimize!(model::Optimizer)
     end
 
     create_root_model!(model, jp)
-    solve_root_model!(jp)
+    relax_start_time = time()
+    restarts = solve_root_model!(jp)
+    jp.relaxation_time = time()-relax_start_time
 
+    (:All in ps || :Info in ps) && println("Status of relaxation: ", jp.status)
+    jp.soltime = time()-jp.start_time
 
+    jp.options.debug && debug_fill_basic(jp.debugDict,jp,restarts)
+
+    # if infeasible or unbounded => return
+    if jp.status != MOI.OPTIMAL && jp.status != MOI.LOCALLY_SOLVED
+        if jp.options.debug && jp.options.debug_write
+            write(jp.options.debug_file_path, JSON.json(jp.debugDict))
+        end
+        return jp.status
+    end
+
+    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
+    
+    backend     = JuMP.backend(jp.model)
+    # TODO: doesn't work atm
+    jp.objval   = JuMP.objective_value(jp.model)
+    jp.solution = get_primal_values(backend)
+    println("Objval: ", jp.objval)
+    println("solution: ", jp.solution)
+
+    jp.options.debug && debug_objective(jp.debugDict,m)
+    
 
 end 
 

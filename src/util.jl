@@ -229,3 +229,8 @@ function get_type_dict(obj)
     end
     return type_dict
 end
+
+function get_primal_values(backend)
+    var_idxs = MOI.get(backend, MOI.ListOfVariableIndices())
+    return [MOI.get(backend, MOI.VariablePrimal(), var_idx) for var_idx in var_idxs]
+end

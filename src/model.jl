@@ -184,6 +184,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
             MOI.add_constraint(backend, constr[1], constr[2])
         end
     end
+    MOI.set(backend, MOI.NLPBlock(), optimizer.nlp_data)
     
     jp.x = x
 end
@@ -210,10 +211,6 @@ function solve_root_model!(jp::JuniperProblem)
         jp.status = MOI.get(backend, MOI.TerminationStatus()) 
         restarts += 1
     end
-
-    var_idxs = MOI.get(backend, MOI.ListOfVariableIndices())
-    vals = [MOI.get(backend, MOI.VariablePrimal(), var_idx) for var_idx in var_idxs]
-    println("vals: ", vals)
 
     return restarts
 end
