@@ -220,3 +220,12 @@ function get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
     end
     return reasonable_int_vars
 end
+
+function get_type_dict(obj)
+    T = typeof(obj)
+    type_dict = Dict{Symbol,Type}()
+    for (name, typ) in zip(fieldnames(T), T.types)
+        type_dict[name] = typ
+    end
+    return type_dict
+end

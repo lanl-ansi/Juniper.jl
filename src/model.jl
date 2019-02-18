@@ -159,54 +159,62 @@ function MathProgBase.optimize!(m::JuniperModel)
     return m.status
 end
 
-function create_root_model!(m::JuniperModel)
-    ps = m.options.log_levels
+function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem)
+    ps = jp.options.log_levels
 
-    m.model = Model(solver=m.nl_solver)
-    lb = m.l_var
-    ub = m.u_var
+    # TODO: include options of the optimizer
+    jp.model = Model(with_optimizer(typeof(jp.nl_solver)))
+    lb = jp.l_var
+    ub = jp.u_var
     # all continuous we solve relaxation first
-    @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
-
-    # define the objective function
-    obj_expr = MathProgBase.obj_expr(m.d)
-    expr_dereferencing!(obj_expr, m.model)
-    JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
-
-    divide_nl_l_constr(m)
-    (:All in ps || :Info in ps) && print_info(m)
-
-    # add all constraints
-    for i=1:m.num_constr
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing!(constr_expr, m.model)
-        # add NL constraint (even if linear because .addconstraint doesn't work with expression)
-        JuMP.addNLconstraint(m.model, constr_expr)
+    @variable(jp.model, lb[i] <= x[i=1:jp.num_var] <= ub[i])
+    println("optimizer.objective: ", optimizer.objective)
+    # TODO check whether it is supported
+    MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
+    backend = JuMP.backend(jp.model);
+    llc = optimizer.linear_le_constraints
+    lgc = optimizer.linear_ge_constraints
+    lec = optimizer.linear_eq_constraints
+    qlc = optimizer.quadratic_le_constraints
+    qgc = optimizer.quadratic_ge_constraints
+    qec = optimizer.quadratic_eq_constraints
+    for constr_type in [llc, lgc, lec, qlc, qgc, qec]
+        for constr in constr_type
+            println("constr: ", constr)
+            MOI.add_constraint(backend, constr[1], constr[2])
+        end
     end
-
-    m.x = x
+    
+    jp.x = x
 end
 
-function solve_root_model!(m::JuniperModel)
-    m.status = solve(m.model; suppress_warnings=true)
+function solve_root_model!(jp::JuniperProblem)
+    optimize!(jp.model)
+    backend = JuMP.backend(jp.model)
+    jp.status = MOI.get(backend, MOI.TerminationStatus()) 
     restarts = 0
-    max_restarts = m.options.num_resolve_root_relaxation
-    m.options.debug && debug_init(m.debugDict)
-    while m.status != :Optimal && m.status != :LocalOptimal &&
-        restarts < max_restarts && time()-m.start_time < m.options.time_limit
+    max_restarts = jp.options.num_resolve_root_relaxation
+    jp.options.debug && debug_init(jp.debugDict)
+    println("Status: ", jp.status)
+    while jp.status != MOI.OPTIMAL && jp.status != MOI.LOCALLY_SOLVED &&
+        restarts < max_restarts && time()-jp.start_time < jp.options.time_limit
 
-        internal_model = internalmodel(m.model)
-        if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-            MathProgBase.freemodel!(internal_model)
+        # TODO freemode for Knitro
+        restart_values = generate_random_restart(jp)
+        # TODO this probably doesn't work yet
+        jp.options.debug && debug_restart_values(jp.debugDict,restart_values)
+        for i=1:jp.num_var
+            setvalue(jp.x[i], restart_values[i])
         end
-        restart_values = generate_random_restart(m)
-        m.options.debug && debug_restart_values(m.debugDict,restart_values)
-        for i=1:m.num_var
-            setvalue(m.x[i], restart_values[i])
-        end
-        m.status = solve(m.model)
+        optimize!(jp.model)
+        jp.status = MOI.get(backend, MOI.TerminationStatus()) 
         restarts += 1
     end
+
+    var_idxs = MOI.get(backend, MOI.ListOfVariableIndices())
+    vals = [MOI.get(backend, MOI.VariablePrimal(), var_idx) for var_idx in var_idxs]
+    println("vals: ", vals)
+
     return restarts
 end
 

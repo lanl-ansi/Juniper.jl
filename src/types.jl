@@ -61,21 +61,21 @@ end
 # Juniper MOI struct 
 
 mutable struct JuniperProblem 
-    nl_solver       :: MathProgBase.AbstractMathProgSolver
+    nl_solver       :: MOI.AbstractOptimizer
    
     model           :: JuMP.Model
         
-    status          :: Symbol
+    status          :: MOI.TerminationStatusCode
     objval          :: Float64
     best_bound      :: Float64
 
-    # x               :: Vector{JuMP.VariableRef}
+    x               :: Vector{JuMP.VariableRef}
     num_constr      :: Int64
     num_nl_constr   :: Int64
     num_l_constr    :: Int64
     num_var         :: Int64
-    #l_var           :: Vector{Float64}
-    #u_var           :: Vector{Float64}
+    l_var           :: Vector{Float64}
+    u_var           :: Vector{Float64}
     #l_constr        :: Vector{Float64}
     #u_constr        :: Vector{Float64}
 
@@ -86,7 +86,7 @@ mutable struct JuniperProblem
 
     var_type        :: Vector{Symbol}
     # isconstrlinear  :: Vector{Bool}
-    # obj_sense       :: Symbol
+    obj_sense       :: Symbol
     # d               :: MathProgBase.AbstractNLPEvaluator
     num_disc_var    :: Int64
 
@@ -97,7 +97,7 @@ mutable struct JuniperProblem
     solutions       :: Vector{SolutionObj}
     nsolutions      :: Int64
 
-    mip_solver      :: MathProgBase.AbstractMathProgSolver
+    mip_solver      :: MOI.AbstractOptimizer
 
     relaxation_time :: Float64
     start_time      :: Float64
@@ -113,9 +113,9 @@ mutable struct JuniperProblem
     fpump_info      :: Dict{Symbol,Float64}
 
     # debug
-    debugDict        :: Dict{Symbol,Any}
+    debugDict       :: Dict{Symbol,Any}
 
-    JuniperModel() = new()
+    JuniperProblem() = new()
 end 
 
 mutable struct JuniperModel <: MathProgBase.AbstractNonlinearModel

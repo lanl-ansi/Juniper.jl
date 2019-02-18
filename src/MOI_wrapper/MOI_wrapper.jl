@@ -175,6 +175,17 @@ quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(mode
 nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
 
 
+function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
+    len_var_info = length(variable_info)
+    type_dict = get_type_dict(variable_info[1])
+    println("Type of attr (",attr,") is: ", type_dict[attr])
+    result = Array{type_dict[attr], 1}(undef, len_var_info)
+    for i = 1:len_var_info
+        result[i] = getfield(variable_info[i], attr)
+    end
+    return result
+end
+
 """
 ``MOI.optimize!()`` for Juniper
 """ 
@@ -200,6 +211,44 @@ function MOI.optimize!(model::Optimizer)
     else 
         @info "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros"
     end 
+
+    # fill JuniperProblem
+    model.inner = JuniperProblem()
+    @views jp = model.inner
+    jp.nl_solver = model.options.nl_solver
+    if model.options.mip_solver != nothing
+        jp.mip_solver = model.options.mip_solver
+    end
+    jp.options = model.options    
+    if model.sense == MOI.MIN_SENSE 
+        jp.obj_sense = :Min
+    else
+        jp.obj_sense = :Max
+    end
+    jp.l_var = info_array_of_variables(model.variable_info, :lower_bound)
+    jp.u_var = info_array_of_variables(model.variable_info, :upper_bound)
+    jp.num_var = length(model.variable_info)
+
+    
+    ps = jp.options.log_levels
+    println("ps: ", ps)
+    jp.debugDict = Dict{Any,Any}()
+    if !jp.options.fixed_gain_mu && jp.obj_sense == :Max
+        jp.options.gain_mu = 1-jp.options.gain_mu
+    end
+    (:All in ps || :AllOptions in ps) && print_options(jp;all=true)
+    (:Options in ps) && print_options(jp;all=false)
+
+    nw = nworkers()
+    if nw < jp.options.processors
+        jp.options.processors = nw
+        @warn "Julia was started with less processors then you define in your options"
+    end
+
+    create_root_model!(model, jp)
+    solve_root_model!(jp)
+
+
 
 end 
 

@@ -13,7 +13,7 @@ function check_print(log_levels::Vector{Symbol}, necessary::Vector{Symbol})
     return false
 end
 
-function print_info(m::JuniperModel)
+function print_info(m::JuniperProblem)
     println("#Variables: ", m.num_var)
     println("#IntBinVar: ", m.num_disc_var)
     println("#Constraints: ", m.num_constr)
@@ -40,6 +40,8 @@ function get_non_default_options(options)
     defaults = Juniper.get_default_options()
     non_defaults = Dict{Symbol,Any}()
     for fname in fieldnames(SolverOptions)
+        # TODO: Better printing of nl_solver/mip_solver name when SolverName exists
+
         # doesn't work for arrays but the only array atm is log_levels 
         # and the default doesn't include :Options therefore !== should work...
         if getfield(options,fname) !== getfield(defaults,fname)
@@ -49,7 +51,7 @@ function get_non_default_options(options)
     return non_defaults
 end
 
-function print_options(m::JuniperModel; all=true)
+function print_options(m::JuniperProblem; all=true)
     if all
         println(m.options)
     else
