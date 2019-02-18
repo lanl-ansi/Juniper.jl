@@ -1,7 +1,7 @@
 
 # Options for the solver (more details like defaults in solver.jl)
 mutable struct SolverOptions
-    nl_solver                           :: Union{Nothing, MOI.AbstractOptimizer} # needs to be set
+    nl_solver                           :: Union{Nothing, JuMP.OptimizerFactory} # needs to be set
     log_levels                          :: Vector{Symbol}
     atol                                :: Float64
     num_resolve_root_relaxation         :: Int64
@@ -28,7 +28,7 @@ mutable struct SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Nothing, MOI.AbstractOptimizer}
+    mip_solver                          :: Union{Nothing, JuMP.OptimizerFactory}
     
     # only for testing
     force_parallel                      :: Bool
