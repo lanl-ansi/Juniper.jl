@@ -3,7 +3,7 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
 
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
-    node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval,[],hash_val)
+    node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, m.status, m.objval,[],hash_val)
     obj_gain_m = zeros(m.num_disc_var)
     obj_gain_p = zeros(m.num_disc_var)
     obj_gain_mc = zeros(Int64, m.num_disc_var)
@@ -49,7 +49,7 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
 end
 
 function new_default_node(idx, level, l_var, u_var, solution;
-                            var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
+                            var_idx=0, state=:Solve, relaxation_state=MOI.OPTIMIZE_NOT_CALLED, best_bound=NaN, path=[])
 
     l_var = copy(l_var)
     u_var = copy(u_var)
@@ -59,7 +59,7 @@ function new_default_node(idx, level, l_var, u_var, solution;
 end
 
 function new_left_node(node, u_var;
-                       var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
+                       var_idx=0, state=:Solve, relaxation_state=MOI.OPTIMIZE_NOT_CALLED, best_bound=NaN, path=[])
     l_var = copy(node.l_var)
     u_var = copy(u_var)
     solution = NaN*ones(length(node.solution))
@@ -68,7 +68,7 @@ function new_left_node(node, u_var;
 end
 
 function new_right_node(node, l_var;
-                       var_idx=0, state=:Solve, relaxation_state=:Solve, best_bound=NaN, path=[])
+                       var_idx=0, state=:Solve, relaxation_state=MOI.OPTIMIZE_NOT_CALLED, best_bound=NaN, path=[])
     l_var = copy(l_var)
     u_var = copy(node.u_var)
     solution = NaN*ones(length(node.solution))

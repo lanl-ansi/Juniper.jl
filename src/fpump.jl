@@ -96,10 +96,10 @@ function generate_nlp(m, mip_sol; random_start=false)
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
-            setvalue(nx[i], restart_values[i])
+            set_start_value(nx[i], restart_values[i])
         end
     else
-        setvalue(nx[1:m.num_var],mip_sol)
+        set_start_value.(nx[1:m.num_var],mip_sol)
     end
 
     # add all constraints
@@ -145,7 +145,7 @@ function generate_real_nlp(m, sol; random_start=false)
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
             if m.var_type[i] == :Cont
-                setvalue(rx[i], restart_values[i])
+                set_start_value(rx[i], restart_values[i])
             end # discrete will be fixed anyway
         end
     end

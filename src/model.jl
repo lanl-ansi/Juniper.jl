@@ -70,13 +70,6 @@ function MathProgBase.loadproblem!(
     MathProgBase.initialize(m.d, [:ExprGraph,:Jac,:Grad])
 end
 
-function replace_solution!(m::JuniperModel, best_known)
-    m.solution = best_known.solution
-    m.objval = best_known.objval
-    m.status = best_known.status
-    m.best_bound = best_known.best_bound # is reasonable for gap or time limit
-end
-
 """
     MathProgBase.optimize!(m::JuniperModel)
 
@@ -207,7 +200,7 @@ function solve_root_model!(jp::JuniperProblem)
         # TODO this probably doesn't work yet
         jp.options.debug && debug_restart_values(jp.debugDict,restart_values)
         for i=1:jp.num_var
-            setvalue(jp.x[i], restart_values[i])
+            set_start_value(jp.x[i], restart_values[i])
         end
         optimize!(jp.model)
         jp.status = MOI.get(backend, MOI.TerminationStatus()) 

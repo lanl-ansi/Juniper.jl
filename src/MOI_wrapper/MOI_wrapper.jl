@@ -186,6 +186,13 @@ function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symb
     return result
 end
 
+function replace_solution!(m::JuniperProblem, best_known)
+    m.solution = best_known.solution
+    m.objval = best_known.objval
+    m.status = best_known.status
+    m.best_bound = best_known.best_bound # is reasonable for gap or time limit
+end
+
 """
 ``MOI.optimize!()`` for Juniper
 """ 
@@ -229,8 +236,13 @@ function MOI.optimize!(model::Optimizer)
     end
     jp.l_var = info_array_of_variables(model.variable_info, :lower_bound)
     jp.u_var = info_array_of_variables(model.variable_info, :upper_bound)
+    integer_bool_arr = info_array_of_variables(model.variable_info, :is_integer)
+    binary_bool_arr = info_array_of_variables(model.variable_info, :is_binary)
+    jp.num_disc_var = sum(integer_bool_arr)+sum(binary_bool_arr)
     jp.num_var = length(model.variable_info)
-
+    jp.var_type = [:Cont for i in 1:jp.num_var]
+    jp.var_type[integer_bool_arr .== true] .= :Int
+    jp.var_type[binary_bool_arr .== true] .= :Bin
     
     ps = jp.options.log_levels
     println("ps: ", ps)
@@ -269,11 +281,35 @@ function MOI.optimize!(model::Optimizer)
     
     backend     = JuMP.backend(jp.model)
     jp.objval   = JuMP.objective_value(jp.model)
-    jp.solution = get_primal_values(backend)
-    println("Objval: ", jp.objval)
-    println("solution: ", jp.solution)
+    jp.solution = JuMP.value.(jp.x)
 
     jp.options.debug && debug_objective(jp.debugDict,m)
+    # TODO free model for Knitro
+
+    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.objval)
+
+    # set incumbent to nothing might be updated using the feasibility_pump
+    inc_sol, inc_obj = nothing, nothing
+    if jp.num_disc_var > 0
+        if jp.options.feasibility_pump
+            inc_sol, inc_obj = fpump(jp)
+        end
+        bnbtree = init(jp.start_time, jp; inc_sol = inc_sol, inc_obj = inc_obj)
+        best_known = solvemip(bnbtree)
+
+        replace_solution!(m, best_known)
+        jp.nsolutions = bnbtree.nsolutions
+    else
+        jp.nsolutions = 1
+        if MOI.supports(backend, MOI.ObjectiveBound())
+            jp.best_bound = JuMP.objective_bound(jp.model)
+        else
+            jp.best_bound = JuMP.objective_value(jp.model)
+        end
+    end
+    jp.soltime = time()-jp.start_time
+
+    (:All in ps || :Info in ps) && println("Obj: ",jp.objval)
     
 
 end 

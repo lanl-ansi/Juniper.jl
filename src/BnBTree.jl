@@ -49,11 +49,13 @@ Return state
 function process_node!(m, step_obj, cnode, disc2var_idx, temp)
      # set bounds
     for i=1:m.num_var
-        JuMP.setlowerbound(m.x[i], cnode.l_var[i])
-        JuMP.setupperbound(m.x[i], cnode.u_var[i])
+        JuMP.set_lower_bound(m.x[i], cnode.l_var[i])
+        JuMP.set_upper_bound(m.x[i], cnode.u_var[i])
     end
-    setvalue(m.x[1:m.num_var],step_obj.node.solution)
+    set_start_value.(m.x[1:m.num_var],step_obj.node.solution)
 
+    # Todo: Options should be accessible using a dictionary and not an Iterator over Pairs. Maybe PR to Ipopt as last time...
+    #=
     if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
         old_mu_init = 0.1 # default value in Ipopt
@@ -69,11 +71,14 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             push!(m.nl_solver.options, (:mu_init, 1e-5))
         end
     end
+    =#
 
-    status = JuMP.solve(m.model, suppress_warnings=true)
+    optimize!(m.model)
+    backend = JuMP.backend(m.model)
+    status = MOI.get(backend, MOI.TerminationStatus()) 
 
     # reset mu_init
-    if occursin("Ipopt", string(m.nl_solver))
+    #=if occursin("Ipopt", string(m.nl_solver))
         for i=1:length(m.nl_solver.options)
             if m.nl_solver.options[i][1] == :mu_init
                 m.nl_solver.options[i] = (:mu_init, old_mu_init)
@@ -81,13 +86,14 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
             end
         end
     end
+    =#
 
-    objval = getobjectivevalue(m.model)
-    cnode.solution = getvalue(m.x)
+    objval = JuMP.objective_value(m.model)
+    cnode.solution = JuMP.value.(m.x)
     cnode.relaxation_state = status
-    if status == :Error
+    if status != MOI.OPTIMAL && status != MOI.LOCALLY_SOLVED && status != MOI.INFEASIBLE && status != MOI.LOCALLY_INFEASIBLE
         cnode.state = :Error
-    elseif status == :Optimal
+    elseif status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
         if !temp
@@ -96,10 +102,13 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     else
         cnode.state = :Infeasible
     end
+    # TODO free model
+    #=
     internal_model = internalmodel(m.model)
     if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
         MathProgBase.freemodel!(internal_model)
     end
+    =#
     return cnode.state
 end
 
@@ -353,7 +362,7 @@ function upd_tree_obj!(tree, step_obj, time_obj)
     if step_obj.state == :GlobalInfeasible
         # if there is no incumbent yet
         if !isdefined(tree,:incumbent)
-            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
+            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.LOCALLY_INFEASIBLE, NaN)
         end # it will terminate and use the current solution as optimal (might want to rerun as an option)
         still_running = false
     end

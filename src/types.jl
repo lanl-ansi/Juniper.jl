@@ -198,7 +198,7 @@ mutable struct BnBNode
     solution            :: Vector{Float64}
     var_idx             :: Int64
     state               :: Symbol
-    relaxation_state    :: Symbol
+    relaxation_state    :: MOI.TerminationStatusCode
     best_bound          :: Float64
     path                :: Vector{BnBNode}
     hash                :: String
@@ -207,7 +207,7 @@ end
 mutable struct Incumbent
     objval      :: Float64
     solution    :: Vector{Float64}
-    status      :: Symbol
+    status      :: MOI.TerminationStatusCode
     best_bound  :: Float64
 end
 
@@ -222,7 +222,7 @@ mutable struct GainObj
 end
 
 mutable struct BnBTreeObj
-    m               :: Juniper.JuniperModel
+    m               :: Juniper.JuniperProblem
     incumbent       :: Incumbent
     obj_gain        :: GainObj
     disc2var_idx    :: Vector{Int64}
