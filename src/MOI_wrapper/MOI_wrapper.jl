@@ -213,46 +213,18 @@ function MOI.optimize!(model::Optimizer)
     # fill JuniperProblem
     model.inner = JuniperProblem()
     @views jp = model.inner
-    jp.start_time = time()
-
-    jp.nl_solver = model.options.nl_solver
-    if model.options.mip_solver != nothing
-        jp.mip_solver = model.options.mip_solver
-    end
-    jp.options = model.options    
-    if model.sense == MOI.MIN_SENSE 
-        jp.obj_sense = :Min
-    else
-        jp.obj_sense = :Max
-    end
-    jp.l_var = info_array_of_variables(model.variable_info, :lower_bound)
-    jp.u_var = info_array_of_variables(model.variable_info, :upper_bound)
-    integer_bool_arr = info_array_of_variables(model.variable_info, :is_integer)
-    binary_bool_arr = info_array_of_variables(model.variable_info, :is_binary)
-    jp.num_disc_var = sum(integer_bool_arr)+sum(binary_bool_arr)
-    jp.num_var = length(model.variable_info)
-    jp.var_type = [:Cont for i in 1:jp.num_var]
-    jp.var_type[integer_bool_arr .== true] .= :Int
-    jp.var_type[binary_bool_arr .== true] .= :Bin
-    jp.disc2var_idx = zeros(jp.num_disc_var)
-    jp.var2disc_idx = zeros(jp.num_var)
-    int_i = 1
-    for i=1:jp.num_var
-        if jp.var_type[i] != :Cont
-            jp.disc2var_idx[int_i] = i
-            jp.var2disc_idx[i] = int_i
-            int_i += 1
-        end
-    end
+    init_juniper_problem!(jp, model)
     
     ps = jp.options.log_levels
     println("ps: ", ps)
     jp.debugDict = Dict{Any,Any}()
+
+    (:All in ps || :AllOptions in ps) && print_options(jp;all=true)
+    (:Options in ps) && print_options(jp;all=false)
+
     if !jp.options.fixed_gain_mu && jp.obj_sense == :Max
         jp.options.gain_mu = 1-jp.options.gain_mu
     end
-    (:All in ps || :AllOptions in ps) && print_options(jp;all=true)
-    (:Options in ps) && print_options(jp;all=false)
 
     nw = nworkers()
     if nw < jp.options.processors
@@ -271,7 +243,7 @@ function MOI.optimize!(model::Optimizer)
     jp.options.debug && debug_fill_basic(jp.debugDict,jp,restarts)
 
     # if infeasible or unbounded => return
-    if jp.status != MOI.OPTIMAL && jp.status != MOI.LOCALLY_SOLVED
+    if !state_is_optimal(jp.status)
         if jp.options.debug && jp.options.debug_write
             write(jp.options.debug_file_path, JSON.json(jp.debugDict))
         end
@@ -302,16 +274,24 @@ function MOI.optimize!(model::Optimizer)
         jp.nsolutions = bnbtree.nsolutions
     else
         jp.nsolutions = 1
-        if MOI.supports(backend, MOI.ObjectiveBound())
-            jp.best_bound = JuMP.objective_bound(jp.model)
-        else
-            jp.best_bound = JuMP.objective_value(jp.model)
+        jp.best_bound = try 
+            JuMP.objective_bound(jp.model)
+        catch
+            JuMP.objective_value(jp.model)
         end
     end
     jp.soltime = time()-jp.start_time
 
     (:All in ps || :Info in ps) && println("Obj: ",jp.objval)
     
+    if length(jp.solutions) == 0
+        push!(jp.solutions, SolutionObj(jp.solution, jp.objval))
+    end
+
+    jp.options.debug && debug_set_solution(jp.debugDict,jp)
+    if jp.options.debug && jp.options.debug_write
+        write(jp.options.debug_file_path, JSON.json(jp.debugDict))
+    end
 
 end 
 

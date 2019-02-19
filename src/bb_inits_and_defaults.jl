@@ -111,3 +111,52 @@ function new_default_step_obj(m,node)
     step_obj.strong_int_vars  = Int64[]
     return step_obj
 end
+
+function init_juniper_problem!(jp::JuniperProblem, model::Optimizer)
+    jp.status = MOI.OPTIMIZE_NOT_CALLED
+    jp.objval = NaN
+    jp.best_bound = NaN
+    jp.solution = Float64[]
+    jp.nsolutions = 0
+    jp.solutions = []
+    jp.num_disc_var = 0
+    jp.nintvars = 0
+    jp.nbinvars = 0
+    jp.nnodes = 1 # is set to one for the root node
+    jp.ncuts = 0
+    jp.nbranches = 0
+    jp.nlevels = 1
+    jp.relaxation_time = 0.0
+
+    jp.start_time = time()
+
+    jp.nl_solver = model.options.nl_solver
+    if model.options.mip_solver != nothing
+        jp.mip_solver = model.options.mip_solver
+    end
+    jp.options = model.options    
+    if model.sense == MOI.MIN_SENSE 
+        jp.obj_sense = :Min
+    else
+        jp.obj_sense = :Max
+    end
+    jp.l_var = info_array_of_variables(model.variable_info, :lower_bound)
+    jp.u_var = info_array_of_variables(model.variable_info, :upper_bound)
+    integer_bool_arr = info_array_of_variables(model.variable_info, :is_integer)
+    binary_bool_arr = info_array_of_variables(model.variable_info, :is_binary)
+    jp.num_disc_var = sum(integer_bool_arr)+sum(binary_bool_arr)
+    jp.num_var = length(model.variable_info)
+    jp.var_type = [:Cont for i in 1:jp.num_var]
+    jp.var_type[integer_bool_arr .== true] .= :Int
+    jp.var_type[binary_bool_arr .== true] .= :Bin
+    jp.disc2var_idx = zeros(jp.num_disc_var)
+    jp.var2disc_idx = zeros(jp.num_var)
+    int_i = 1
+    for i=1:jp.num_var
+        if jp.var_type[i] != :Cont
+            jp.disc2var_idx[int_i] = i
+            jp.var2disc_idx[i] = int_i
+            int_i += 1
+        end
+    end
+end
