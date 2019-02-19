@@ -178,7 +178,6 @@ nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(mo
 function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
     len_var_info = length(variable_info)
     type_dict = get_type_dict(variable_info[1])
-    println("Type of attr (",attr,") is: ", type_dict[attr])
     result = Array{type_dict[attr], 1}(undef, len_var_info)
     for i = 1:len_var_info
         result[i] = getfield(variable_info[i], attr)
@@ -205,14 +204,6 @@ function MOI.optimize!(model::Optimizer)
     num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
     num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
 
-    println("linear eq constraints: ")
-    println(model.linear_eq_constraints)
-    println("Objective sense: ")
-    println(model.sense)
-    println("Objective: ")
-    println(model.objective)
-
-    
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
 
     else 
