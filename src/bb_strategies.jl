@@ -32,7 +32,7 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
 
     # set the bounds directly for the node
     # also update the best bound and the solution
-    if l_nd.relaxation_state != :Optimal
+    if !state_is_optimal(l_nd.relaxation_state)
         node.l_var[var_idx] = ceil(node.solution[var_idx])
         node.best_bound = r_nd.best_bound
         node.solution = r_nd.solution
@@ -142,7 +142,7 @@ function branch_strong_on!(m,opts,step_obj,
             # no current restart => we can set max_gain and variable
             gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
 
-            if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
+            if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state) && counter == 1
                 # TODO: Might be Error/UserLimit instead of infeasible
                 status = :GlobalInfeasible
                 left_node = l_nd
@@ -151,8 +151,8 @@ function branch_strong_on!(m,opts,step_obj,
             end
 
             # check if one part is infeasible => update bounds & restart if strong restart is true
-            if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
-                if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
+            if !state_is_optimal(l_nd.relaxation_state) || !state_is_optimal(r_nd.relaxation_state)
+                if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state)
                     # TODO: Might be Error/UserLimit instead of infeasible
                     status = :LocalInfeasible
                     left_node = l_nd
@@ -372,7 +372,7 @@ function score(q_m, q_p, mu)
 end
 
 function diff_obj(node, cnode)
-    if cnode.relaxation_state == :Optimal
+    if state_is_optimal(cnode.relaxation_state)
         return abs(node.best_bound - cnode.best_bound)
     else
         return Inf

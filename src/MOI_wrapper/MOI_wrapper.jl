@@ -243,6 +243,16 @@ function MOI.optimize!(model::Optimizer)
     jp.var_type = [:Cont for i in 1:jp.num_var]
     jp.var_type[integer_bool_arr .== true] .= :Int
     jp.var_type[binary_bool_arr .== true] .= :Bin
+    jp.disc2var_idx = zeros(jp.num_disc_var)
+    jp.var2disc_idx = zeros(jp.num_var)
+    int_i = 1
+    for i=1:jp.num_var
+        if jp.var_type[i] != :Cont
+            jp.disc2var_idx[int_i] = i
+            jp.var2disc_idx[i] = int_i
+            int_i += 1
+        end
+    end
     
     ps = jp.options.log_levels
     println("ps: ", ps)

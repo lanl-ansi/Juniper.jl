@@ -201,7 +201,7 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
     if !isdefined(tree,:incumbent) || factor*node.best_bound > factor*tree.incumbent.objval
         objval = node.best_bound
         solution = copy(node.solution)
-        status = :Optimal
+        status = MOI.LOCALLY_SOLVED
         tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
         if !tree.options.all_solutions
             bound!(tree)
@@ -580,7 +580,7 @@ function solvemip(tree::BnBTreeObj)
         objval = getobjectivevalue(tree.m.model)
         sol = getvalue(tree.m.x)
         bbound = getobjectivebound(tree.m.model)
-        tree.incumbent = Incumbent(objval,sol,:Optimal,bbound)
+        tree.incumbent = Incumbent(objval,sol,MOI.LOCALLY_SOLVED,bbound)
         return tree.incumbent
     end
 
