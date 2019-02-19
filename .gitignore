@@ -1,5 +1,6 @@
 test/load_mod.jl
 test/current.jl
+test/current_moi.jl
 test/JuniperLib.jl
 test/CSV/
 test/debug.json

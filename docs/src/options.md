@@ -84,7 +84,7 @@ $\text{obj } \geq (1-\epsilon)\text{UB}$
 
 ## Options for strong branching
 
-### strong_branching_perc::Float64 [100]
+### strong\_branching\_perc::Float64 [100]
 
 Defines the percentage of variables to consider for strong branching. 
 If set to 25 it means that strong branching is performed on 25% of all discrete variables.
@@ -92,11 +92,11 @@ Variables which are discrete in the relaxation aren't considered again but count
 all discrete variables.
 If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. **Attention:** `strong_branching_approx_time_limit` might change this value.
 
-### strong_branching_nsteps::Int64 [1]
+### strong\_branching\_nsteps::Int64 [1]
 
 Defines the number of steps in which strong branching is used. `:PseudoCost` will be used for later steps.
 
-### strong_branching_approx_time_limit::Float64 [100]s
+### strong\_branching\_approx\_time\_limit::Float64 [100]s
 
 For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable
 to reduce the number of strong branching variables.
@@ -123,12 +123,12 @@ and if some branching variables aren't reliable in a sense that strong branching
 at least `reliablility_branching_threshold` times then strong branching is performed on those.
 Afterwards it will be branched on the variable with the highest gain score.
 
-### reliablility_branching_perc::Float64 [25]
+### reliablility\_branching\_perc::Float64 [25]
 
 Defines the percentage of variables to consider for the strong branching part of reliablity branching.
 If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
 
-### reliablility_branching_threshold::Int64 [5]
+### reliablility\_branching\_threshold::Int64 [5]
 
 Defines whether strong branching is used to improve the reliability of the gain score.
 If a variable was used less than `reliablility_branching_threshold` times for strong branching then strong branching is performed on some of those candidates. The amount of candidates used is calculated by `reliablility_branching_perc`.
@@ -182,11 +182,11 @@ using GLPKMathProgInterface
 ```
 and set the option with `mip_solver=GLPKSolverMIP()`
 
-### feasibility_pump_time_limit::Int64 [60]s
+### feasibility\_pump\_time\_limit::Int64 [60]s
 
 The time limit of the feasibility pump in seconds. After that time limit the branch and bound part starts whether a feasible solution was found or not.
 
-### feasibility_pump_tolerance_counter::Int64 [5]
+### feasibility\_pump\_tolerance\_counter::Int64 [5]
 
 In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution.
 If the default tolerance (`atol`) can't be reached for `feasibility_pump_tolerance_counter` consecutive times
@@ -197,12 +197,12 @@ If this can't be done a warning like `Real objective wasn't solved to optimality
 This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues. 
 You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option.
 
-### tabu_list_length::Int64 [30]
+### tabu\_list\_length::Int64 [30]
 
 During the run of the feasibility pump it might happen that the alternating solve steps get into a cycle.
 By using a tabu list cycles can be avoided. The length determines the length of the cycle which will be avoided. If a cycle is encountered which is longer the feasibility pump terminates.
 
-### num_resolve_nlp_feasibility_pump::Int64 [1]
+### num\_resolve\_nlp\_feasibility\_pump::Int64 [1]
 
 If the NLP is infeasible during the feasibility pump it can be restarted with a random starting point for the NL solver. This will be done as long as it is infeasible or `num_resolve_nlp_feasibility_pump` is reached.
 
@@ -222,7 +222,7 @@ The maximum time in seconds the solver should run.
 
 Stops the solver if the gap is smaller than `mip_gap`. The default is `0.01%`.
 
-### best_obj_stop::Float [NaN]
+### best\_obj\_stop::Float [NaN]
 
 If an incumbent is found which is better than `best_obj_stop` the incumbent is returned. A warning gets thrown if `best_obj_stop` can't be reached.
 
@@ -235,7 +235,7 @@ If `0` the option gets ignored.
 
 Sometimes the non linear solver doesn't find a feasible solution in the first run.
 
-### num_resolve_root_relaxation::Int [3]
+### num\_resolve\_root\_relaxation::Int [3]
 This especially bad if this happens for the root relaxation. If there is no optimal/local optimal
 solution in the root relaxation you can use this option to resolve a couple of time until a solution is found or the number of resolves exceeded this value.
 
