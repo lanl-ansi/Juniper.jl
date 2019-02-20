@@ -102,13 +102,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     else
         cnode.state = :Infeasible
     end
-    # TODO free model
-    #=
-    internal_model = internalmodel(m.model)
-    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-        MathProgBase.freemodel!(internal_model)
-    end
-    =#
+    Base.finalize(backend)
     return cnode.state
 end
 

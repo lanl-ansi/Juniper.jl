@@ -123,13 +123,7 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
     nlp_sol = JuMP.value.(nx)
     nlp_obj = JuMP.objective_value(nlp_model)
 
-    # TODO free model for Knitro
-    #=
-    internal_model = internalmodel(nlp_model)
-    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-        MathProgBase.freemodel!(internal_model)
-    end
-    =#
+    Base.finalize(backend)
 
     return status, nlp_sol, nlp_obj
 end
@@ -198,13 +192,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     real_sol = JuMP.value.(rx)
     obj_val = JuMP.objective_value(rmodel)
 
-    # TODO: free model for Knitro
-    #=
-    internal_model = internalmodel(rmodel)
-    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-        MathProgBase.freemodel!(internal_model)
-    end
-    =#
+    Base.finalize(backend)
 
     return status, real_sol, obj_val
 end
