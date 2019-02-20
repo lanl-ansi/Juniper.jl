@@ -177,6 +177,8 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         end
     end
     MOI.set(backend, MOI.NLPBlock(), optimizer.nlp_data)
+
+    (:All in ps || :Info in ps) && print_info(jp)
     
     jp.x = x
 end

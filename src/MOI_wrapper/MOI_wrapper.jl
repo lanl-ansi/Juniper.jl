@@ -196,14 +196,6 @@ end
 ``MOI.optimize!()`` for Juniper
 """ 
 function MOI.optimize!(model::Optimizer)   
-    num_variables = length(model.variable_info)
-    num_linear_le_constraints = length(model.linear_le_constraints)
-    num_linear_ge_constraints = length(model.linear_ge_constraints)
-    num_linear_eq_constraints = length(model.linear_eq_constraints)
-    num_quadratic_le_constraints = length(model.quadratic_le_constraints)
-    num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
-    num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
-
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
 
     else 
@@ -265,7 +257,7 @@ function MOI.optimize!(model::Optimizer)
     inc_sol, inc_obj = nothing, nothing
     if jp.num_disc_var > 0
         if jp.options.feasibility_pump
-            inc_sol, inc_obj = fpump(jp)
+            inc_sol, inc_obj = fpump(model,jp)
         end
         bnbtree = init(jp.start_time, jp; inc_sol = inc_sol, inc_obj = inc_obj)
         best_known = solvemip(bnbtree)

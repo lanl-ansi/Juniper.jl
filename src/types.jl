@@ -72,6 +72,7 @@ mutable struct JuniperProblem
     x               :: Vector{JuMP.VariableRef}
     num_constr      :: Int64
     num_nl_constr   :: Int64
+    num_q_constr    :: Int64
     num_l_constr    :: Int64
     num_var         :: Int64
     l_var           :: Vector{Float64}

@@ -113,6 +113,14 @@ function new_default_step_obj(m,node)
 end
 
 function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
+    num_variables = length(model.variable_info)
+    num_linear_le_constraints = length(model.linear_le_constraints)
+    num_linear_ge_constraints = length(model.linear_ge_constraints)
+    num_linear_eq_constraints = length(model.linear_eq_constraints)
+    num_quadratic_le_constraints = length(model.quadratic_le_constraints)
+    num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
+    num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
+
     jp.status = MOI.OPTIMIZE_NOT_CALLED
     jp.objval = NaN
     jp.best_bound = NaN
@@ -159,4 +167,8 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
             int_i += 1
         end
     end
+    jp.num_l_constr = num_linear_le_constraints+num_linear_ge_constraints+num_linear_eq_constraints
+    jp.num_q_constr = num_quadratic_le_constraints+num_quadratic_ge_constraints+num_quadratic_eq_constraints
+    jp.num_nl_constr = length(model.nlp_data.constraint_bounds)
+    jp.num_constr = jp.num_l_constr+jp.num_q_constr+jp.num_nl_constr
 end
