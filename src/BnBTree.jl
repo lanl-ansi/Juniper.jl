@@ -577,9 +577,13 @@ function solvemip(tree::BnBTreeObj)
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
-        objval = getobjectivevalue(tree.m.model)
-        sol = getvalue(tree.m.x)
-        bbound = getobjectivebound(tree.m.model)
+        objval = JuMP.objective_value(tree.m.model)
+        sol = JuMP.value.(tree.m.x)
+        bbound = try 
+            JuMP.objective_bound(tree.m.model)
+        catch
+            JuMP.objective_value(tree.m.model)
+        end
         tree.incumbent = Incumbent(objval,sol,MOI.LOCALLY_SOLVED,bbound)
         return tree.incumbent
     end

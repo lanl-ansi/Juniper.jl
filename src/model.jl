@@ -161,8 +161,14 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     # all continuous we solve relaxation first
     @variable(jp.model, lb[i] <= x[i=1:jp.num_var] <= ub[i])
     # TODO check whether it is supported
-    MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
-    MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
+    if optimizer.nlp_data.has_objective
+        obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
+        expr_dereferencing!(obj_expr, jp.model)
+        JuMP.setNLobjective(jp.model, optimizer.sense, obj_expr)
+    else
+        MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
+        MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
+    end
 
     backend = JuMP.backend(jp.model);
     llc = optimizer.linear_le_constraints
