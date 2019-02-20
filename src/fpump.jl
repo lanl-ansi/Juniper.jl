@@ -141,8 +141,8 @@ Generate the orignal nlp and get the objective for that
 """
 function generate_real_nlp(optimizer, m, sol; random_start=false)
     if m.num_var == m.num_disc_var
-        nlp_obj = MathProgBase.eval_f(m.d, sol)
-        status = :Optimal
+        nlp_obj = MOI.eval_objective(optimizer.nlp_data.evaluator, sol)
+        status = MOI.OPTIMAL
         return status, sol, nlp_obj
     end
 

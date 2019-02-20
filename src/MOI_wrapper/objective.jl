@@ -5,6 +5,7 @@ MOI objective
 """
 Supported objective types and sense 
 """
+MOI.supports(::Optimizer, ::MOI.NLPBlock) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SVF}) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SAF}) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SQF}) = true
