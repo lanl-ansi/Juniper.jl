@@ -112,7 +112,7 @@ function new_default_step_obj(m,node)
     return step_obj
 end
 
-function init_juniper_problem!(jp::JuniperProblem, model::Optimizer)
+function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.status = MOI.OPTIMIZE_NOT_CALLED
     jp.objval = NaN
     jp.best_bound = NaN
