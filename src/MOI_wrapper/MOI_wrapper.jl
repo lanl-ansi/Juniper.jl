@@ -195,7 +195,9 @@ end
 """
 ``MOI.optimize!()`` for Juniper
 """ 
-function MOI.optimize!(model::Optimizer)   
+function MOI.optimize!(model::Optimizer)
+    MOI.initialize(model.nlp_data.evaluator, [:ExprGraph,:Jac,:Grad])
+    
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
 
     else 
