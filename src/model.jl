@@ -155,7 +155,7 @@ end
 function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem)
     ps = jp.options.log_levels
 
-    jp.model = Model(with_optimizer(jp.nl_solver))
+    jp.model = Model()
     lb = jp.l_var
     ub = jp.u_var
     # all continuous we solve relaxation first
@@ -190,7 +190,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
 end
 
 function solve_root_model!(jp::JuniperProblem)
-    optimize!(jp.model)
+    optimize!(jp.model, jp.nl_solver)
     backend = JuMP.backend(jp.model)
     jp.status = MOI.get(backend, MOI.TerminationStatus()) 
     restarts = 0
@@ -200,7 +200,7 @@ function solve_root_model!(jp::JuniperProblem)
     while jp.status != MOI.OPTIMAL && jp.status != MOI.LOCALLY_SOLVED &&
         restarts < max_restarts && time()-jp.start_time < jp.options.time_limit
 
-        # TODO freemode for Knitro
+        # TODO freemodel for Knitro
         restart_values = generate_random_restart(jp)
         # TODO this probably doesn't work yet
         jp.options.debug && debug_restart_values(jp.debugDict,restart_values)

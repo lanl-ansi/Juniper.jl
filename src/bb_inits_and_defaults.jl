@@ -139,6 +139,18 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.start_time = time()
 
     jp.nl_solver = model.options.nl_solver
+    nl_vec_opts = Vector{Tuple}()
+    for arg in model.options.nl_solver.kwargs
+        if isa(arg, Pair)
+            push!(nl_vec_opts, (arg.first, arg.second))
+        else # is a tuple in v0.6
+            push!(nl_vec_opts, arg)
+        end
+    end
+
+    jp.nl_solver_options = nl_vec_opts
+    println("typeof: nl_solver_options ", typeof(nl_vec_opts))
+
     if model.options.mip_solver != nothing
         jp.mip_solver = model.options.mip_solver
     end

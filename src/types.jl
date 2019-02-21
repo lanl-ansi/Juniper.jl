@@ -62,6 +62,7 @@ end
 
 mutable struct JuniperProblem 
     nl_solver       :: JuMP.OptimizerFactory
+    nl_solver_options :: Vector{Tuple}
    
     model           :: JuMP.Model
         

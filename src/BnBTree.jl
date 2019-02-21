@@ -54,39 +54,38 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     end
     set_start_value.(m.x[1:m.num_var],step_obj.node.solution)
 
-    # Todo: Options should be accessible using a dictionary and not an Iterator over Pairs. Maybe PR to Ipopt as last time...
-    #=
     if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
         old_mu_init = 0.1 # default value in Ipopt
-        for i=1:length(m.nl_solver.options)
-            if m.nl_solver.options[i][1] == :mu_init
-                old_mu_init = m.nl_solver.options[i][2]
-                m.nl_solver.options[i] = (:mu_init, 1e-5)
+        for i=1:length(m.nl_solver_options)
+            if m.nl_solver_options[i][1] == :mu_init
+                old_mu_init = m.nl_solver_options[i][2]
+                m.nl_solver_options[i] = (:mu_init, 1e-5)
                 overwritten = true
                 break
             end
         end
         if !overwritten
-            push!(m.nl_solver.options, (:mu_init, 1e-5))
+            push!(m.nl_solver_options, (:mu_init, 1e-5))
         end
+        m.nl_solver = with_optimizer(m.nl_solver.constructor; m.nl_solver_options...)
     end
-    =#
 
+    JuMP.set_optimizer(m.model, m.nl_solver)
     optimize!(m.model)
     backend = JuMP.backend(m.model)
     status = MOI.get(backend, MOI.TerminationStatus()) 
 
     # reset mu_init
-    #=if occursin("Ipopt", string(m.nl_solver))
-        for i=1:length(m.nl_solver.options)
-            if m.nl_solver.options[i][1] == :mu_init
-                m.nl_solver.options[i] = (:mu_init, old_mu_init)
+    if occursin("Ipopt", string(m.nl_solver))
+        for i=1:length(m.nl_solver_options)
+            if m.nl_solver_options[i][1] == :mu_init
+                m.nl_solver_options[i] = (:mu_init, old_mu_init)
                 break
             end
         end
+        m.nl_solver = with_optimizer(m.nl_solver.constructor; m.nl_solver_options...)
     end
-    =#
 
     objval = JuMP.objective_value(m.model)
     cnode.solution = JuMP.value.(m.x)
