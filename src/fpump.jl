@@ -358,6 +358,7 @@ function fpump(optimizer, m)
                 iscorrect = true
                 break
             elseif are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol)
+                # Todo this needs to be done based on whether the objective is linear/quadratic or non linear
                 nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
                 iscorrect = true
                 @warn "Real objective wasn't solved to optimality"

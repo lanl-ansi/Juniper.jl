@@ -129,8 +129,3 @@ function combine_options(options)
     end
     return defaults
 end
-
-function JuniperSolver(nl_solver::MathProgBase.AbstractMathProgSolver;options...)
-    options_obj = combine_options(options)
-    return JuniperSolverObj(nl_solver,options_obj)
-end

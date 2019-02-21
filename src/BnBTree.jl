@@ -224,6 +224,7 @@ end
 Add a constraint >=/<= incumbent
 """
 function add_incumbent_constr(m, incumbent)
+    # TODO: Add constraint based on type od objective
     obj_expr = MathProgBase.obj_expr(m.d)
     if m.obj_sense == :Min
         obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
@@ -241,6 +242,7 @@ end
 Add a constraint obj ≦ (1+ϵ)*LB or obj ≧ (1-ϵ)*UB
 """
 function add_obj_epsilon_constr(tree)
+    # TODO: Add constraint based on type od objective
     # add constr for objval
     if tree.options.obj_epsilon > 0
         ϵ = tree.options.obj_epsilon
