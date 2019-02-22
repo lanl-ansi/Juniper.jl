@@ -46,7 +46,6 @@ function solve_root_model!(jp::JuniperProblem)
     restarts = 0
     max_restarts = jp.options.num_resolve_root_relaxation
     jp.options.debug && debug_init(jp.debugDict)
-    println("Status: ", jp.status)
     while jp.status != MOI.OPTIMAL && jp.status != MOI.LOCALLY_SOLVED &&
         restarts < max_restarts && time()-jp.start_time < jp.options.time_limit
 
