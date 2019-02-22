@@ -13,7 +13,7 @@ function check_print(log_levels::Vector{Symbol}, necessary::Vector{Symbol})
     return false
 end
 
-function print_info(m::JuniperProblem)
+function print_info(m::Union{Nothing,JuniperProblem})
     println("#Variables: ", m.num_var)
     println("#IntBinVar: ", m.num_disc_var)
     println("#Constraints: ", m.num_constr)

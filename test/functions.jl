@@ -2,7 +2,11 @@
 @testset "Function testing" begin
 
 @testset ":Options" begin
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5)
+        )
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -12,8 +16,9 @@
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-    JuMP.build(m)
-    options = m.internalModel.options
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    options = bm.optimizer.model.options
 
     nd_options = Juniper.get_non_default_options(options)    
     @test nd_options[:obj_epsilon] == 0.5
@@ -22,16 +27,36 @@
 end
 
 function option_not_available_t()
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5)
+        )
+    )
 end
+
 function option_not_available_b()
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5)
+        )
+    )
 end
+
 function option_not_available()
-    m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5)
+        )
+    )
 end
+
 function option_no_mip_solver()
-    m = Model(solver=DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true)
+        )
+    )
+
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     @variable(m, x[1:5], Bin)
@@ -40,8 +65,9 @@ function option_no_mip_solver()
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-    JuMP.build(m)
-    return m.internalModel.options
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    return bm.optimizer.model.options
 end
 
 @testset ":Option not available" begin
@@ -53,8 +79,11 @@ end
 end
 
 @testset "Info/Table" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
-                                        strong_restart=true))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)
+        )
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -64,9 +93,9 @@ end
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
     
-    JuMP.build(m)
-    m = m.internalModel
-    options = m.options
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    options = bm.optimizer.model.options
 
     @test !isa(try Juniper.print_info(m) catch ex ex end, Exception) 
     @test !isa(try Juniper.print_options(m;all=true) catch ex ex end, Exception) 
@@ -170,8 +199,11 @@ end
 end
 
 @testset "Random restarts" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2,
-    strong_restart=true))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)
+        )
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -185,8 +217,10 @@ end
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-    JuMP.build(m)
-    model = m.internalModel
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    model = bm.optimizer.model.inner
+
 
     cont_restart = Juniper.generate_random_restart(model)
     @test length(cont_restart) == 5
@@ -206,7 +240,11 @@ end
 end
 
 @testset "LSE matrix" begin
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:MostInfeasible,log_levels=[:All]))
+    m = Model(with_optimizer(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch_strategy=:MostInfeasible,log_levels=[:All])
+        )
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -220,9 +258,11 @@ end
     @constraint(m, sum(w[i]*x[i] for i=1:2)+1*y <= 10)   
     @constraint(m, 3*y <= 20)
 
-    solve(m)
+    optimize!(m)
     
-    model = m.internalModel
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    model = bm.optimizer.model.inner
     
     complete_mat = Juniper.construct_complete_affine_matrix(model)
     @test complete_mat[1,:] == vcat(w, [0])

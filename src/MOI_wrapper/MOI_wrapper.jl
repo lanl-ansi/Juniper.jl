@@ -108,12 +108,26 @@ function Optimizer(;options...)
     solver_options)
 end 
 
+function Optimizer(options::Dict{Symbol,Any}) 
+    
+    solver_options = combine_options(options)
+
+    return Optimizer(
+    nothing, 
+    [], 
+    empty_nlp_data(), 
+    MOI.FEASIBILITY_SENSE, 
+    nothing, 
+    [], [], [], # linear constraints 
+    [], [], [], # quadratic constraints
+    solver_options)
+end 
+
 """
 Printing the optimizer 
 """
 function Base.show(io::IO, model::Optimizer)
-    println(io, "A MathOptInterface model with backend:")
-    println(io, model.inner)
+    println("A Juniper MathOptInterface model with backend")
     return
 end
 

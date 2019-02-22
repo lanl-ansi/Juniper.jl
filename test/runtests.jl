@@ -1,6 +1,5 @@
 using Base,Logging
 
-
 if VERSION > v"0.7.0-"
     using Test, Distributed
 end
@@ -41,6 +40,11 @@ using Ipopt
 using Cbc
 # using PowerModels
 
+using MathOptInterface 
+
+const MOI = MathOptInterface 
+const MOIU = MOI.Utilities
+
 using Juniper
 
 opt_rtol = 1e-6
@@ -49,13 +53,15 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0), solver_args...)
+
+function DefaultTestSolver(;nl_solver=Ipopt.Optimizer(print_level=0), solver_args...)
     solver_args_dict = Dict{Symbol,Any}()
     solver_args_dict[:log_levels] = []
+    solver_args_dict[:nl_solver] = nl_solver
     for v in solver_args
         solver_args_dict[v[1]] = v[2]
     end
-    return JuniperSolver(nl_solver; solver_args_dict...)
+    return solver_args_dict
 end
 
 juniper_strong_restart_2 = DefaultTestSolver(
@@ -96,11 +102,11 @@ start = time()
 @testset "Juniper" begin
     include("debug.jl")
     include("functions.jl")
-    include("basic.jl")
-    include("user_limits.jl")
-    include("parallel.jl")
-    include("fpump.jl")
-    include("pod.jl")
+    # include("basic.jl")
+    # include("user_limits.jl")
+    # include("parallel.jl")
+    # include("fpump.jl")
+    # include("pod.jl")
     # include("power_models_acp.jl")
     # include("power_models_socwr.jl")
 end
