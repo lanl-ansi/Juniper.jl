@@ -122,6 +122,10 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
 
     jp.status = MOI.OPTIMIZE_NOT_CALLED
+    jp.has_nl_objective = model.nlp_data.has_objective
+    jp.nlp_evaluator = model.nlp_data.evaluator
+    jp.objective = model.objective
+
     jp.objval = NaN
     jp.best_bound = NaN
     jp.solution = Float64[]

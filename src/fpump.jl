@@ -138,7 +138,8 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         if optimizer.nlp_data.has_objective
             nlp_obj = MOI.eval_objective(optimizer.nlp_data.evaluator, sol)
         else
-            nlp_obj = optimizer.objective(sol)
+            # TODO: Compute the objective if linear/quadratic
+            # nlp_obj = optimizer.objective(sol) <- this function doesn't exist
         end
         status = MOI.OPTIMAL
         return status, sol, nlp_obj
@@ -304,7 +305,7 @@ function fpump(optimizer, m)
             end
         end
         if mip_status != MOI.OPTIMAL
-            @warn "MIP couldn't be solved to optimality"
+            @warn "MIP couldn't be solved to optimality. Terminated with status: "*string(mip_status)
             break
         end
 

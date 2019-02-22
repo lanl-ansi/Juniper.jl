@@ -96,3 +96,29 @@ Returns true if either optimal or locally solved
 function state_is_optimal(state::MOI.TerminationStatusCode)
     return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED
 end
+
+"""
+    add_obj_constraint(jp::JuniperProblem, rhs::Float64)
+
+Add a constraint for the objective based on whether the objective is linear/quadratic or non linear.
+If the objective sense is :MIN than add objective <= rhs else objective >= rhs
+"""
+function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
+    if jp.has_nl_objective
+        obj_expr = MOI.objective_expr(jp.nlp_evaluator)
+        if jp.obj_sense == :Min
+            obj_constr = Expr(:call, :<=, obj_expr, rhs)
+        else
+            obj_constr = Expr(:call, :>=, obj_expr, rhs)
+        end
+        Juniper.expr_dereferencing!(obj_constr, jp.model)
+        JuMP.add_NL_constraint(jp.model, obj_constr)
+    else # linear or quadratic
+        backend = JuMP.backend(jp.model);
+        if jp.obj_sense == :Min
+            MOI.add_constraint(backend, jp.objective, MOI.LessThan(rhs))
+        else
+            MOI.add_constraint(backend, jp.objective, MOI.GreaterThan(rhs))
+        end
+    end
+end

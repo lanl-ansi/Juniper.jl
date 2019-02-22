@@ -11,12 +11,6 @@ MOI functions, sets and, other type definitions
 const VI = MOI.VariableIndex
 const CI = MOI.ConstraintIndex
 
-# functions
-const SVF = MOI.SingleVariable
-const SAF = MOI.ScalarAffineFunction{Float64}
-const SQF = MOI.ScalarQuadraticFunction{Float64}
-const VECTOR = MOI.VectorOfVariables
-
 # sets
 const BOUNDS = Union{
     MOI.EqualTo{Float64}, 
@@ -286,7 +280,7 @@ function MOI.optimize!(model::Optimizer)
     if jp.options.debug && jp.options.debug_write
         write(jp.options.debug_file_path, JSON.json(jp.debugDict))
     end
-
+    println(jp.solution)
 end 
 
 include("variables.jl")

@@ -13,6 +13,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
         expr_dereferencing!(obj_expr, jp.model)
+        println("obj_expr: ", obj_expr)
         JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
     else
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)

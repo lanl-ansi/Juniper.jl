@@ -263,7 +263,6 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
         node.var_idx = max_gain_var
     end
 
-
     @assert max_gain_var != 0 || status == :LocalInfeasible || status == :GlobalInfeasible || node.state == :Infeasible
     return status, max_gain_var, strong_restarts
 end

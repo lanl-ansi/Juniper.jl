@@ -8,6 +8,12 @@ using MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+# functions
+const SVF = MOI.SingleVariable
+const SAF = MOI.ScalarAffineFunction{Float64}
+const SQF = MOI.ScalarQuadraticFunction{Float64}
+const VECTOR = MOI.VectorOfVariables
+
 if VERSION < v"0.7.0-"
     import Compat: occursin
     import Compat: Nothing

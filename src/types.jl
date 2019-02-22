@@ -44,15 +44,6 @@ mutable struct SolutionObj
     objval      :: Float64
 end
 
-mutable struct Aff
-    sense     :: Symbol
-    var_idx   :: Vector{Int64}
-    coeff     :: Vector{Float64}
-    rhs       :: Float64
-
-    Aff() = new()
-end
-
 # Juniper MOI struct 
 
 mutable struct JuniperProblem 
@@ -73,6 +64,11 @@ mutable struct JuniperProblem
     num_var         :: Int64
     l_var           :: Vector{Float64}
     u_var           :: Vector{Float64}
+
+    has_nl_objective:: Bool
+    nlp_evaluator   :: MOI.AbstractNLPEvaluator
+
+    objective       :: Union{SVF, SAF, SQF, Nothing}
 
     disc2var_idx    :: Vector{Int64}
     var2disc_idx    :: Vector{Int64}

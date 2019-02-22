@@ -224,16 +224,7 @@ end
 Add a constraint >=/<= incumbent
 """
 function add_incumbent_constr(m, incumbent)
-    # TODO: Add constraint based on type od objective
-    obj_expr = MathProgBase.obj_expr(m.d)
-    if m.obj_sense == :Min
-        obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
-    else
-        obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
-    end
-    Juniper.expr_dereferencing!(obj_constr, m.model)
-    # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)
-    JuMP.addNLconstraint(m.model, obj_constr)
+    add_obj_constraint(m, incumbent.objval)
 end
 
 """
@@ -242,18 +233,15 @@ end
 Add a constraint obj ≦ (1+ϵ)*LB or obj ≧ (1-ϵ)*UB
 """
 function add_obj_epsilon_constr(tree)
-    # TODO: Add constraint based on type od objective
     # add constr for objval
     if tree.options.obj_epsilon > 0
         ϵ = tree.options.obj_epsilon
-        obj_expr = MathProgBase.obj_expr(tree.m.d)
         if tree.m.obj_sense == :Min
-            obj_constr = Expr(:call, :<=, obj_expr, (1+ϵ)*tree.m.objval)
+            rhs = (1+ϵ)*tree.m.objval
         else
-            obj_constr = Expr(:call, :>=, obj_expr, (1-ϵ)*tree.m.objval)
+            rhs = (1-ϵ)*tree.m.objval
         end
-        Juniper.expr_dereferencing!(obj_constr, tree.m.model)
-        JuMP.addNLconstraint(tree.m.model, obj_constr)
+        add_obj_constraint(tree.m, rhs)
         tree.m.ncuts += 1
     end
 end
@@ -623,13 +611,13 @@ function solvemip(tree::BnBTreeObj)
 
     if !isdefined(tree,:incumbent)
         # infeasible
-        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, tree.best_bound)
+        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.INFEASIBLE, tree.best_bound)
     end
 
     # update best bound in incumbent
     tree.incumbent.best_bound = tree.best_bound
 
-    if tree.options.obj_epsilon != 0 && tree.incumbent.status == :Infeasible
+    if tree.options.obj_epsilon != 0 && tree.incumbent.status == MOI.INFEASIBLE
         @warn "Maybe only infeasible because of obj_epsilon."
     end
 
