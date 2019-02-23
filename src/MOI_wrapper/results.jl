@@ -28,6 +28,13 @@ function MOI.get(model::Optimizer, ::MOI.RelativeGap)
 	return abs(model.inner.best_bound-model.inner.objval)/abs(model.inner.objval)
 end
 
+function MOI.get(model::Optimizer, ::MOI.SolveTime)
+    if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
+	    @error "optimizer not called"
+	end
+	return model.inner.soltime
+end
+
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
 	if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
 	    @error "optimizer not called"

@@ -295,7 +295,6 @@ function MOI.optimize!(model::Optimizer)
     if jp.options.debug && jp.options.debug_write
         write(jp.options.debug_file_path, JSON.json(jp.debugDict))
     end
-    println(jp.solution)
 end 
 
 getnsolutions(m::JuniperProblem) = m.nsolutions

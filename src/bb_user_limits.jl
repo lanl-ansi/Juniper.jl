@@ -46,10 +46,10 @@ Check if time limit is reached and  set or update the Incumbent
 function isbreak_time_limit!(tree)
     if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
         if !isdefined(tree,:incumbent)
-            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :UserLimit, tree.best_bound)
+            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.TIME_LIMIT, tree.best_bound)
             return true
         else
-            tree.incumbent.status = :UserLimit
+            tree.incumbent.status = MOI.TIME_LIMIT
             tree.incumbent.best_bound = tree.best_bound
             return true
         end

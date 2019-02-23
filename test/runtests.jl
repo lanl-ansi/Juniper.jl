@@ -70,6 +70,11 @@ function solve(m::Model)
     return MOI.get(bm, MOI.TerminationStatus()) 
 end
 
+function getsolvetime(m::Model)
+    bm = JuMP.backend(m)
+    return MOI.get(bm, MOI.SolveTime()) 
+end
+
 function internalmodel(m::Model)
     bm = JuMP.backend(m)
     return bm.optimizer.model.inner
@@ -119,8 +124,8 @@ start = time()
     include("debug.jl")
     include("functions.jl")
     include("basic.jl")
-    # include("user_limits.jl")
-    # include("parallel.jl")
+    include("user_limits.jl")
+    include("parallel.jl")
     # include("fpump.jl")
     # include("pod.jl")
     # include("power_models_acp.jl")
