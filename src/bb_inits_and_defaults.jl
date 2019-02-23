@@ -1,4 +1,4 @@
-function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
+function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothing)
 
     VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
 

@@ -1,7 +1,7 @@
 
 # Options for the solver (more details like defaults in solver.jl)
 mutable struct SolverOptions
-    nl_solver                           :: Union{Nothing, MOI.AbstractOptimizer} # needs to be set
+    nl_solver                           :: Union{Nothing, JuMP.OptimizerFactory} # needs to be set
     log_levels                          :: Vector{Symbol}
     atol                                :: Float64
     num_resolve_root_relaxation         :: Int64
@@ -47,7 +47,7 @@ end
 # Juniper MOI struct 
 
 mutable struct JuniperProblem 
-    nl_solver       :: MOI.AbstractOptimizer
+    nl_solver       :: JuMP.OptimizerFactory
     nl_solver_options :: Vector{Tuple}
    
     model           :: JuMP.Model

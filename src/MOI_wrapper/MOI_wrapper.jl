@@ -272,7 +272,7 @@ function MOI.optimize!(model::Optimizer)
         bnbtree = init(jp.start_time, jp; inc_sol = inc_sol, inc_obj = inc_obj)
         best_known = solvemip(bnbtree)
 
-        replace_solution!(m, best_known)
+        replace_solution!(jp, best_known)
         jp.nsolutions = bnbtree.nsolutions
     else
         jp.nsolutions = 1

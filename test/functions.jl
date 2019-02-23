@@ -95,11 +95,16 @@ end
     
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
+    optimize!(m)
+    
     options = bm.optimizer.model.options
+    jp = bm.optimizer.model.inner
+    println("typeof(m): ", typeof(m))
+    println("typeof(jp): ", typeof(jp))
 
-    @test !isa(try Juniper.print_info(m) catch ex ex end, Exception) 
-    @test !isa(try Juniper.print_options(m;all=true) catch ex ex end, Exception) 
-    @test !isa(try Juniper.print_options(m;all=false) catch ex ex end, Exception) 
+    @test !isa(try Juniper.print_info(jp) catch ex ex end, Exception) 
+    @test !isa(try Juniper.print_options(jp;all=true) catch ex ex end, Exception) 
+    @test !isa(try Juniper.print_options(jp;all=false) catch ex ex end, Exception) 
     
 
     fields, field_chars = Juniper.get_table_config(options)
@@ -107,10 +112,10 @@ end
     @test length(ln) == sum(field_chars)
         
     start_time = time()
-    tree = Juniper.init(start_time,m)
+    tree = Juniper.init(start_time,jp)
     tree.best_bound = 100
     node = Juniper.new_default_node(1,1,zeros(Int64,5),ones(Int64,5),zeros(Int64,5))
-    step_obj = Juniper.new_default_step_obj(m,node)
+    step_obj = Juniper.new_default_step_obj(jp,node)
     step_obj.counter = 1
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     @test length(fields) == length(field_chars)
@@ -120,7 +125,7 @@ end
         @test fc >= length(f)
     end
     # Test with incumbent
-    tree.incumbent = Juniper.Incumbent(42,[0,0,0,0,1],:UserLimit,65)
+    tree.incumbent = Juniper.Incumbent(42,[0,0,0,0,1],MOI.TIME_LIMIT,65)
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     @test length(fields) == length(field_chars)
     for i in 1:length(fields)
@@ -208,10 +213,10 @@ end
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     @variable(m, x[1:5], Int)
-    setlowerbound(x[1], 0)
-    setlowerbound(x[2], 0.5)
-    setupperbound(x[3], 1)
-    setupperbound(x[2], 1)
+    JuMP.set_lower_bound(x[1], 0)
+    JuMP.set_lower_bound(x[2], 0.5)
+    JuMP.set_upper_bound(x[3], 1)
+    JuMP.set_upper_bound(x[2], 1)
 
     @objective(m, Max, dot(v,x))
 
@@ -219,6 +224,7 @@ end
 
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
+    optimize!(m)
     model = bm.optimizer.model.inner
 
 
@@ -237,46 +243,6 @@ end
         @test isapprox(round(disc_restart[i])-disc_restart[i],0,atol=1e-6)
     end
 
-end
-
-@testset "LSE matrix" begin
-    m = Model(with_optimizer(
-        Juniper.Optimizer, 
-        DefaultTestSolver(;branch_strategy=:MostInfeasible,log_levels=[:All])
-        )
-    )
-
-    v = [10,20,12,23,42]
-    w = [12,45,12,22,21]
-    @variable(m, x[1:5], Int)
-    @variable(m, y)
-
-    @objective(m, Max, dot(v,x)+100*y)
-
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
-    @constraint(m, sum(w[i]*x[i] for i=1:5) <= 25)   
-    @constraint(m, sum(w[i]*x[i] for i=1:2)+1*y <= 10)   
-    @constraint(m, 3*y <= 20)
-
-    optimize!(m)
-    
-    MOIU.attach_optimizer(m)
-    bm = JuMP.backend(m)
-    model = bm.optimizer.model.inner
-    
-    complete_mat = Juniper.construct_complete_affine_matrix(model)
-    @test complete_mat[1,:] == vcat(w, [0])
-    @test complete_mat[2,:] == vcat(w[1:2],[0,0,0],[1])
-
-    disc_mat = Juniper.construct_disc_affine_matrix(model; only_non_zero=false)
-    @test disc_mat[1,:] == w
-    @test disc_mat[2,:] == vcat(w[1:2],[0,0,0])
-    @test disc_mat[3,:] == [0,0,0,0,0]
-
-    disc_mat = Juniper.construct_disc_affine_matrix(model)
-    @test disc_mat[1,:] == w
-    @test disc_mat[2,:] == vcat(w[1:2],[0,0,0])
-    @test size(disc_mat)[1] == 2
 end
 
 end

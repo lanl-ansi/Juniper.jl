@@ -54,7 +54,7 @@ sol_rtol = 1e-3
 sol_atol = 1e-3
 
 
-function DefaultTestSolver(;nl_solver=Ipopt.Optimizer(print_level=0), solver_args...)
+function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0), solver_args...)
     solver_args_dict = Dict{Symbol,Any}()
     solver_args_dict[:log_levels] = []
     solver_args_dict[:nl_solver] = nl_solver
