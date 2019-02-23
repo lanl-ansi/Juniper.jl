@@ -611,13 +611,13 @@ function solvemip(tree::BnBTreeObj)
 
     if !isdefined(tree,:incumbent)
         # infeasible
-        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.INFEASIBLE, tree.best_bound)
+        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.LOCALLY_INFEASIBLE, tree.best_bound)
     end
 
     # update best bound in incumbent
     tree.incumbent.best_bound = tree.best_bound
 
-    if tree.options.obj_epsilon != 0 && tree.incumbent.status == MOI.INFEASIBLE
+    if tree.options.obj_epsilon != 0 && state_is_infeasible(tree.incumbent.status)
         @warn "Maybe only infeasible because of obj_epsilon."
     end
 

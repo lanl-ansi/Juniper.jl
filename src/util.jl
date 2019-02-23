@@ -98,6 +98,15 @@ function state_is_optimal(state::MOI.TerminationStatusCode)
 end
 
 """
+    state_is_infeasible(state::MOI.TerminationStatusCode)
+
+Returns true if either infeasible or locally infeasible
+"""
+function state_is_infeasible(state::MOI.TerminationStatusCode)
+    return state == MOI.INFEASIBLE || state == MOI.LOCALLY_INFEASIBLE
+end
+
+"""
     add_obj_constraint(jp::JuniperProblem, rhs::Float64)
 
 Add a constraint for the objective based on whether the objective is linear/quadratic or non linear.
@@ -115,6 +124,7 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
         JuMP.add_NL_constraint(jp.model, obj_constr)
     else # linear or quadratic
         backend = JuMP.backend(jp.model);
+        println("jp.objective: ", jp.objective)
         if jp.obj_sense == :Min
             MOI.add_constraint(backend, jp.objective, MOI.LessThan(rhs))
         else

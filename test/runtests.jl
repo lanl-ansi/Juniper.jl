@@ -64,6 +64,22 @@ function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_leve
     return solver_args_dict
 end
 
+function solve(m::Model)
+    optimize!(m)
+    bm = JuMP.backend(m)
+    return MOI.get(bm, MOI.TerminationStatus()) 
+end
+
+function internalmodel(m::Model)
+    bm = JuMP.backend(m)
+    return bm.optimizer.model.inner
+end
+
+function getobjgap(m::Model)
+    bm = JuMP.backend(m)
+    return MOI.get(bm, MOI.RelativeGap()) 
+end
+
 juniper_strong_restart_2 = DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_perc = 25,
@@ -101,8 +117,8 @@ start = time()
 
 @testset "Juniper" begin
     include("debug.jl")
-    include("functions.jl")
-    # include("basic.jl")
+    # include("functions.jl")
+    include("basic.jl")
     # include("user_limits.jl")
     # include("parallel.jl")
     # include("fpump.jl")

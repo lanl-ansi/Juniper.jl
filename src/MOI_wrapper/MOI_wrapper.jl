@@ -204,6 +204,7 @@ end
 ``MOI.optimize!()`` for Juniper
 """ 
 function MOI.optimize!(model::Optimizer)
+    Random.seed!(1)
     MOI.initialize(model.nlp_data.evaluator, [:ExprGraph,:Jac,:Grad])
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
@@ -258,7 +259,7 @@ function MOI.optimize!(model::Optimizer)
     jp.objval   = JuMP.objective_value(jp.model)
     jp.solution = JuMP.value.(jp.x)
 
-    jp.options.debug && debug_objective(jp.debugDict,m)
+    jp.options.debug && debug_objective(jp.debugDict,jp)
     # TODO free model for Knitro
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.objval)
@@ -296,6 +297,10 @@ function MOI.optimize!(model::Optimizer)
     end
     println(jp.solution)
 end 
+
+getnsolutions(m::JuniperProblem) = m.nsolutions
+getsolutions(m::JuniperProblem) = m.solutions
+getnbranches(m::JuniperProblem) = m.nbranches
 
 include("variables.jl")
 include("constraints.jl")

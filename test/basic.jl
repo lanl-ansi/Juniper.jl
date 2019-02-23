@@ -14,10 +14,12 @@ include("basic/gamsworld.jl")
         debug = true
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_all_solutions)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
-
 
     @objective(m, Min, x[1])
 
@@ -30,17 +32,21 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    status = solve(m)
-    debugDict = internalmodel(m).debugDict
+    optimize!(m)
+    bm = JuMP.backend(m)
+    status = MOI.get(bm, MOI.TerminationStatus()) 
+
+    innermodel = bm.optimizer.model.inner
+    debugDict = innermodel.debugDict
     @test getnstate(debugDict,:Integral) == 24
     @test different_hashes(debugDict) == true
-    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
+    counter_test(debugDict,Juniper.getnbranches(innermodel))
 
-    list_of_solutions = Juniper.getsolutions(internalmodel(m))
-    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+    list_of_solutions = Juniper.getsolutions(innermodel)
+    @test length(unique(list_of_solutions)) == Juniper.getnsolutions(innermodel)
 
-    @test status == :Optimal
-    @test Juniper.getnsolutions(internalmodel(m)) == 24
+    @test status == MOI.LOCALLY_SOLVED
+    @test Juniper.getnsolutions(innermodel) == 24
 end
 
 @testset "bruteforce full strong w/o restart" begin
@@ -56,7 +62,10 @@ end
         strong_restart = false
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_all_solutions)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -76,7 +85,7 @@ end
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
@@ -92,7 +101,10 @@ end
         strong_restart = true
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_all_solutions)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -113,7 +125,7 @@ end
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
@@ -130,10 +142,12 @@ end
         strong_restart = true
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_all_solutions)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
-
 
     @objective(m, Min, x[1])
 
@@ -151,7 +165,7 @@ end
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
@@ -166,7 +180,10 @@ end
         strong_restart = true
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_all_solutions)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -186,7 +203,7 @@ end
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
@@ -200,7 +217,10 @@ end
         list_of_solutions = true,
     )
 
-    m = Model(solver=juniper_all_solutions)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_all_solutions)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -220,7 +240,7 @@ end
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
@@ -228,7 +248,11 @@ end
     println("==================================")
     println("no integer")
     println("==================================")
-    m = Model(solver=juniper_strong_restart)
+    
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_restart)
+    )
 
     println("Create variables/constr/obj")
     @variable(m, 1 <= x <= 5)
@@ -241,14 +265,17 @@ end
     status = solve(m)
     println("Status: ", status)
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 end
 
 @testset "infeasible cos" begin
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(solver=juniper_strong_restart)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_restart)
+    )
 
     @variable(m, 1 <= x <= 5, Int)
     @variable(m, -2 <= y <= 2, Int)
@@ -261,7 +288,7 @@ end
 
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
     @test isnan(getobjgap(m))
 end
 
@@ -270,7 +297,10 @@ end
     println("==================================")
     println("Infeasible int reliable")
     println("==================================")
-    m = Model(solver=juniper_reliable_restart)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_reliable_restart)
+    )
 
     @variable(m, 1 <= x <= 5, Int)
     @variable(m, -2 <= y <= 2, Int)
@@ -283,7 +313,7 @@ end
     status = solve(m)
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
     @test isnan(getobjgap(m))
 end
 
@@ -291,7 +321,15 @@ end
     println("==================================")
     println("Infeasible  sin with different bounds")
     println("==================================")
-    m = Model()
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            branch_strategy=:MostInfeasible,
+            feasibility_pump = true,
+            time_limit = 1,
+            mip_solver=with_optimizer(Cbc.Optimizer)
+        ))
+    )
 
     @variable(m, x <= 5, Int)
     @variable(m, y >= 2, Int)
@@ -300,19 +338,20 @@ end
 
     @NLconstraint(m, y==sin(x))
 
-    setsolver(m, JuniperSolver(IpoptSolver(print_level=0),
-        branch_strategy=:MostInfeasible,
-        feasibility_pump = true,
-        time_limit = 1,
-        mip_solver=CbcSolver()
-    ))
+    status = solve(m)
+
+    @test status == MOI.LOCALLY_INFEASIBLE
 end
 
 @testset "infeasible relaxation" begin
     println("==================================")
     println("Infeasible relaxation")
     println("==================================")
-    m = Model(solver=DefaultTestSolver(;debug=true))
+    
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(;debug=true))
+    )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -322,9 +361,13 @@ end
     @NLconstraint(m, x[1]*x[2]*x[3] >= 10)
 
     status = solve(m)
-    debug1 = m.internalModel.debugDict
 
-    m = Model(solver=DefaultTestSolver(;debug=true))
+    debug1 = internalmodel(m).debugDict
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(;debug=true))
+    )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -335,8 +378,8 @@ end
 
     status = solve(m)
 
-    debug2 = m.internalModel.debugDict
-    opts = m.internalModel.options
+    debug2 = internalmodel(m).debugDict
+    opts = internalmodel(m).options
 
     # should be deterministic
     @test debug1[:relaxation][:nrestarts] == debug2[:relaxation][:nrestarts] == opts.num_resolve_root_relaxation
@@ -346,14 +389,18 @@ end
 
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
 end
 
 @testset "infeasible relaxation 2" begin
     println("==================================")
     println("Infeasible relaxation 2")
     println("==================================")
-    m = Model(solver=juniper_strong_no_restart)
+    
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_no_restart)
+    )
 
     @variable(m, x[1:3], Int)
     @variable(m, y)
@@ -366,7 +413,7 @@ end
     status = solve(m)
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
 end
 
 
@@ -374,7 +421,10 @@ end
     println("==================================")
     println("Infeasible integer")
     println("==================================")
-    m = Model(solver=juniper_strong_no_restart)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_no_restart)
+    )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -387,14 +437,17 @@ end
     status = solve(m)
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
 end
 
 @testset "infeasible in strong" begin
     println("==================================")
     println("Infeasible in strong")
     println("==================================")
-    m = Model(solver=juniper_strong_no_restart)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_no_restart)
+    )
 
     @variable(m, 0 <= x[1:5] <= 2, Int)
 
@@ -406,14 +459,17 @@ end
     status = solve(m)
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
 end
 
 @testset "One Integer small Reliable" begin
     println("==================================")
     println("One Integer small Reliable")
     println("==================================")
-    m = Model(solver=juniper_reliable_restart)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_reliable_restart)
+    )
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -426,21 +482,25 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
-    println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("Obj: ", JuMP.objective_value(m))
+    println("x: ", JuMP.value(x))
+    println("y: ", JuMP.value(x))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3.162277, atol=sol_atol)
 end
 
 @testset "One Integer small Strong" begin
     println("==================================")
     println("One Integer small Strong")
     println("==================================")
-    m = Model(solver=juniper_strong_no_restart)
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_no_restart)
+    )
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -453,21 +513,25 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
-    println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("Obj: ", JuMP.objective_value(m))
+    println("x: ", JuMP.value(x))
+    println("y: ", JuMP.value(x))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3.162277, atol=sol_atol)
 end
 
 @testset "One Integer small MostInfeasible" begin
     println("==================================")
     println("One Integer small MostInfeasible")
     println("==================================")
-    m = Model(solver=juniper_mosti)
+    
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_mosti)
+    )
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -480,21 +544,25 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
-    println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("Obj: ", JuMP.objective_value(m))
+    println("x: ", JuMP.value(x))
+    println("y: ", JuMP.value(x))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3.162277, atol=sol_atol)
 end
 
 @testset "One Integer small PseudoCost" begin
     println("==================================")
     println("One Integer small PseudoCost")
     println("==================================")
-    m = Model(solver=juniper_pseudo)
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_pseudo)
+    )
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -507,21 +575,25 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
-    println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("Obj: ", JuMP.objective_value(m))
+    println("x: ", JuMP.value(x))
+    println("y: ", JuMP.value(x))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3.162277, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3.162277, atol=sol_atol)
 end
 
 @testset "Three Integers Small Strong" begin
     println("==================================")
     println("Three Integers Small Strong")
     println("==================================")
-    m = Model(solver=juniper_strong_no_restart)
+    
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_no_restart)
+    )
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -534,12 +606,12 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    println("Obj: ", JuMP.objective_value(m))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3, atol=sol_atol)
 end
 
 @testset "Three Integers Small MostInfeasible" begin
@@ -547,7 +619,10 @@ end
     println("Three Integers Small MostInfeasible")
     println("==================================")
 
-    m = Model(solver=juniper_mosti)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_mosti)
+    )
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -560,12 +635,12 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    println("Obj: ", JuMP.objective_value(m))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3, atol=sol_atol)
 end
 
 @testset "Three Integers Small PseudoCost" begin
@@ -573,7 +648,11 @@ end
     println("Three Integers Small PseudoCost")
     println("==================================")
 
-    m = Model(solver=juniper_pseudo)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_pseudo)
+    )
+
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0, Int)
@@ -586,12 +665,12 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    println("Obj: ", JuMP.objective_value(m))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), -12, atol=opt_atol)
-    @test isapprox(getvalue(x), 3, atol=sol_atol)
-    @test isapprox(getvalue(y), 3, atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), -12, atol=opt_atol)
+    @test isapprox(JuMP.value(x), 3, atol=sol_atol)
+    @test isapprox(JuMP.value(y), 3, atol=sol_atol)
 end
 
 @testset "Knapsack Max" begin
@@ -599,9 +678,12 @@ end
     println("KNAPSACK")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,
-            incumbent_constr=true,mip_solver=CbcSolver(),
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(;traverse_strategy=:DBFS,
+            incumbent_constr=true,mip_solver=with_optimizer(Cbc.Optimizer),
             strong_branching_approx_time_limit=1))
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -612,22 +694,26 @@ end
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    println("Obj: ", JuMP.objective_value(m))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
-    @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
-    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.objective_bound(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.value.(x), [0,0,0,1,1], atol=sol_atol)
 end
 
 @testset "Knapsack Max Reliable" begin
     println("==================================")
     println("KNAPSACK Reliable no restart")
     println("==================================")
-
-    m = Model(solver=DefaultTestSolver(;branch_strategy=:Reliability,
-              strong_restart=false,strong_branching_approx_time_limit=1,gain_mu=0.5))
  
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(;branch_strategy=:Reliability,
+              strong_restart=false,strong_branching_approx_time_limit=1,gain_mu=0.5))
+    )
+
+
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     @variable(m, x[1:5], Bin)
@@ -637,12 +723,12 @@ end
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    println("Obj: ", JuMP.objective_value(m))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
-    @test isapprox(getobjectivebound(m), 65, atol=opt_atol)
-    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.objective_bound(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.value.(x), [0,0,0,1,1], atol=sol_atol)
 end
 
 
@@ -650,16 +736,19 @@ end
     println("==================================")
     println("INTEGER AT ROOT")
     println("==================================")
-    m = Model(solver=DefaultTestSolver())
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver())
+    )
 
     @variable(m, x[1:6] <= 1, Int)
     @constraint(m, x[1:6] .== 1)
     @objective(m, Max, sum(x))
     @NLconstraint(m, x[1]*x[2]*x[3]+x[4]*x[5]*x[6] <= 100)
     status = solve(m)
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), 6, atol=opt_atol)
-    @test isapprox(getobjectivebound(m), 0, atol=opt_atol) # Ipopt return 0
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), 6, atol=opt_atol)
+    @test isapprox(JuMP.objective_bound(m), 0, atol=opt_atol) # Ipopt return 0
 end
 
 @testset "Knapsack Max with epsilon" begin
@@ -667,7 +756,10 @@ end
     println("KNAPSACK with epsilon")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -678,11 +770,11 @@ end
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
     status = solve(m)
-    println("Obj: ", getobjectivevalue(m))
+    println("Obj: ", JuMP.objective_value(m))
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m), 65, atol=opt_atol)
-    @test isapprox(getvalue(x), [0,0,0,1,1], atol=sol_atol)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m), 65, atol=opt_atol)
+    @test isapprox(JuMP.value.(x), [0,0,0,1,1], atol=sol_atol)
 end
 
 @testset "Knapsack Max with epsilon too strong" begin
@@ -690,7 +782,10 @@ end
     println("KNAPSACK with epsilon too strong")
     println("==================================")
 
-    m = Model(solver=DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.1))
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.1))
+    )
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -702,7 +797,7 @@ end
 
     status = solve(m)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
 end
 
 @testset "Batch.mod Restart" begin
@@ -712,11 +807,15 @@ end
 
     m = batch_problem()
 
-    setsolver(m, juniper_strong_restart)
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_restart)
+    )
+    
     status = solve(m)
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 
-    juniper_val = getobjectivevalue(m)
+    juniper_val = JuMP.objective_value(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -731,11 +830,15 @@ end
 
     m = batch_problem()
 
-    setsolver(m, juniper_strong_restart_2)
-    status = solve(m)
-    @test status == :Optimal
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_restart_2)
+    )
 
-    juniper_val = getobjectivevalue(m)
+    status = solve(m)
+    @test status == MOI.LOCALLY_SOLVED
+
+    juniper_val = JuMP.objective_value(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -751,11 +854,15 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    setsolver(m, juniper_strong_restart)
-    status = solve(m)
-    @test status == :Optimal
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_restart)
+    )
 
-    juniper_val = getobjectivevalue(m)
+    status = solve(m)
+    @test status == MOI.LOCALLY_SOLVED
+
+    juniper_val = JuMP.objective_value(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -770,11 +877,15 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    setsolver(m, juniper_strong_no_restart)
-    status = solve(m)
-    @test status == :Optimal
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        juniper_strong_no_restart)
+    )
 
-    juniper_val = getobjectivevalue(m)
+    status = solve(m)
+    @test status == MOI.LOCALLY_SOLVED
+
+    juniper_val = JuMP.objective_value(m)
 
     println("Solution by Juniper")
     println("obj: ", juniper_val)
@@ -802,9 +913,13 @@ end
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-    setsolver(m, juniper_one_solution)
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        juniper_one_solution)
+    )
+
     status = solve(m)
-    @test status == :UserLimit
+    @test status == MOI.SOLUTION_LIMIT
 
     # maybe 2 found at the same time
     @test Juniper.getnsolutions(internalmodel(m)) <= 2
@@ -820,10 +935,13 @@ end
         obj_epsilon=0.4
     )
 
-    m = Model(solver=juniper_obj_eps)
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_obj_eps)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
-
 
     @objective(m, Min, x[1])
 
@@ -839,7 +957,7 @@ end
     status = solve(m)
 
     # maybe 2 found at the same time
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 end
 
 @testset "bruteforce best_obj_stop not reachable" begin
@@ -850,8 +968,10 @@ end
         branch_strategy=:StrongPseudoCost,
         best_obj_stop=0.8
     )
-
-    m = Model(solver=juniper_best_obj_stop)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_best_obj_stop)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -870,7 +990,7 @@ end
     status = solve(m)
 
     # not possible to reach but should be solved anyway
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 end
 
 @testset "bruteforce best_obj_stop reachable" begin
@@ -882,7 +1002,10 @@ end
         best_obj_stop=1
     )
 
-    m = Model(solver=juniper_one_solution)
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_one_solution)
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -901,7 +1024,7 @@ end
     status = solve(m)
 
     # reachable and should break => UserLimit
-    @test status == :UserLimit
+    @test status == MOI.OTHER_LIMIT
     # maybe 2 found at the same time
     @test Juniper.getnsolutions(internalmodel(m)) <= 2
     @test Juniper.getnsolutions(internalmodel(m)) >= 1

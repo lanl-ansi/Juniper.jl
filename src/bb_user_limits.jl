@@ -29,7 +29,8 @@ function isbreak_new_incumbent_limits(tree)
         sense = tree.m.obj_sense
         if (sense == :Min && inc_val <= bos) || (sense == :Max && inc_val >= bos) 
             incu = tree.incumbent
-            tree.incumbent = Incumbent(incu.objval, incu.solution, :UserLimit, tree.best_bound)
+            # TODO: Check if there is a better limit
+            tree.incumbent = Incumbent(incu.objval, incu.solution, MOI.OTHER_LIMIT, tree.best_bound)
             return true
         end
     end
@@ -67,7 +68,7 @@ Break if
 function isbreak_after_step!(tree)
     # maybe break on solution_limit (can be higher if two solutions found in last step)
     if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
-        tree.incumbent.status = :UserLimit
+        tree.incumbent.status = MOI.SOLUTION_LIMIT
         tree.incumbent.best_bound = tree.best_bound
         return true
     end

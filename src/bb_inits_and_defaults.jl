@@ -1,7 +1,4 @@
 function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothing)
-
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
-
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, m.status, m.objval,[],hash_val)
     obj_gain_m = zeros(m.num_disc_var)

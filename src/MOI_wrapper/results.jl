@@ -18,6 +18,16 @@ function MOI.get(model::Optimizer, ::MOI.ObjectiveBound)
 	return model.inner.best_bound
 end
 
+function MOI.get(model::Optimizer, ::MOI.RelativeGap)
+    if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
+	    @error "optimizer not called"
+	end
+	if isnan(model.inner.objval) || isnan(model.inner.best_bound)
+		return NaN
+	end
+	return abs(model.inner.best_bound-model.inner.objval)/abs(model.inner.objval)
+end
+
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
 	if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
 	    @error "optimizer not called"

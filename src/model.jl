@@ -12,6 +12,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
+        println("obj_expr before dereferencing: ", obj_expr)
         expr_dereferencing!(obj_expr, jp.model)
         println("obj_expr: ", obj_expr)
         JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
@@ -51,7 +52,6 @@ function solve_root_model!(jp::JuniperProblem)
 
         # TODO freemodel for Knitro
         restart_values = generate_random_restart(jp)
-        # TODO this probably doesn't work yet
         jp.options.debug && debug_restart_values(jp.debugDict,restart_values)
         for i=1:jp.num_var
             set_start_value(jp.x[i], restart_values[i])

@@ -204,7 +204,7 @@ function cvxnonsep_nsig20r_problem()
     @NLconstraint(m, -0.032*log(x18) - x38 <= 0)
     @NLconstraint(m, -0.095*log(x19) - x39 <= 0)
     @NLconstraint(m, -0.003*log(x20) - x40 <= 0)
-    @NLobjective(m, Min,  1.5*i1 + 0.51*i2 + 1.01*i3 + 1.4*i4 + 1.78*i5 + 1.92*i6
+    @objective(m, Min,  1.5*i1 + 0.51*i2 + 1.01*i3 + 1.4*i4 + 1.78*i5 + 1.92*i6
     + 1.09*i7 + 0.48*i8 + 0.67*i9 + 0.52*i10 + 1.68*x11 + 0.51*x12 + 1.63*x13
     + 0.49*x14 + 1.86*x15 + 0.7*x16 + 0.39*x17 + 0.5*x18 + 1.23*x19 + 0.95*x20)
 
