@@ -205,7 +205,7 @@ end
 """ 
 function MOI.optimize!(model::Optimizer)
     Random.seed!(1)
-    MOI.initialize(model.nlp_data.evaluator, [:ExprGraph,:Jac,:Grad])
+    MOI.initialize(model.nlp_data.evaluator, [:ExprGraph])
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
 
@@ -219,7 +219,6 @@ function MOI.optimize!(model::Optimizer)
     init_juniper_problem!(jp, model)
     
     ps = jp.options.log_levels
-    println("ps: ", ps)
     jp.debugDict = Dict{Any,Any}()
 
     (:All in ps || :AllOptions in ps) && print_options(jp;all=true)
@@ -263,6 +262,7 @@ function MOI.optimize!(model::Optimizer)
     # TODO free model for Knitro
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.objval)
+    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.solution)
 
     # set incumbent to nothing might be updated using the feasibility_pump
     inc_sol, inc_obj = nothing, nothing

@@ -150,7 +150,6 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     end
 
     jp.nl_solver_options = nl_vec_opts
-    println("typeof: nl_solver_options ", typeof(nl_vec_opts))
 
     if model.options.mip_solver != nothing
         jp.mip_solver = model.options.mip_solver

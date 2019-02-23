@@ -12,9 +12,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
-        println("obj_expr before dereferencing: ", obj_expr)
         expr_dereferencing!(obj_expr, jp.model)
-        println("obj_expr: ", obj_expr)
         JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
     else
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
@@ -33,7 +31,11 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
             MOI.add_constraint(backend, constr[1], constr[2])
         end
     end
-    MOI.set(backend, MOI.NLPBlock(), optimizer.nlp_data)
+    for i in 1:jp.num_nl_constr
+        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
+        expr_dereferencing!(constr_expr, jp.model)
+        JuMP.add_NL_constraint(jp.model, constr_expr)
+    end
 
     (:All in ps || :Info in ps) && print_info(jp)
     

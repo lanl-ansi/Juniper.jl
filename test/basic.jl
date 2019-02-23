@@ -748,7 +748,8 @@ end
     status = solve(m)
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.objective_value(m), 6, atol=opt_atol)
-    @test isapprox(JuMP.objective_bound(m), 0, atol=opt_atol) # Ipopt return 0
+    # objective bound doesn't exists anymore in Ipopt
+    #@test isapprox(JuMP.objective_bound(m), 0, atol=opt_atol) # Ipopt return 0
 end
 
 @testset "Knapsack Max with epsilon" begin

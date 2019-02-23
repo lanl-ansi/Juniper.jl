@@ -113,7 +113,11 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
             MOI.add_constraint(backend, constr[1], constr[2])
         end
     end
-    MOI.set(backend, MOI.NLPBlock(), optimizer.nlp_data)
+    for i in 1:m.num_nl_constr
+        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
+        expr_dereferencing!(constr_expr, nlp_model)
+        JuMP.add_NL_constraint(nlp_model, constr_expr)
+    end
     
 
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
@@ -185,7 +189,11 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
             MOI.add_constraint(backend, constr[1], constr[2])
         end
     end
-    MOI.set(backend, MOI.NLPBlock(), optimizer.nlp_data)
+    for i in 1:m.num_nl_constr
+        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
+        expr_dereferencing!(constr_expr, rmodel)
+        JuMP.add_NL_constraint(rmodel, constr_expr)
+    end
 
     optimize!(rmodel)
     status = MOI.get(backend, MOI.TerminationStatus()) 

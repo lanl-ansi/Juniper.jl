@@ -124,11 +124,20 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
         JuMP.add_NL_constraint(jp.model, obj_constr)
     else # linear or quadratic
         backend = JuMP.backend(jp.model);
-        println("jp.objective: ", jp.objective)
-        if jp.obj_sense == :Min
-            MOI.add_constraint(backend, jp.objective, MOI.LessThan(rhs))
+        if isa(jp.objective, MOI.SingleVariable)
+            println("Objective is a single variable")
+            println("jp.objective: ", jp.objective.variable.value)
+            if jp.obj_sense == :Min
+                JuMP.set_upper_bound(jp.x[jp.objective.variable.value], rhs)
+            else
+                JuMP.set_lower_bound(jp.x[jp.objective.variable.value], rhs)
+            end
         else
-            MOI.add_constraint(backend, jp.objective, MOI.GreaterThan(rhs))
+            if jp.obj_sense == :Min
+                MOI.add_constraint(backend, jp.objective, MOI.LessThan(rhs))
+            else
+                MOI.add_constraint(backend, jp.objective, MOI.GreaterThan(rhs))
+            end
         end
     end
 end
