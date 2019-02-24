@@ -6,48 +6,6 @@ include("basic/gamsworld.jl")
 
 @testset "fp tests" begin
 
-#=
-# omit for test speed
-@testset "FP: blend029" begin
-    println("==================================")
-    println("FP: blend029")
-    println("==================================")
-
-    m,objval = get_blend029()
-
-    setsolver(m, DefaultTestSolver(
-            branch_strategy=:MostInfeasible,
-            time_limit = 5,
-            mip_solver=CbcSolver(),
-            incumbent_constr = true
-    ))
-    status = solve(m)
-
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
-end
-=#
-
-#=
-# seems to be a copy of blend029
-@testset "FP: cvxnonsep_nsig20r_problem" begin
-    println("==================================")
-    println("FP: cvxnonsep_nsig20r_problem")
-    println("==================================")
-
-    m,objval = get_blend029()
-
-    setsolver(m, DefaultTestSolver(
-            branch_strategy=:MostInfeasible,
-            feasibility_pump = true,
-            time_limit = 1,
-            mip_solver=CbcSolver()
-    ))
-    status = solve(m)
-
-    @test Juniper.getnsolutions(internalmodel(m)) >= 1
-end
-=#
-
 @testset "FP: no linear" begin
     println("==================================")
     println("FP: no linear")
@@ -58,12 +16,15 @@ end
     @NLconstraint(m, x[1]^2+x[2]^2 == 0)
     @objective(m, Max, sum(x))
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=CbcSolver()
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
+
     status = solve(m)
 
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
@@ -88,11 +49,13 @@ end
     @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    setsolver(m, DefaultTestSolver(
-        branch_strategy=:MostInfeasible,
-        feasibility_pump = true,
-        time_limit = 1,
-        mip_solver=CbcSolver()
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            branch_strategy=:MostInfeasible,
+            feasibility_pump = true,
+            time_limit = 1,
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
 
     status = solve(m)
@@ -116,11 +79,13 @@ end
     @NLconstraint(m, y^2 <= u*w)
     @NLconstraint(m, x^2 >= u*w)
 
-    setsolver(m, DefaultTestSolver(
-        branch_strategy=:MostInfeasible,
-        feasibility_pump = true,
-        time_limit = 1,
-        mip_solver=CbcSolver()
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            branch_strategy=:MostInfeasible,
+            feasibility_pump = true,
+            time_limit = 1,
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
 
     status = solve(m)
@@ -140,17 +105,19 @@ end
 
     @NLconstraint(m, y==2*cos(2*x))
 
-    setsolver(m, DefaultTestSolver(
-        branch_strategy=:MostInfeasible,
-        feasibility_pump = true,
-        time_limit = 1,
-        mip_solver=CbcSolver()
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            branch_strategy=:MostInfeasible,
+            feasibility_pump = true,
+            time_limit = 1,
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
 
     status = solve(m)
     println("Status: ", status)
 
-    @test status == :Infeasible
+    @test status == MOI.LOCALLY_INFEASIBLE
     @test Juniper.getnsolutions(internalmodel(m)) == 0
 end
 
@@ -161,39 +128,19 @@ end
 
     m = get_tspn05()
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=CbcSolver()
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
+
     status = solve(m)
 
-    @test status == :Optimal
-    @test isapprox(getobjectivevalue(m),191.2541,atol=1e0)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m),191.2541,atol=1e0)
 end
-
-
-#=
-# omit for test speed
-@testset "FP: ndcc12persp" begin
-    println("==================================")
-    println("FP: ndcc12persp")
-    println("==================================")
-
-    # This probably has a "NLP couldn't be solved to optimality" warning in FPump
-    m = get_ndcc12persp()
-
-    setsolver(m, DefaultTestSolver(
-            branch_strategy=:StrongPseudoCost,
-            feasibility_pump = true,
-            mip_solver=CbcSolver(),
-            time_limit = 10,
-    ))
-    status = solve(m)
-
-    @test status == :Optimal || status == :UserLimit
-end
-=#
 
 @testset "FP: FLay02H" begin
     println("==================================")
@@ -203,16 +150,19 @@ end
     # This probably needs a restart in real nlp
     m = get_FLay02H()
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
             feasibility_pump_time_limit = 10,
             time_limit = 10,
-            mip_solver=CbcSolver()
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
+
     status = solve(m)
 
-    @test status == :Optimal || status == :UserLimit
+    @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 

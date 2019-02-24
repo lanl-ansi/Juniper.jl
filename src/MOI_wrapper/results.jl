@@ -36,7 +36,7 @@ function MOI.get(model::Optimizer, ::MOI.SolveTime)
 end
 
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
-	if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
+    if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
 	    @error "optimizer not called"
 	end
 	check_inbounds(model, vi)

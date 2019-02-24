@@ -141,3 +141,17 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
         end
     end
 end
+
+
+"""
+    evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
+
+Evaluate the objective whether it is non linear, linear or quadratic
+"""
+function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
+    if optimizer.nlp_data.has_objective
+        return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
+    else
+        return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
+    end
+end

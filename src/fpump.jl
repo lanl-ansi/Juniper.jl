@@ -142,8 +142,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         if optimizer.nlp_data.has_objective
             nlp_obj = MOI.eval_objective(optimizer.nlp_data.evaluator, sol)
         else
-            # TODO: Compute the objective if linear/quadratic
-            # nlp_obj = optimizer.objective(sol) <- this function doesn't exist
+            nlp_obj = evaluate_objective(optimizer, m, sol)
         end
         status = MOI.OPTIMAL
         return status, sol, nlp_obj
@@ -367,8 +366,7 @@ function fpump(optimizer, m)
                 iscorrect = true
                 break
             elseif are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol)
-                # Todo this needs to be done based on whether the objective is linear/quadratic or non linear
-                nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
+                nlp_obj = evaluate_objective(optimizer, m, nlp_sol)
                 iscorrect = true
                 @warn "Real objective wasn't solved to optimality"
                 break
