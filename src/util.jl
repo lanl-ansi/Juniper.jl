@@ -125,8 +125,6 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
     else # linear or quadratic
         backend = JuMP.backend(jp.model);
         if isa(jp.objective, MOI.SingleVariable)
-            println("Objective is a single variable")
-            println("jp.objective: ", jp.objective.variable.value)
             if jp.obj_sense == :Min
                 JuMP.set_upper_bound(jp.x[jp.objective.variable.value], rhs)
             else
