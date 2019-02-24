@@ -65,7 +65,7 @@ function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_leve
 end
 
 function solve(m::Model)
-    optimize!(m)
+    JuMP.optimize!(m)
     bm = JuMP.backend(m)
     return MOI.get(bm, MOI.TerminationStatus()) 
 end

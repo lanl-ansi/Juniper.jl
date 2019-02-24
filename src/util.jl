@@ -7,7 +7,7 @@ function expr_dereferencing!(expr, m)
             k = 0
         elseif expr.args[i].head == :ref
             @assert isa(expr.args[i].args[2], MOI.VariableIndex)
-            expr.args[i] = VariableRef(m, expr.args[i].args[2])
+            expr.args[i] = JuMP.VariableRef(m, expr.args[i].args[2])
         elseif expr.args[i].head == :call
             expr_dereferencing!(expr.args[i], m)
         else

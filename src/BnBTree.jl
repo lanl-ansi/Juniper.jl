@@ -52,7 +52,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
         JuMP.set_lower_bound(m.x[i], cnode.l_var[i])
         JuMP.set_upper_bound(m.x[i], cnode.u_var[i])
     end
-    set_start_value.(m.x[1:m.num_var],step_obj.node.solution)
+    JuMP.set_start_value.(m.x[1:m.num_var],step_obj.node.solution)
 
     if occursin("Ipopt", string(m.nl_solver))
         overwritten = false
@@ -72,7 +72,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     end
 
     JuMP.set_optimizer(m.model, m.nl_solver)
-    optimize!(m.model)
+    JuMP.optimize!(m.model)
     backend = JuMP.backend(m.model)
     status = MOI.get(backend, MOI.TerminationStatus()) 
 

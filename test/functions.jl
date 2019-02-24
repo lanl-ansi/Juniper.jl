@@ -95,7 +95,7 @@ end
     
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
-    optimize!(m)
+    JuMP.optimize!(m)
     
     options = bm.optimizer.model.options
     jp = bm.optimizer.model.inner
@@ -224,7 +224,7 @@ end
 
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
-    optimize!(m)
+    JuMP.optimize!(m)
     model = bm.optimizer.model.inner
 
 

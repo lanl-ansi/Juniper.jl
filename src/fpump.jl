@@ -71,7 +71,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list)
     end
     =#
 
-    optimize!(mip_model)
+    JuMP.optimize!(mip_model)
     status = MOI.get(backend, MOI.TerminationStatus()) 
 
     # round mip values
@@ -94,10 +94,10 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
-            set_start_value(nx[i], restart_values[i])
+            JuMP.set_start_value(nx[i], restart_values[i])
         end
     else
-        set_start_value.(nx[1:m.num_var],mip_sol)
+        JuMP.set_start_value.(nx[1:m.num_var],mip_sol)
     end
 
     # add all constraints
@@ -121,7 +121,7 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
     
 
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
-    optimize!(nlp_model)
+    JuMP.optimize!(nlp_model)
     status = MOI.get(backend, MOI.TerminationStatus()) 
 
     nlp_sol = JuMP.value.(nx)
@@ -156,7 +156,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
             if m.var_type[i] == :Cont
-                set_start_value(rx[i], restart_values[i])
+                JuMP.set_start_value(rx[i], restart_values[i])
             end # discrete will be fixed anyway
         end
     end
@@ -195,7 +195,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         JuMP.add_NL_constraint(rmodel, constr_expr)
     end
 
-    optimize!(rmodel)
+    JuMP.optimize!(rmodel)
     status = MOI.get(backend, MOI.TerminationStatus()) 
 
     real_sol = JuMP.value.(rx)

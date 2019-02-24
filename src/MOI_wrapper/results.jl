@@ -5,7 +5,7 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
 end
 	
 function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
-    if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
+	if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
 	    @error "optimizer not called"
 	end
 	return model.inner.objval

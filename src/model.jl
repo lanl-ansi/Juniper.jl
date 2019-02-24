@@ -43,7 +43,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
 end
 
 function solve_root_model!(jp::JuniperProblem)
-    optimize!(jp.model, jp.nl_solver)
+    JuMP.optimize!(jp.model, jp.nl_solver)
     backend = JuMP.backend(jp.model)
     jp.status = MOI.get(backend, MOI.TerminationStatus()) 
     restarts = 0
@@ -56,9 +56,9 @@ function solve_root_model!(jp::JuniperProblem)
         restart_values = generate_random_restart(jp)
         jp.options.debug && debug_restart_values(jp.debugDict,restart_values)
         for i=1:jp.num_var
-            set_start_value(jp.x[i], restart_values[i])
+            JuMP.set_start_value(jp.x[i], restart_values[i])
         end
-        optimize!(jp.model)
+        JuMP.optimize!(jp.model)
         jp.status = MOI.get(backend, MOI.TerminationStatus()) 
         restarts += 1
     end

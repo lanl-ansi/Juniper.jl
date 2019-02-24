@@ -1,7 +1,8 @@
 module Juniper
 
 using MathProgBase
-using JuMP
+import JuMP
+using JuMP: @variable, @constraint, @objective, Model, with_optimizer
 using JSON
 
 using MathOptInterface
