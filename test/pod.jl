@@ -96,7 +96,6 @@ end
     set_optimizer(m, with_optimizer(
         Juniper.Optimizer,
         DefaultTestSolver(
-            log_levels = [:Info, :Table],
             branch_strategy=:StrongPseudoCost,
             strong_restart=false,
             mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
