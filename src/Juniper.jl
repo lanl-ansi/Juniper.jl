@@ -3,6 +3,10 @@ module Juniper
 import JuMP
 using JuMP: @variable, @constraint, @objective, Model, with_optimizer
 using JSON
+using LinearAlgebra
+using Random
+using Distributed
+using Statistics
 
 using MathOptInterface
 const MOI = MathOptInterface
@@ -13,28 +17,6 @@ const SVF = MOI.SingleVariable
 const SAF = MOI.ScalarAffineFunction{Float64}
 const SQF = MOI.ScalarQuadraticFunction{Float64}
 const VECTOR = MOI.VectorOfVariables
-
-if VERSION < v"0.7.0-"
-    import Compat: occursin
-    import Compat: Nothing
-    import Compat: round
-    import Compat: @warn
-    import Compat: pushfirst!
-    import Compat: popfirst!
-    import Compat: Array
-    import Compat: undef
-    import Compat: hasmethod
-    import Compat: findall
-end
-
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Random
-    using Distributed
-    using Statistics
-end
-
-
 
 include("types.jl")
 

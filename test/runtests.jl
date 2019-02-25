@@ -1,12 +1,8 @@
-using Base,Logging
+using Base, Logging
 
-if VERSION > v"0.7.0-"
-    using Test, Distributed
-end
+using Test, Distributed
 
-if VERSION < v"0.7.0-"
-    using Base.Test
-end
+
 
 
 if nworkers() > 1
@@ -23,15 +19,10 @@ end
 println("Workers:", nworkers())
 
 
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Statistics
-    using Random
-end
 
-if VERSION < v"0.7.0-"
-    using Compat
-end
+using LinearAlgebra
+using Statistics
+using Random
 
 
 using JuMP
@@ -54,7 +45,7 @@ sol_rtol = 1e-3
 sol_atol = 1e-3
 
 
-function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0), solver_args...)
+function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0, sb="yes"), solver_args...)
     solver_args_dict = Dict{Symbol,Any}()
     solver_args_dict[:log_levels] = []
     solver_args_dict[:nl_solver] = nl_solver
