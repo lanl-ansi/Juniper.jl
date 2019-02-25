@@ -14,7 +14,7 @@ addons:
 before_install:
 - julia -e 'using Pkg; Pkg.update()'
 script:
-  julia --inline=no -e 'using Pkg; Pkg.clone(pwd()); Pkg.test("Juniper", coverage=true)'
+  julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.test("Juniper", coverage=true)'
 after_success:
   julia -e 'using Pkg; Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Codecov.submit(process_folder())'
 jobs:
