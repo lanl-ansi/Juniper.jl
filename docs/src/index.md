@@ -13,10 +13,6 @@ You have a really good solver for the relaxation and just want to solve problems
 
 The latest version can be installed via:
 
-`Pkg.add("Juniper")`
-
-or for Julia v0.7 and v1:
-
 `] add Juniper` as `]` is used to get to interact with the package manager.
 
 Then adding it to your project by
@@ -29,16 +25,19 @@ You also have to import your NLP solver i.e.
 
 as well as [JuMP](http://www.juliaopt.org/JuMP.jl)
 
-Define `JuniperSolver` as your solver:
+Define `Juniper` as the optimizer:
 
 ```
-solver = JuniperSolver(IpoptSolver(print_level=0))
+optimizer = Juniper.Optimizer
+params = Dict{Symbol,Any}()
+params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
 ```
 
 And give it a go:
 
 ```
-m = Model(solver=solver)
+using LinearAlgebra # for the dot product
+m = Model(with_optimizer(optimizer, params))
 
 v = [10,20,12,23,42]
 w = [12,45,12,22,21]
@@ -48,8 +47,14 @@ w = [12,45,12,22,21]
 
 @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-status = solve(m)
+optimize!(m)
 
+# retrieve the objective value, corresponding x values and the status
+println(JuMP.value.(x))
+println(JuMP.objective_value(m))
+println(JuMP.termination_status(m))
 ```
 
 This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.
+Juniper is specialized for **non** convex problems which get solved **locally** optimal.
+It will solve convex problems as well but specialized solvers for convex problems should be preferred then.    

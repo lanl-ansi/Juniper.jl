@@ -3,22 +3,24 @@
 The most basic configuration of Juniper is:
 
 ```
-JuniperSolver(IpoptSolver(print_level=0))
+optimizer = Juniper.Optimizer
+params = Dict{Symbol,Any}()
+params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
 ```
 
+and then creating the model with:
+```
+m = Model(with_optimizer(optimizer, params))
+```
 
-The first argument defines the solver for the relaxation here `IpoptSolver`. [Ipopt](https://projects.coin-or.org/Ipopt) is used for all our test cases. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl). The solver itself can have parameters i.e `print_level=0`.
+The argument `nl_solver` defines the solver for the relaxation here `IpoptSolver`. [Ipopt](https://projects.coin-or.org/Ipopt) is used for all our test cases. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl). The solver itself can have parameters i.e `print_level=0`.
 
 JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
 
-You can add options doing the following:
+You can add options by adding another key, value per to the `params` dictionary:
 
 ```
-m = Model()
-juniper = JuniperSolver(IpoptSolver(print_level=0);
-    branch_strategy=:StrongPseudoCost
-)
-setsolver(m, juniper)
+params[:branch_strategy] = :StrongPseudoCost
 ```
 
 In this example the strategy used for branching is defined.
@@ -174,13 +176,16 @@ The default is `true` if a mip solver is specified and `false` otherwise.
 This has to be set to a mip solver if the feasibility pump should be used.
 A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers).
 
-If you want to use [GLPK](https://www.gnu.org/software/glpk/)
+If you want to use [Cbc](https://projects.coin-or.org/Cbc)
 you would need to use
 
 ```
-using GLPKMathProgInterface
+using Cbc
 ```
-and set the option with `mip_solver=GLPKSolverMIP()`
+and set the option with 
+```
+params[:mip_solver] = with_optimizer(Cbc.Optimizer, logLevel=0)
+```
 
 ### feasibility\_pump\_time\_limit::Int64 [60]s
 

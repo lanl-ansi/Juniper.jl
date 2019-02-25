@@ -1,7 +1,9 @@
 # Juniper.jl Changelog
 
 ### Staged
-- nothing
+- MPB -> MOI
+- JuMP 0.19
+- Dropped support for Julia versions < 1.0
 
 ### v0.2.4
 - Remove Julia version upper bound
