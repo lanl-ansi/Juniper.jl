@@ -453,7 +453,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     counter = 0
 
     for p=2:np
-        VERSION > v"0.7.0-" ? (seed = Random.seed!) : (seed = srand)
+        seed = Random.seed!
         remotecall_fetch(seed, p, 1)
         sendto(p, m=tree.m)
         sendto(p, is_newincumbent=false)

@@ -262,7 +262,6 @@ function MOI.optimize!(model::Optimizer)
     # TODO free model for Knitro
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.objval)
-    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.solution)
 
     # set incumbent to nothing might be updated using the feasibility_pump
     inc_sol, inc_obj = nothing, nothing

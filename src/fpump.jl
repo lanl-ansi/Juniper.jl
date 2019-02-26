@@ -258,7 +258,7 @@ end
 Run the feasibility pump
 """
 function fpump(optimizer, m)
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+    Random.seed!(1)
 
     if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
         return m.solution, m.objval
