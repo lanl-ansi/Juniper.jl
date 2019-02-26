@@ -83,11 +83,6 @@ function get_type_dict(obj)
     return type_dict
 end
 
-function get_primal_values(backend)
-    var_idxs = MOI.get(backend, MOI.ListOfVariableIndices())
-    return [MOI.get(backend, MOI.VariablePrimal(), var_idx) for var_idx in var_idxs]
-end
-
 """
     state_is_optimal(state::MOI.TerminationStatusCode)
 
