@@ -5,6 +5,10 @@
 - JuMP 0.19
 - Dropped support for Julia versions < 1.0
 
+### v0.2.5
+- add linear constraints using @constraint in root model
+- in BFS mode use the highest depth if several nodes have the same objective
+
 ### v0.2.4
 - Remove Julia version upper bound
 
