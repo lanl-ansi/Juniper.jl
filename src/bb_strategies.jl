@@ -19,13 +19,13 @@ function branch_mostinfeasible(m, node, disc2var_idx)
 end
 
 """
-init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars,
+init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars,
  left_node, right_node, strong_restart, max_gain_var, atol, var_type)
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
-function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
-                                reasonable_int_vars, infeasible_int_vars, 
+function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, 
+                                reasonable_disc_vars, infeasible_disc_vars, 
                                 left_node, right_node, strong_restart, max_gain_var, atol, var_type)
     restart = false
     set_to_last_var = false
@@ -162,8 +162,8 @@ function branch_strong_on!(m,opts,step_obj,
                     right_node = r_nd
                     break
                 end
-                restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type)
-                infeasible_int_vars = new_infeasible_int_vars
+                restart,new_infeasible_disc_vars,set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type)
+                infeasible_disc_vars = new_infeasible_disc_vars
 
                 need_to_resolve = true
                 # only variables where one branch is infeasible => no restart and break

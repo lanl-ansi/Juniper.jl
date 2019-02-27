@@ -56,22 +56,22 @@ function generate_random_restart(m; cont=true)
 end
 
 """
-    get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
+    get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
 
 Get all discrete variables which aren't close to discrete yet based on atol 
 """
-function get_reasonable_int_vars(node, var_type, int_vars, disc2var_idx, atol)
-    reasonable_int_vars = zeros(Int64,0)
-    for i=1:int_vars
+function get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
+    reasonable_disc_vars = zeros(Int64,0)
+    for i=1:disc_vars
         idx = disc2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
         if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],var_type[idx],atol)
             continue
         end
-        push!(reasonable_int_vars,i)
+        push!(reasonable_disc_vars,i)
     end
-    return reasonable_int_vars
+    return reasonable_disc_vars
 end
 
 function get_type_dict(obj)
