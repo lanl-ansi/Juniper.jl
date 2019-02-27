@@ -195,7 +195,7 @@ mutable struct StepObj
     r_nd                :: BnBNode
     counter             :: Int64
     upd_gains           :: Symbol
-    strong_int_vars     :: Vector{Int64}
+    strong_disc_vars     :: Vector{Int64}
 
     StepObj() = new()
 end

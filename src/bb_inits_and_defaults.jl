@@ -12,12 +12,12 @@ function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
     obj_gain = GainObj(obj_gain_m, obj_gain_p, obj_gain_mc, obj_gain_pc, obj_gain_inf)
     disc2var_idx = zeros(m.num_disc_var)
     var2disc_idx = zeros(m.num_var)
-    int_i = 1
+    disc_i = 1
     for i=1:m.num_var
         if m.var_type[i] != :Cont
-            disc2var_idx[int_i] = i
-            var2disc_idx[i] = int_i
-            int_i += 1
+            disc2var_idx[disc_i] = i
+            var2disc_idx[i] = disc_i
+            disc_i += 1
         end
     end
     factor = 1
@@ -108,6 +108,6 @@ function new_default_step_obj(m,node)
     step_obj.branch           = []
     step_obj.counter          = 0
     step_obj.upd_gains        = :None
-    step_obj.strong_int_vars  = Int64[]
+    step_obj.strong_disc_vars  = Int64[]
     return step_obj
 end

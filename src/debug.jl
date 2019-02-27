@@ -1,5 +1,5 @@
 step_obj_primitives = [:var_idx,:state,:nrestarts,:gain_gap,
-                       :strong_int_vars,:idx_time,:node_idx_time,:upd_gains_time,:branch_time,
+                       :strong_disc_vars,:idx_time,:node_idx_time,:upd_gains_time,:branch_time,
                        :counter,:upd_gains]
 node_primitives = [:level,:var_idx,:l_var,:u_var,:solution,:state,:relaxation_state,:best_bound]
 gain_obj_primitives = [:minus,:plus,:minus_counter,:plus_counter]

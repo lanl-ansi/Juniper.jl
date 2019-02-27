@@ -19,13 +19,13 @@ function branch_mostinfeasible(m, node, disc2var_idx)
 end
 
 """
-init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars,
+init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars,
  left_node, right_node, strong_restart)
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
-function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
-                                reasonable_int_vars, infeasible_int_vars, 
+function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, 
+                                reasonable_disc_vars, infeasible_disc_vars, 
                                 left_node, right_node, strong_restart)
     restart = false
     set_to_last_var = false
@@ -42,42 +42,42 @@ function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd,
         node.solution = l_nd.solution
     end
 
-    push!(infeasible_int_vars, int_var_idx)
+    push!(infeasible_disc_vars, disc_var_idx)
 
-    if length(reasonable_int_vars) == length(infeasible_int_vars)
+    if length(reasonable_disc_vars) == length(infeasible_disc_vars)
         # basically branching on the last infeasible variable 
         set_to_last_var = true
     elseif strong_restart
         restart = true
     end
-    return restart, infeasible_int_vars, set_to_last_var
+    return restart, infeasible_disc_vars, set_to_last_var
 end
 
 """
-    branch_strong_on!(m,opts,step_obj,reasonable_int_vars, disc2var_idx, strong_restart, counter)
+    branch_strong_on!(m,opts,step_obj,reasonable_disc_vars, disc2var_idx, strong_restart, counter)
 
 Try to branch on a few different variables and choose the one with highest obj_gain.
 Update obj_gain for the variables tried and average the other ones.
 """
 function branch_strong_on!(m,opts,step_obj,
-    reasonable_int_vars, disc2var_idx, strong_restart, counter)
+    reasonable_disc_vars, disc2var_idx, strong_restart, counter)
 
-    function set_temp_gains!(gains, gain_l, gain_r, int_var_idx)
+    function set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
         if !isinf(gain_l)
-            gains.minus[int_var_idx] = gain_l
-            gains.minus_counter[int_var_idx] = 1
+            gains.minus[disc_var_idx] = gain_l
+            gains.minus_counter[disc_var_idx] = 1
         else 
-            gains.inf_counter[int_var_idx] = 1
+            gains.inf_counter[disc_var_idx] = 1
         end
         if !isinf(gain_r)
-            gains.plus[int_var_idx] = gain_r
-            gains.plus_counter[int_var_idx] = 1
+            gains.plus[disc_var_idx] = gain_r
+            gains.plus_counter[disc_var_idx] = 1
         else 
-            gains.inf_counter[int_var_idx] = 1
+            gains.inf_counter[disc_var_idx] = 1
         end
 
         if !isinf(gain_l) && !isinf(gain_r)
-            gains.inf_counter[int_var_idx] -= 1
+            gains.inf_counter[disc_var_idx] -= 1
         end
     end
 
@@ -107,12 +107,12 @@ function branch_strong_on!(m,opts,step_obj,
 
     max_gain = -Inf # then one is definitely better
     max_gain_var = 0
-    max_gain_int_var = 0
+    max_gain_disc_var = 0
     strong_restarts = -1
     restart = true
     status = :Normal
     node = step_obj.node
-    infeasible_int_vars = zeros(Int64,0)
+    infeasible_disc_vars = zeros(Int64,0)
     gains = init_gains(m.num_disc_var)
   
     left_node, right_node = nothing, nothing
@@ -123,12 +123,12 @@ function branch_strong_on!(m,opts,step_obj,
     while restart 
         strong_restarts += 1 # is init with -1
         restart = false
-        for int_var_idx in reasonable_int_vars
+        for disc_var_idx in reasonable_disc_vars
             # don't rerun if the variable has already one infeasible node
-            if int_var_idx in infeasible_int_vars
+            if disc_var_idx in infeasible_disc_vars
                 continue
             end
-            var_idx = disc2var_idx[int_var_idx]
+            var_idx = disc2var_idx[disc_var_idx]
             step_obj.var_idx = var_idx
             u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
             # don't rerun if bounds are exact or is type correct
@@ -159,21 +159,21 @@ function branch_strong_on!(m,opts,step_obj,
                     right_node = r_nd
                     break
                 end
-                restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart)
-                infeasible_int_vars = new_infeasible_int_vars
+                restart,new_infeasible_disc_vars,set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart)
+                infeasible_disc_vars = new_infeasible_disc_vars
 
                 need_to_resolve = true
                 # only variables where one branch is infeasible => no restart and break
                 if set_to_last_var
                     max_gain_var = var_idx
-                    max_gain_int_var = int_var_idx
+                    max_gain_disc_var = disc_var_idx
                     left_node = l_nd
                     right_node = r_nd
                     restart = false
                     need_to_resolve = false
                     gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
                     max_gain = gain
-                    set_temp_gains!(gains, gain_l, gain_r, int_var_idx)
+                    set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
                     break
                 end
 
@@ -186,14 +186,14 @@ function branch_strong_on!(m,opts,step_obj,
             if gain > max_gain && !restart 
                 max_gain = gain
                 max_gain_var = var_idx
-                max_gain_int_var = int_var_idx
+                max_gain_disc_var = disc_var_idx
                 left_node = l_nd
                 right_node = r_nd
                 # we are changing the bounds if one branch is infeasible then the current
                 # selection might not work anymore => we have to resolve it later
                 need_to_resolve = false
             end
-            set_temp_gains!(gains, gain_l, gain_r, int_var_idx)
+            set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
             if restart
                 break
             end
@@ -237,12 +237,12 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
     end
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
-    int_vars = m.num_disc_var
+    disc_vars = m.num_disc_var
     atol = opts.atol
-    reasonable_int_vars = get_reasonable_int_vars(node, m.var_type, int_vars,  disc2var_idx, atol)
-    if num_strong_var < length(reasonable_int_vars)
-        shuffle!(reasonable_int_vars)
-        reasonable_int_vars = reasonable_int_vars[1:num_strong_var]
+    reasonable_disc_vars = get_reasonable_disc_vars(node, m.var_type, disc_vars,  disc2var_idx, atol)
+    if num_strong_var < length(reasonable_disc_vars)
+        shuffle!(reasonable_disc_vars)
+        reasonable_disc_vars = reasonable_disc_vars[1:num_strong_var]
     end
 
     # compute the gain for each reasonable candidate and choose the highest
@@ -250,7 +250,7 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
     right_node = nothing
 
     status, max_gain_var,  left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
-        reasonable_int_vars, disc2var_idx, opts.strong_restart, counter)
+        reasonable_disc_vars, disc2var_idx, opts.strong_restart, counter)
 
     step_obj.obj_gain += gains
 
@@ -294,7 +294,7 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
     gpc_r = gains.plus_counter  .< reliability_param
 
     strong_restarts = 0
-    reasonable_int_vars = []
+    reasonable_disc_vars = []
     atol = opts.atol
     for i=1:length(gmc_r)
         if gmc_r[i] || gpc_r[i]
@@ -304,17 +304,17 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
             if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],m.var_type[idx],atol)
                 continue
             end
-            push!(reasonable_int_vars,i)
+            push!(reasonable_disc_vars,i)
         end
     end
-    if length(reasonable_int_vars) > 0
-        unrealiable_idx = sortperm(gains.minus_counter[reasonable_int_vars])
-        reasonable_int_vars = reasonable_int_vars[unrealiable_idx]
-        num_reasonable = num_strong_var < length(reasonable_int_vars) ? num_strong_var : length(reasonable_int_vars)
-        reasonable_int_vars = reasonable_int_vars[1:num_reasonable]
+    if length(reasonable_disc_vars) > 0
+        unrealiable_idx = sortperm(gains.minus_counter[reasonable_disc_vars])
+        reasonable_disc_vars = reasonable_disc_vars[unrealiable_idx]
+        num_reasonable = num_strong_var < length(reasonable_disc_vars) ? num_strong_var : length(reasonable_disc_vars)
+        reasonable_disc_vars = reasonable_disc_vars[1:num_reasonable]
         
         status, max_gain_var, left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
-            reasonable_int_vars, disc2var_idx, opts.strong_restart, counter)
+            reasonable_disc_vars, disc2var_idx, opts.strong_restart, counter)
         
         step_obj.obj_gain += gains
         

@@ -83,6 +83,7 @@ end
 Optimize by creating a model based on the variables saved in JuniperModel.
 """
 function MathProgBase.optimize!(m::JuniperModel)
+    m.start_time = time()
     ps = m.options.log_levels
     m.debugDict = Dict{Any,Any}()
     if !m.options.fixed_gain_mu && m.obj_sense == :Max
@@ -98,13 +99,13 @@ function MathProgBase.optimize!(m::JuniperModel)
     end
 
     create_root_model!(m)
-    m.start_time = time()
+    relaxation_start_time = time()
     restarts = solve_root_model!(m)
 
     (:All in ps || :Info in ps) && println("Status of relaxation: ", m.status)
 
     m.soltime = time()-m.start_time
-    m.relaxation_time = time()-m.start_time
+    m.relaxation_time = time()-relaxation_start_time
     m.options.debug && debug_fill_basic(m.debugDict,m,restarts)
     if m.status != :Optimal && m.status != :LocalOptimal
         if m.options.debug && m.options.debug_write
@@ -113,7 +114,7 @@ function MathProgBase.optimize!(m::JuniperModel)
         return m.status
     end
 
-    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.soltime)
+    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", m.relaxation_time)
     m.objval   = getobjectivevalue(m.model)
     m.solution = getvalue(m.x)
 
@@ -128,9 +129,6 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     inc_sol, inc_obj = nothing, nothing
     if m.num_disc_var > 0
-        if m.num_l_constr > 0
-            m.affs = construct_affine_vector(m)
-        end
         if m.options.feasibility_pump
             inc_sol, inc_obj = fpump(m)
         end
@@ -174,14 +172,27 @@ function create_root_model!(m::JuniperModel)
     JuMP.setNLobjective(m.model, m.obj_sense, obj_expr)
 
     divide_nl_l_constr(m)
+    if m.num_l_constr > 0
+        m.affs = construct_affine_vector(m)
+    end
     (:All in ps || :Info in ps) && print_info(m)
 
     # add all constraints
     for i=1:m.num_constr
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing!(constr_expr, m.model)
-        # add NL constraint (even if linear because .addconstraint doesn't work with expression)
-        JuMP.addNLconstraint(m.model, constr_expr)
+        if m.isconstrlinear[i]
+            constr = m.affs[i]
+            if constr.sense == :(>=)
+                @constraint(m.model, sum(x[constr.var_idx[j]]*constr.coeff[j] for j=1:length(constr.var_idx)) >= constr.rhs)
+            elseif constr.sense == :(<=)
+                @constraint(m.model, sum(x[constr.var_idx[j]]*constr.coeff[j] for j=1:length(constr.var_idx)) <= constr.rhs)
+            else # ==
+                @constraint(m.model, sum(x[constr.var_idx[j]]*constr.coeff[j] for j=1:length(constr.var_idx)) == constr.rhs)
+            end
+        else
+            constr_expr = MathProgBase.constr_expr(m.d,i)
+            expr_dereferencing!(constr_expr, m.model)
+            JuMP.addNLconstraint(m.model, constr_expr)
+        end
     end
 
     m.x = x
