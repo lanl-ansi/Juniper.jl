@@ -148,3 +148,77 @@ function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
     end
 end
+
+"""
+    set_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+                          subsolver_name::String, param::Symbol, change::Pair)
+
+Set the optimizer of the model if the subsolver_name is part of the name of the optimizer.
+Change the option `param` of the sub_solver. i.e `change=0.1 => 1e-5` means the default 
+normally is 0.1 and will be changed to 1e-5.
+Normally reset_subsolver_option! should be run to return to reset this change after `optimize!`
+Return the previous value of the param option or if not previously set return change.first   
+"""
+function set_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+                              subsolver_name::String, param::Symbol, change::Pair)
+
+    old_value = change.first
+    if type_of_subsolver == "nl"
+        sub_solver = getfield(jp, :nl_solver)
+        sub_solver_options = getfield(jp, :nl_solver_options)
+    end
+
+    if occursin(subsolver_name, string(sub_solver))
+        overwritten = false
+        for i=1:length(sub_solver_options)
+            if sub_solver_options[i][1] == param
+                old_value = sub_solver_options[i][2]
+                sub_solver_options[i] = (param, change.second)
+                overwritten = true
+                break
+            end
+        end
+        if !overwritten
+            push!(sub_solver_options, (param, change.second))
+        end
+        sub_solver = with_optimizer(sub_solver.constructor; sub_solver_options...)
+    end
+
+    if type_of_subsolver == "nl"
+        setfield!(jp, :nl_solver, sub_solver)
+        setfield!(jp, :nl_solver_options, sub_solver_options)
+        JuMP.set_optimizer(jp.model, jp.nl_solver)  
+    end
+    
+    return old_value
+end
+
+"""
+    reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+                            subsolver_name::String, param::Symbol, value)
+
+Resets the subsolver option `param` to `value` if the subsolver for the type i.e "nl" matches
+`subsolver_name`. `value` is normally get by calling `set_subsolver_option!`
+"""
+function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+                                subsolver_name::String, param::Symbol, value)
+    if type_of_subsolver == "nl"
+        sub_solver = getfield(jp, :nl_solver)
+        sub_solver_options = getfield(jp, :nl_solver_options)
+    end
+
+    if occursin(subsolver_name, string(sub_solver))
+        for i=1:length(sub_solver_options)
+            if sub_solver_options[i][1] == param
+                sub_solver_options[i] = (param, value)
+                break
+            end
+        end
+        sub_solver = with_optimizer(sub_solver.constructor; sub_solver_options...)
+    end
+
+    if type_of_subsolver == "nl"
+        setfield!(jp, :nl_solver, sub_solver)
+        setfield!(jp, :nl_solver_options, sub_solver_options)
+    end
+end
