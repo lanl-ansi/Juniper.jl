@@ -16,7 +16,8 @@ include("POD_experiment/nous1.jl")
             branch_strategy=:StrongPseudoCost,
             strong_branching_perc = 100,
             strong_branching_nsteps = 100,
-            strong_restart = true)
+            strong_restart = true,
+            debug = true)
     ))
 
     status = solve(m)
@@ -32,6 +33,11 @@ include("POD_experiment/nous1.jl")
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
 
+    bm = JuMP.backend(m)
+    innermodel = bm.optimizer.model.inner
+    debugDict = innermodel.debugDict
+    counter_test(debugDict,Juniper.getnbranches(innermodel))
+
     @test isapprox(juniper_val, objval, atol=1e0)
     @test isapprox(best_bound_val, objval, atol=1e0)
     @test isapprox(gap_val, 0, atol=1e-2)
@@ -40,7 +46,7 @@ end
 
 @testset "blend029 break strong branching time limit" begin
     println("==================================")
-    println("blend029 full strong branching")
+    println("blend029 break strong branching time limit")
     println("==================================")
 
     m,objval = get_blend029()
@@ -121,7 +127,8 @@ end
             branch_strategy=:Reliability,
             reliability_branching_perc = 50,
             reliability_branching_threshold = 5,
-            strong_restart = true)
+            strong_restart = true,
+            debug = true)
     ))
 
     status = solve(m)
@@ -140,6 +147,11 @@ end
     @test isapprox(juniper_val, objval, atol=1e0)
     @test isapprox(best_bound_val, objval, atol=1e0)
     @test isapprox(gap_val, 0, atol=1e-2)
+
+    bm = JuMP.backend(m)
+    innermodel = bm.optimizer.model.inner
+    debugDict = innermodel.debugDict
+    counter_test(debugDict,Juniper.getnbranches(innermodel))
     end
 
 end
