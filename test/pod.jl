@@ -14,7 +14,8 @@ include("POD_experiment/nous1.jl")
             branch_strategy=:StrongPseudoCost,
             strong_branching_perc = 100,
             strong_branching_nsteps = 100,
-            strong_restart = true
+            strong_restart = true,
+            debug = true
     ))
     status = solve(m)
 
@@ -32,6 +33,9 @@ include("POD_experiment/nous1.jl")
     @test isapprox(juniper_val, objval, atol=1e0)
     @test isapprox(best_bound_val, objval, atol=1e0)
     @test isapprox(gap_val, 0, atol=1e-2)
+
+    debugDict = internalmodel(m).debugDict
+    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
 end
 
 
