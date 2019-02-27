@@ -164,6 +164,8 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.u_var = info_array_of_variables(model.variable_info, :upper_bound)
     integer_bool_arr = info_array_of_variables(model.variable_info, :is_integer)
     binary_bool_arr = info_array_of_variables(model.variable_info, :is_binary)
+    jp.nintvars = sum(integer_bool_arr)
+    jp.nbinvars = sum(binary_bool_arr)
     jp.num_disc_var = sum(integer_bool_arr)+sum(binary_bool_arr)
     jp.num_var = length(model.variable_info)
     jp.var_type = [:Cont for i in 1:jp.num_var]

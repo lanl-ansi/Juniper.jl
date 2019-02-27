@@ -92,6 +92,7 @@ function debug_fill_basic(d,m,restarts)
     d[:info][:sense] = m.obj_sense
     d[:info][:nintvars] = m.nintvars
     d[:info][:nbinvars] = m.nbinvars
+    d[:info][:var2disc_idx] = m.var2disc_idx
 end
 
 
