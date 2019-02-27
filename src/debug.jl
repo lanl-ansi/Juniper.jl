@@ -26,18 +26,18 @@ function get_entry_dict(step_obj)
     d[:step_obj] = step_obj_dict
 
     d_l[:hash] = step_obj.l_nd.hash
-    n_l[:state] =step_obj.l_nd.state
-    n_l[:best_bound] =step_obj.l_nd.best_bound
-    n_l[:relaxation_state] =step_obj.l_nd.relaxation_state
+    n_l[:state] = step_obj.l_nd.state
+    n_l[:best_bound] = step_obj.l_nd.best_bound
+    n_l[:relaxation_state] = step_obj.l_nd.relaxation_state
     if n_l[:state] == :Integral
         n_l[:solution] = step_obj.l_nd.solution
     end
     d_r[:hash] = step_obj.r_nd.hash
-    n_r[:state] =step_obj.r_nd.state
-    n_r[:best_bound] =step_obj.r_nd.best_bound
-    n_r[:relaxation_state] =step_obj.r_nd.relaxation_state
+    n_r[:state] = step_obj.r_nd.state
+    n_r[:best_bound] = step_obj.r_nd.best_bound
+    n_r[:relaxation_state] = step_obj.r_nd.relaxation_state
     if n_r[:state] == :Integral
-        n_r[:solution] =step_obj.r_nd.solution
+        n_r[:solution] = step_obj.r_nd.solution
     end
     d_l[:step_obj] = Dict{Symbol,Any}()
     d_r[:step_obj] = Dict{Symbol,Any}()

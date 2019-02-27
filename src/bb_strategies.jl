@@ -20,26 +20,32 @@ end
 
 """
 init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars,
- left_node, right_node, strong_restart)
+ left_node, right_node, strong_restart, max_gain_var, atol, var_type)
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
 function init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, 
                                 reasonable_int_vars, infeasible_int_vars, 
-                                left_node, right_node, strong_restart)
+                                left_node, right_node, strong_restart, max_gain_var, atol, var_type)
     restart = false
     set_to_last_var = false
 
     # set the bounds directly for the node
     # also update the best bound and the solution
     if !state_is_optimal(l_nd.relaxation_state)
-        node.l_var[var_idx] = ceil(node.solution[var_idx])
-        node.best_bound = r_nd.best_bound
-        node.solution = r_nd.solution
+        # the solution shouldn't be updated when the current max_gain_var is then type correct
+        if max_gain_var == 0 || !is_type_correct(r_nd.solution[max_gain_var],var_type[max_gain_var],atol)
+            node.l_var[var_idx] = ceil(node.solution[var_idx])
+            node.best_bound = r_nd.best_bound
+            node.solution = r_nd.solution
+        end
     else
-        node.u_var[var_idx] = floor(node.solution[var_idx])
-        node.best_bound = l_nd.best_bound
-        node.solution = l_nd.solution
+        # the solution shouldn't be updated when the current max_gain_var is then type correct
+        if max_gain_var == 0 || !is_type_correct(l_nd.solution[max_gain_var],var_type[max_gain_var],atol)
+            node.u_var[var_idx] = floor(node.solution[var_idx])
+            node.best_bound = l_nd.best_bound
+            node.solution = l_nd.solution
+        end
     end
 
     push!(infeasible_int_vars, int_var_idx)
@@ -102,9 +108,6 @@ function branch_strong_on!(m,opts,step_obj,
 
     node = step_obj.node
 
-    left_node = nothing
-    right_node = nothing
-
     max_gain = -Inf # then one is definitely better
     max_gain_var = 0
     max_gain_int_var = 0
@@ -159,7 +162,7 @@ function branch_strong_on!(m,opts,step_obj,
                     right_node = r_nd
                     break
                 end
-                restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart)
+                restart,new_infeasible_int_vars,set_to_last_var = init_strong_restart!(node, var_idx, int_var_idx, l_nd, r_nd, reasonable_int_vars, infeasible_int_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type)
                 infeasible_int_vars = new_infeasible_int_vars
 
                 need_to_resolve = true

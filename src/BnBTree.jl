@@ -52,7 +52,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
         JuMP.set_lower_bound(m.x[i], cnode.l_var[i])
         JuMP.set_upper_bound(m.x[i], cnode.u_var[i])
     end
-    JuMP.set_start_value.(m.x[1:m.num_var],step_obj.node.solution)
+    JuMP.set_start_value.(m.x[1:m.num_var], step_obj.node.solution)
 
     old_mu_init = set_subsolver_option!(m, "nl", "Ipopt", :mu_init, 0.1 => 1e-5)                                   
 
