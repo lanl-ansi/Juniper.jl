@@ -231,7 +231,11 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
                 val = string(round(mip_obj; digits=4))
             end
         elseif f == :NLPobj
-            val = string(round(nlp_obj; digits=4))
+            if isnan(nlp_obj)
+                val = "-"
+            else
+                val = string(round(nlp_obj; digits=4))
+            end
         elseif f == :Time
             val = string(round(t; digits=1))
         end
@@ -334,6 +338,9 @@ function fpump(optimizer, m)
             end
             if !state_is_optimal(nlp_status)
                 @warn "NLP couldn't be solved to optimality"
+                if check_print(ps,[:Table])
+                    print_fp_table(mip_obj, NaN, time()-start_fpump, fields, field_chars)
+                end
                 break
             end
         end

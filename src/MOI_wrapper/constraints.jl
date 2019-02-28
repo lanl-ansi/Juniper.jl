@@ -55,11 +55,10 @@ Binary variable support
 """
 function MOI.add_constraint(model::Optimizer, v::SVF, ::MOI.ZeroOne)
     vi = v.variable
-	check_inbounds(model, vi)
-    model.variable_info[vi.value].lower_bound = 0.0
-    model.variable_info[vi.value].has_lower_bound = true
-    model.variable_info[vi.value].upper_bound = 1.0
-    model.variable_info[vi.value].has_upper_bound = true
+    check_inbounds(model, vi)
+    # the bounds are set using info_array_of_variables 
+    # according to mlubin the bounds should not be set here as the bounds should stay when 
+    # the binary constraint is deleted
     model.variable_info[vi.value].is_binary = true
 	
     return MOI.ConstraintIndex{SVF, MOI.ZeroOne}(vi.value)

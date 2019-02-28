@@ -189,6 +189,13 @@ function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symb
     result = Array{type_dict[attr], 1}(undef, len_var_info)
     for i = 1:len_var_info
         result[i] = getfield(variable_info[i], attr)
+        # if type is binary then set bounds correctly
+        if result[i] < 0 && attr == :lower_bound && getfield(variable_info[i], :is_binary)
+            result[i] = 0
+        end
+        if result[i] > 1 && attr == :upper_bound && getfield(variable_info[i], :is_binary)
+            result[i] = 1
+        end
     end
     return result
 end
