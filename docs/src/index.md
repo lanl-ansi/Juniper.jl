@@ -53,3 +53,11 @@ status = solve(m)
 ```
 
 This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.
+
+# Performance
+You can find our paper with detailed performance measurements in our [paper](https://link.springer.com/chapter/10.1007/978-3-319-93031-2_27) or [technical report](https://arxiv.org/abs/1804.07332).
+
+The most recent stats can be found on the website [BnBVisual](https://wikunia.github.io/BnBVisual/).
+
+![Locally solved instances](https://user-images.githubusercontent.com/4931746/53558402-41416680-3b48-11e9-991f-84bc4588f23f.png)
+
