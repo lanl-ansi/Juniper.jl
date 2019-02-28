@@ -33,6 +33,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "index.html#Performance-1",
+    "page": "Home",
+    "title": "Performance",
+    "category": "section",
+    "text": "You can find our paper with detailed performance measurements in our paper or technical report.The most recent stats can be found on the website BnBVisual.(Image: Locally solved instances)"
+},
+
+{
     "location": "options.html#",
     "page": "Options",
     "title": "Options",
