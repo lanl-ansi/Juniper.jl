@@ -20,44 +20,55 @@ end
 
 """
 init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars,
- left_node, right_node, strong_restart, max_gain_var, atol, var_type)
+ left_node, right_node, strong_restart, max_gain_var, atol, var_type, disc2var_idx)
 
 Tighten the bounds for the node and check if there are variables that need to be checked for a restart.
 """
 function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, 
                                 reasonable_disc_vars, infeasible_disc_vars, 
-                                left_node, right_node, strong_restart,
-                                max_gain_var, atol, var_type)
+                                left_node, right_node, strong_restart, max_gain_var,
+                                atol, var_type, disc2var_idx)
     restart = false
     set_to_last_var = false
+    need_to_resolve = false
 
     # set the bounds directly for the node
     # also update the best bound and the solution
     if l_nd.relaxation_state != :Optimal
         # the solution shouldn't be updated when the current max_gain_var is then type correct
         if max_gain_var == 0 || !is_type_correct(r_nd.solution[max_gain_var],var_type[max_gain_var],atol)
-            node.l_var[var_idx] = ceil(node.solution[var_idx])
-            node.best_bound = r_nd.best_bound
-            node.solution = r_nd.solution
+            # if all variables reasonable_disc_vars are type correct => just continue with thetree
+            # no restarts and no change in bounds
+            if !all_reasonable_type_correct(r_nd.solution, disc2var_idx, reasonable_disc_vars, atol)
+                node.l_var[var_idx] = ceil(node.solution[var_idx])
+                node.best_bound = r_nd.best_bound
+                node.solution = r_nd.solution
+                need_to_resolve = true
+                push!(infeasible_disc_vars, disc_var_idx)
+                strong_restart && (restart = true)
+            end
         end
     else
         # the solution shouldn't be updated when the current max_gain_var is then type correct
         if max_gain_var == 0 || !is_type_correct(l_nd.solution[max_gain_var],var_type[max_gain_var],atol)
-            node.u_var[var_idx] = floor(node.solution[var_idx])
-            node.best_bound = l_nd.best_bound
-            node.solution = l_nd.solution
+            if !all_reasonable_type_correct(l_nd.solution, disc2var_idx, reasonable_disc_vars, atol)
+                node.u_var[var_idx] = floor(node.solution[var_idx])
+                node.best_bound = l_nd.best_bound
+                node.solution = l_nd.solution
+                need_to_resolve = true
+                push!(infeasible_disc_vars, disc_var_idx)
+                strong_restart && (restart = true)
+            end
         end
     end
 
-    push!(infeasible_disc_vars, disc_var_idx)
 
     if length(reasonable_disc_vars) == length(infeasible_disc_vars)
         # basically branching on the last infeasible variable 
         set_to_last_var = true
-    elseif strong_restart
-        restart = true
+        restart = false
     end
-    return restart, infeasible_disc_vars, set_to_last_var
+    return need_to_resolve, restart, infeasible_disc_vars, set_to_last_var
 end
 
 """
@@ -166,10 +177,9 @@ function branch_strong_on!(m,opts,step_obj,
                     right_node = r_nd
                     break
                 end
-                restart,new_infeasible_disc_vars,set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type)
+                need_to_resolve, restart, new_infeasible_disc_vars, set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type, disc2var_idx)
                 infeasible_disc_vars = new_infeasible_disc_vars
 
-                need_to_resolve = true
                 # only variables where one branch is infeasible => no restart and break
                 if set_to_last_var
                     max_gain_var = var_idx

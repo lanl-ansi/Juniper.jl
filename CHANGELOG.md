@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### Staging
+- bugfix in init_strong_restart
+
 ### v0.2.5
 - add linear constraints using @constraint in root model
 - in BFS mode use the highest depth if several nodes have the same objective

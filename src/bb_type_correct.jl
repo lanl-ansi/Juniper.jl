@@ -25,3 +25,18 @@ function are_type_correct(sol, types, disc2var_idx, atol)
     end
     return true
 end
+
+"""
+    all_reasonable_type_correct(sol, disc2var_idx, reasonable_idx, atol)
+
+Check whether all reasonable variable have are discrete alreadyy
+"""
+function all_reasonable_type_correct(sol, disc2var_idx, reasonable_idx, atol)
+    for i in reasonable_idx
+        idx = disc2var_idx[i]
+        if !isapprox(round(sol[idx])-sol[idx], 0; atol=atol)
+            return false
+        end
+    end
+    return true
+end
