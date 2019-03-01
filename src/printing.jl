@@ -61,8 +61,8 @@ function print_options(m::JuniperProblem; all=true)
     println()
 end
 
-function print_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
-    ln, arr = get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+function print_fp_table(mip_obj,nlp_obj,t, fields, field_chars, catol)
+    ln, arr = get_fp_table(mip_obj,nlp_obj,t, fields, field_chars, catol)
     println(ln)
 end
 

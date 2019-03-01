@@ -218,7 +218,7 @@ function add!(t::TabuList, m, sol)
     end
 end
 
-function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars, catol)
     ln = ""
     i = 1
     arr = []
@@ -228,13 +228,21 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
             if isnan(mip_obj)
                 val = "-"
             else
-                val = string(round(mip_obj; digits=4))
+                digits = 4
+                if mip_obj < 1e-4
+                    digits = convert(Int,floor(log10(1/catol)))
+                end
+                val = string(round(mip_obj; digits=digits))
             end
         elseif f == :NLPobj
             if isnan(nlp_obj)
                 val = "-"
             else
-                val = string(round(nlp_obj; digits=4))
+                digits = 4
+                if nlp_obj < 1e-4
+                    digits = convert(Int,floor(log10(1/catol)))
+                end
+                val = string(round(nlp_obj; digits=digits))
             end
         elseif f == :Time
             val = string(round(t; digits=1))
@@ -339,14 +347,14 @@ function fpump(optimizer, m)
             if !state_is_optimal(nlp_status)
                 @warn "NLP couldn't be solved to optimality"
                 if check_print(ps,[:Table])
-                    print_fp_table(mip_obj, NaN, time()-start_fpump, fields, field_chars)
+                    print_fp_table(mip_obj, NaN, time()-start_fpump, fields, field_chars, catol)
                 end
                 break
             end
         end
 
         if check_print(ps,[:Table])
-            print_fp_table(mip_obj, nlp_obj, time()-start_fpump, fields, field_chars)
+            print_fp_table(mip_obj, nlp_obj, time()-start_fpump, fields, field_chars, catol)
         end
 
         # if the current tolerance was nearly reached 5 times
