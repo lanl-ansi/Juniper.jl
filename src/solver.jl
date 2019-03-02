@@ -35,7 +35,7 @@ function get_default_options()
     traverse_strategy                   = :BFS
     # Feasibility Pump  
     feasibility_pump                    = true # changes to false if mip_solver not provided
-    feasibility_pump_time_limit         = 60
+    feasibility_pump_time_limit         = 60.0
     feasibility_pump_tolerance_counter  = 5
     tabu_list_length                    = 30
     num_resolve_nlp_feasibility_pump    = 1
@@ -95,6 +95,13 @@ function combine_options(options)
     # if gain mu is specified we shouldn't change it later
     if haskey(options_dict, :gain_mu)
         options_dict[:fixed_gain_mu] = true
+    end
+
+    # if time limit is set make sure to reduce the time limit for the feasibility pump
+    if haskey(options_dict, :time_limit) && !haskey(options_dict, :feasibility_pump_time_limit)
+        if options_dict[:time_limit] < defaults.feasibility_pump_time_limit
+            setfield!(defaults, :feasibility_pump_time_limit, convert(Float64, options_dict[:time_limit]))
+        end
     end
 
     for fname in fieldnames(SolverOptions)

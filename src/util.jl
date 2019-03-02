@@ -150,7 +150,7 @@ function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
 end
 
 """
-    set_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+    set_subsolver_option!(jp::JuniperProblem, model::JuMP.model, type_of_subsolver::String,
                           subsolver_name::String, param::Symbol, change::Pair)
 
 Set the optimizer of the model if the subsolver_name is part of the name of the optimizer.
@@ -159,13 +159,16 @@ normally is 0.1 and will be changed to 1e-5.
 Normally reset_subsolver_option! should be run to return to reset this change after `optimize!`
 Return the previous value of the param option or if not previously set return change.first   
 """
-function set_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+function set_subsolver_option!(jp::JuniperProblem, model::JuMP.Model, type_of_subsolver::String,
                               subsolver_name::String, param::Symbol, change::Pair)
 
     old_value = change.first
     if type_of_subsolver == "nl"
         sub_solver = getfield(jp, :nl_solver)
         sub_solver_options = getfield(jp, :nl_solver_options)
+    elseif type_of_subsolver == "mip"
+        sub_solver = getfield(jp, :mip_solver)
+        sub_solver_options = getfield(jp, :mip_solver_options)
     end
 
     if occursin(subsolver_name, string(sub_solver))
@@ -187,8 +190,13 @@ function set_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
     if type_of_subsolver == "nl"
         setfield!(jp, :nl_solver, sub_solver)
         setfield!(jp, :nl_solver_options, sub_solver_options)
-        JuMP.set_optimizer(jp.model, jp.nl_solver)  
+        JuMP.set_optimizer(model, jp.nl_solver)  
+    elseif type_of_subsolver == "mip"
+        setfield!(jp, :mip_solver, sub_solver)
+        setfield!(jp, :mip_solver_options, sub_solver_options)
+        JuMP.set_optimizer(model, jp.mip_solver) 
     end
+
     
     return old_value
 end
@@ -205,6 +213,9 @@ function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
     if type_of_subsolver == "nl"
         sub_solver = getfield(jp, :nl_solver)
         sub_solver_options = getfield(jp, :nl_solver_options)
+    elseif type_of_subsolver == "mip"
+        sub_solver = getfield(jp, :mip_solver)
+        sub_solver_options = getfield(jp, :mip_solver_options)
     end
 
     if occursin(subsolver_name, string(sub_solver))
@@ -220,5 +231,8 @@ function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
     if type_of_subsolver == "nl"
         setfield!(jp, :nl_solver, sub_solver)
         setfield!(jp, :nl_solver_options, sub_solver_options)
+    elseif type_of_subsolver == "mip"
+        setfield!(jp, :mip_solver, sub_solver)
+        setfield!(jp, :mip_solver_options, sub_solver_options)
     end
 end

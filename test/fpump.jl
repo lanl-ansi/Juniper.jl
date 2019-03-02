@@ -166,4 +166,27 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
+@testset "FP: FLay02H short feasibility_pump_time_limit" begin
+    println("==================================")
+    println("FP: FLay02H short feasibility_pump_time_limit")
+    println("==================================")
+
+    # This probably needs a restart in real nlp
+    m = get_FLay02H()
+
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            branch_strategy=:StrongPseudoCost,
+            feasibility_pump = true,
+            feasibility_pump_time_limit = 1,
+            time_limit = 2,
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+    ))
+
+    status = solve(m)
+
+    @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
+end
+
 end

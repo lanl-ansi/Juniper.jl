@@ -1,11 +1,11 @@
 """
-    generate_mip(optimizer, m, nlp_sol, tabu_list)
+    generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
 
 Generate a mip using the linear constraints of the original model
 TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
-function generate_mip(optimizer, m, nlp_sol, tabu_list)
+function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     mip_model = Model(with_optimizer(m.mip_solver))
     @variable(mip_model, 
         m.l_var[i] <= mx[i = 1:m.num_var] <= m.u_var[i], 
@@ -61,18 +61,16 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list)
 
     @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
 
-    # Break the mip solver if it takes too long or throw a warning when this option isn't available
-    # Todo time limit for solver using MOI?
+    # Break the mip solver if it takes too long or throw a warning when this option isn't available 
+    current_time = time()-start_fpump  
+    time_left = m.options.feasibility_pump_time_limit-current_time
+    time_left < 0 && (time_left = 1.0)
+    old_time_limit = set_subsolver_option!(m, mip_model, "mip", "Cbc", :seconds, Inf => time_left)                                   
     
-    #=try
-        MathProgBase.setparameters!(m.mip_solver, TimeLimit=m.options.feasibility_pump_time_limit)
-    catch
-       @warn "Set parameters is not supported"
-    end
-    =#
-
     JuMP.optimize!(mip_model)
     status = MOI.get(backend, MOI.TerminationStatus()) 
+
+    reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
 
     # round mip values
     values = JuMP.value.(mx)
@@ -312,7 +310,7 @@ function fpump(optimizer, m)
 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
-            mip_status, mip_sol, mip_obj = generate_mip(optimizer, m, nlp_sol, tabu_list)
+            mip_status, mip_sol, mip_obj = generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
         else
             # if no linear constraints just round the discrete variables
             mip_obj = NaN
