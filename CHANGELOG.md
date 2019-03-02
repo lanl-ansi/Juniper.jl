@@ -4,6 +4,7 @@
 - MPB -> MOI
 - JuMP 0.19
 - Dropped support for Julia versions < 1.0
+- bugfix in init_strong_restart
 
 ### v0.2.5
 - add linear constraints using @constraint in root model

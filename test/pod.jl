@@ -41,6 +41,9 @@ include("POD_experiment/nous1.jl")
     @test isapprox(juniper_val, objval, atol=1e0)
     @test isapprox(best_bound_val, objval, atol=1e0)
     @test isapprox(gap_val, 0, atol=1e-2)
+
+    debugDict = internalmodel(m).debugDict
+    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
 end
 
 
