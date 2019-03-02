@@ -397,8 +397,6 @@ function get_blend029()
   # ----- Objective ----- #
   @objective(m, Max, objvar)
 
-  m = m 		 # model get returned when including this script. 
-
   return m, 13.3594
 
 end
