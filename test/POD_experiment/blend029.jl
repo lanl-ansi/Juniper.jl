@@ -1,236 +1,404 @@
 function get_blend029()
   m = Model()
 
-  @variable(m, x[1:102])
-  for i=67:102
-    setcategory(x[i], :Bin)
-  end
+  # ----- Variables ----- #
+  @variable(m, objvar)
+  x_Idx = Any[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67]
+  @variable(m, x[x_Idx])
+  b_Idx = Any[68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103]
+  @variable(m, b[b_Idx])
+  setcategory(b[71], :Bin)
+  setlowerbound(x[16], 0.0)
+  setcategory(b[78], :Bin)
+  setlowerbound(x[14], 0.0)
+  setlowerbound(x[62], 0.0)
+  setlowerbound(x[38], 0.0)
+  setcategory(b[75], :Bin)
+  setcategory(b[85], :Bin)
+  setlowerbound(x[42], 0.0)
+  setcategory(b[80], :Bin)
+  setcategory(b[82], :Bin)
+  setlowerbound(x[56], 0.0)
+  setcategory(b[70], :Bin)
+  setlowerbound(x[22], 0.0)
+  setlowerbound(x[59], 0.0)
+  setcategory(b[81], :Bin)
+  setlowerbound(x[2], 0.0)
+  setlowerbound(x[9], 0.0)
+  setlowerbound(x[8], 0.0)
+  setlowerbound(x[43], 0.0)
+  setcategory(b[90], :Bin)
+  setlowerbound(x[36], 0.0)
+  setcategory(b[87], :Bin)
+  setcategory(b[98], :Bin)
+  setlowerbound(x[4], 0.0)
+  setlowerbound(x[32], 0.0)
+  setlowerbound(x[54], 0.0)
+  setlowerbound(x[27], 0.0)
+  setcategory(b[95], :Bin)
+  setcategory(b[77], :Bin)
+  setlowerbound(x[3], 0.0)
+  setlowerbound(x[25], 0.0)
+  setcategory(b[84], :Bin)
+  setlowerbound(x[30], 0.0)
+  setlowerbound(x[58], 0.0)
+  setlowerbound(x[11], 0.0)
+  setcategory(b[79], :Bin)
+  setlowerbound(x[29], 0.0)
+  setlowerbound(x[53], 0.0)
+  setlowerbound(x[5], 0.0)
+  setlowerbound(x[37], 0.0)
+  setlowerbound(x[63], 0.0)
+  setlowerbound(x[57], 0.0)
+  setlowerbound(x[55], 0.0)
+  setcategory(b[74], :Bin)
+  setcategory(b[89], :Bin)
+  setlowerbound(x[24], 0.0)
+  setcategory(b[92], :Bin)
+  setcategory(b[72], :Bin)
+  setlowerbound(x[41], 0.0)
+  setcategory(b[96], :Bin)
+  setlowerbound(x[18], 0.0)
+  setlowerbound(x[52], 0.0)
+  setcategory(b[86], :Bin)
+  setlowerbound(x[7], 0.0)
+  setlowerbound(x[13], 0.0)
+  setlowerbound(x[49], 0.0)
+  setcategory(b[102], :Bin)
+  setlowerbound(x[21], 0.0)
+  setlowerbound(x[10], 0.0)
+  setlowerbound(x[67], 0.0)
+  setcategory(b[69], :Bin)
+  setcategory(b[68], :Bin)
+  setcategory(b[100], :Bin)
+  setlowerbound(x[26], 0.0)
+  setlowerbound(x[45], 0.0)
+  setlowerbound(x[66], 0.0)
+  setlowerbound(x[12], 0.0)
+  setlowerbound(x[40], 0.0)
+  setlowerbound(x[44], 0.0)
+  setcategory(b[83], :Bin)
+  setlowerbound(x[61], 0.0)
+  setlowerbound(x[50], 0.0)
+  setcategory(b[101], :Bin)
+  setlowerbound(x[31], 0.0)
+  setlowerbound(x[33], 0.0)
+  setlowerbound(x[47], 0.0)
+  setcategory(b[76], :Bin)
+  setlowerbound(x[28], 0.0)
+  setlowerbound(x[35], 0.0)
+  setlowerbound(x[64], 0.0)
+  setcategory(b[88], :Bin)
+  setlowerbound(x[6], 0.0)
+  setlowerbound(x[60], 0.0)
+  setcategory(b[97], :Bin)
+  setlowerbound(x[17], 0.0)
+  setcategory(b[93], :Bin)
+  setcategory(b[99], :Bin)
+  setlowerbound(x[23], 0.0)
+  setcategory(b[94], :Bin)
+  setlowerbound(x[34], 0.0)
+  setlowerbound(x[46], 0.0)
+  setlowerbound(x[51], 0.0)
+  setcategory(b[91], :Bin)
+  setlowerbound(x[19], 0.0)
+  setlowerbound(x[48], 0.0)
+  setcategory(b[103], :Bin)
+  setlowerbound(x[20], 0.0)
+  setlowerbound(x[39], 0.0)
+  setlowerbound(x[15], 0.0)
+  setcategory(b[73], :Bin)
+  setlowerbound(x[65], 0.0)
+  setupperbound(x[2], 1.0)
+  setupperbound(x[3], 1.0)
+  setupperbound(x[4], 1.0)
+  setupperbound(x[5], 1.0)
+  setupperbound(x[6], 1.0)
+  setupperbound(x[7], 1.0)
+  setupperbound(x[8], 1.0)
+  setupperbound(x[9], 1.0)
+  setupperbound(x[10], 1.0)
+  setupperbound(x[11], 1.0)
+  setupperbound(x[12], 1.0)
+  setupperbound(x[13], 1.0)
+  setupperbound(x[14], 1.0)
+  setupperbound(x[15], 1.0)
+  setupperbound(x[16], 1.0)
+  setupperbound(x[17], 1.0)
+  setupperbound(x[18], 1.0)
+  setupperbound(x[19], 1.0)
+  setupperbound(x[20], 1.0)
+  setupperbound(x[21], 1.0)
+  setupperbound(x[22], 1.0)
+  setupperbound(x[23], 1.0)
+  setupperbound(x[24], 1.0)
+  setupperbound(x[25], 1.0)
+  setupperbound(x[26], 1.0)
+  setupperbound(x[27], 1.0)
+  setupperbound(x[28], 1.0)
+  setupperbound(x[29], 1.0)
+  setupperbound(x[30], 1.0)
+  setupperbound(x[31], 1.0)
+  setupperbound(x[32], 1.0)
+  setupperbound(x[33], 1.0)
+  setupperbound(x[34], 1.0)
+  setupperbound(x[35], 1.0)
+  setupperbound(x[36], 1.0)
+  setupperbound(x[37], 1.0)
+  setupperbound(x[38], 1.0)
+  setupperbound(x[39], 1.0)
+  setupperbound(x[40], 1.0)
+  setupperbound(x[41], 1.0)
+  setupperbound(x[42], 1.0)
+  setupperbound(x[43], 1.0)
+  setupperbound(x[44], 1.0)
+  setupperbound(x[45], 1.0)
+  setupperbound(x[46], 1.0)
+  setupperbound(x[47], 1.0)
+  setupperbound(x[48], 1.0)
+  setupperbound(x[49], 1.0)
+  setupperbound(x[50], 2.0)
+  setupperbound(x[51], 2.0)
+  setupperbound(x[52], 2.0)
+  setupperbound(x[53], 2.0)
+  setupperbound(x[54], 2.0)
+  setupperbound(x[55], 2.0)
+  setupperbound(x[56], 2.0)
+  setupperbound(x[57], 2.0)
+  setupperbound(x[58], 2.0)
+  setupperbound(x[59], 2.0)
+  setupperbound(x[60], 2.0)
+  setupperbound(x[61], 2.0)
+  setupperbound(x[62], 2.0)
+  setupperbound(x[63], 2.0)
+  setupperbound(x[64], 2.0)
+  setupperbound(x[65], 2.0)
+  setupperbound(x[66], 2.0)
+  setupperbound(x[67], 2.0)
 
-  for i=1:48
-    setlowerbound(x[i], 0)
-    setupperbound(x[i], 1)
-  end
-  for i=49:66
-    setlowerbound(x[i], 0)
-    setupperbound(x[i], 2)
-  end
 
-  @objective(m, Max, - 1.74*x[1] - 1.74*x[2] - 1.74*x[3] - 1.45*x[4] - 1.45*x[5] - 1.45*x[6] + 7.38*x[7] + 7.38*x[8] + 7.38*x[9] + 5.6*x[10] + 5.6*x[11] + 5.6*x[12] - 1.7*x[13] - 1.7*x[14] - 1.7*x[15] - 1.18*x[16] - 1.18*x[17] - 1.18*x[18] + 7.21*x[19] + 7.21*x[20] + 7.21*x[21] + 5.45*x[22] + 5.45*x[23] + 5.45*x[24] - 0.3*x[25] - 0.3*x[26] - 0.3*x[27] + 7.71*x[28] + 7.71*x[29] + 7.71*x[30] + 6.28*x[31] + 6.28*x[32] + 6.28*x[33] + 7.74*x[34] + 7.74*x[35] + 7.74*x[36] - 0.84*x[67] - 0.84*x[68] - 0.84*x[69] - 0.05*x[70] - 0.05*x[71] - 0.05*x[72] - 0.94*x[73] - 0.94*x[74] - 0.94*x[75] - 0.81*x[76] - 0.81*x[77] - 0.81*x[78] - 0.79*x[79] - 0.79*x[80] - 0.79*x[81] - 0.05*x[82] - 0.05*x[83] - 0.05*x[84] - 0.65*x[85] - 0.65*x[86] - 0.65*x[87] - 0.97*x[88] - 0.97*x[89] - 0.97*x[90] - 0.57*x[91] - 0.57*x[92] - 0.57*x[93] - 0.26*x[94] - 0.26*x[95] - 0.26*x[96] - 0.45*x[97] - 0.45*x[98] - 0.45*x[99] - 0.1*x[100] - 0.1*x[101] - 0.1*x[102])
+  # ----- Constraints ----- #
+  @constraint(m, e1, objvar+1.74*x[2]+1.74*x[3]+1.74*x[4]+1.45*x[5]+1.45*x[6]+1.45*x[7]-7.38*x[8]-7.38*x[9]-7.38*x[10]-5.6*x[11]-5.6*x[12]-5.6*x[13]+1.7*x[14]+1.7*x[15]+1.7*x[16]+1.18*x[17]+1.18*x[18]+1.18*x[19]-7.21*x[20]-7.21*x[21]-7.21*x[22]-5.45*x[23]-5.45*x[24]-5.45*x[25]+0.3*x[26]+0.3*x[27]+0.3*x[28]-7.71*x[29]-7.71*x[30]-7.71*x[31]-6.28*x[32]-6.28*x[33]-6.28*x[34]-7.74*x[35]-7.74*x[36]-7.74*x[37]+0.84*b[68]+0.84*b[69]+0.84*b[70]+0.05*b[71]+0.05*b[72]+0.05*b[73]+0.94*b[74]+0.94*b[75]+0.94*b[76]+0.81*b[77]+0.81*b[78]+0.81*b[79]+0.79*b[80]+0.79*b[81]+0.79*b[82]+0.05*b[83]+0.05*b[84]+0.05*b[85]+0.65*b[86]+0.65*b[87]+0.65*b[88]+0.97*b[89]+0.97*b[90]+0.97*b[91]+0.57*b[92]+0.57*b[93]+0.57*b[94]+0.26*b[95]+0.26*b[96]+0.26*b[97]+0.45*b[98]+0.45*b[99]+0.45*b[100]+0.1*b[101]+0.1*b[102]+0.1*b[103] == 0.0)
+  @constraint(m, e2, x[2]+x[5]+x[8]+x[11]+x[50] == 1.0)
+  @constraint(m, e3, x[14]+x[17]+x[20]+x[23]+x[53] == 1.1)
+  @constraint(m, e4, -x[2]-x[14]+x[26]+x[29]+x[32]+x[56] == 0.2)
+  @constraint(m, e5, -x[5]-x[17]-x[26]+x[35]+x[59] == 0.1)
+  @constraint(m, e6, -x[8]-x[20]-x[29]-x[35]+x[62] == 1.55)
+  @constraint(m, e7, -x[11]-x[23]-x[32]+x[65] == 0.49)
+  @NLconstraint(m, e8, x[38]*x[56]-0.6*x[2]-0.2*x[14]+0.2*x[26]+0.2*x[29]+0.2*x[32] == 0.04)
+  @NLconstraint(m, e9, x[41]*x[59]-0.6*x[5]-0.2*x[17]-0.2*x[26]+0.7*x[35] == 0.07)
+  @NLconstraint(m, e10, x[44]*x[56]-0.4*x[2]-0.4*x[14]+0.5*x[26]+0.5*x[29]+0.5*x[32] == 0.1)
+  @NLconstraint(m, e11, x[47]*x[59]-0.4*x[5]-0.4*x[17]-0.5*x[26]+0.6*x[35] == 0.06)
+  @constraint(m, e12, x[3]+x[6]+x[9]+x[12]-x[50]+x[51] == 1.0)
+  @constraint(m, e13, x[4]+x[7]+x[10]+x[13]-x[51]+x[52] == 0.0)
+  @constraint(m, e14, x[15]+x[18]+x[21]+x[24]-x[53]+x[54] == 0.1)
+  @constraint(m, e15, x[16]+x[19]+x[22]+x[25]-x[54]+x[55] == 0.9)
+  @constraint(m, e16, -x[3]-x[15]+x[27]+x[30]+x[33]-x[56]+x[57] == 0.0)
+  @constraint(m, e17, -x[4]-x[16]+x[28]+x[31]+x[34]-x[57]+x[58] == 0.0)
+  @constraint(m, e18, -x[6]-x[18]-x[27]+x[36]-x[59]+x[60] == 0.0)
+  @constraint(m, e19, -x[7]-x[19]-x[28]+x[37]-x[60]+x[61] == 0.0)
+  @constraint(m, e20, -x[9]-x[21]-x[30]-x[36]-x[62]+x[63] == -0.81)
+  @constraint(m, e21, -x[10]-x[22]-x[31]-x[37]-x[63]+x[64] == -0.88)
+  @constraint(m, e22, -x[12]-x[24]-x[33]-x[65]+x[66] == -0.14)
+  @constraint(m, e23, -x[13]-x[25]-x[34]-x[66]+x[67] == -0.1)
+  @NLconstraint(m, e24, x[39]*x[57]-(x[38]*x[56]-(x[38]*x[27]+x[38]*x[30]+x[38]*x[33]))-0.6*x[3]-0.2*x[15] == 0.0)
+  @NLconstraint(m, e25, x[40]*x[58]-(x[39]*x[57]-(x[39]*x[28]+x[39]*x[31]+x[39]*x[34]))-0.6*x[4]-0.2*x[16] == 0.0)
+  @NLconstraint(m, e26, x[42]*x[60]-(x[41]*x[59]+x[38]*x[27]-x[41]*x[36])-0.6*x[6]-0.2*x[18] == 0.0)
+  @NLconstraint(m, e27, x[43]*x[61]-(x[42]*x[60]+x[39]*x[28]-x[42]*x[37])-0.6*x[7]-0.2*x[19] == 0.0)
+  @NLconstraint(m, e28, x[45]*x[57]-(x[44]*x[56]-(x[44]*x[27]+x[44]*x[30]+x[44]*x[33]))-0.4*x[3]-0.4*x[15] == 0.0)
+  @NLconstraint(m, e29, x[46]*x[58]-(x[45]*x[57]-(x[45]*x[28]+x[45]*x[31]+x[45]*x[34]))-0.4*x[4]-0.4*x[16] == 0.0)
+  @NLconstraint(m, e30, x[48]*x[60]-(x[47]*x[59]+x[44]*x[27]-x[47]*x[36])-0.4*x[6]-0.4*x[18] == 0.0)
+  @NLconstraint(m, e31, x[49]*x[61]-(x[48]*x[60]+x[45]*x[28]-x[48]*x[37])-0.4*x[7]-0.4*x[19] == 0.0)
+  @constraint(m, e32, x[2]-b[68] <= 0.0)
+  @constraint(m, e33, x[3]-b[69] <= 0.0)
+  @constraint(m, e34, x[4]-b[70] <= 0.0)
+  @constraint(m, e35, x[5]-b[71] <= 0.0)
+  @constraint(m, e36, x[6]-b[72] <= 0.0)
+  @constraint(m, e37, x[7]-b[73] <= 0.0)
+  @constraint(m, e38, x[8]-b[74] <= 0.0)
+  @constraint(m, e39, x[9]-b[75] <= 0.0)
+  @constraint(m, e40, x[10]-b[76] <= 0.0)
+  @constraint(m, e41, x[11]-b[77] <= 0.0)
+  @constraint(m, e42, x[12]-b[78] <= 0.0)
+  @constraint(m, e43, x[13]-b[79] <= 0.0)
+  @constraint(m, e44, x[14]-b[80] <= 0.0)
+  @constraint(m, e45, x[15]-b[81] <= 0.0)
+  @constraint(m, e46, x[16]-b[82] <= 0.0)
+  @constraint(m, e47, x[17]-b[83] <= 0.0)
+  @constraint(m, e48, x[18]-b[84] <= 0.0)
+  @constraint(m, e49, x[19]-b[85] <= 0.0)
+  @constraint(m, e50, x[20]-b[86] <= 0.0)
+  @constraint(m, e51, x[21]-b[87] <= 0.0)
+  @constraint(m, e52, x[22]-b[88] <= 0.0)
+  @constraint(m, e53, x[23]-b[89] <= 0.0)
+  @constraint(m, e54, x[24]-b[90] <= 0.0)
+  @constraint(m, e55, x[25]-b[91] <= 0.0)
+  @constraint(m, e56, x[26]-b[92] <= 0.0)
+  @constraint(m, e57, x[27]-b[93] <= 0.0)
+  @constraint(m, e58, x[28]-b[94] <= 0.0)
+  @constraint(m, e59, x[29]-b[95] <= 0.0)
+  @constraint(m, e60, x[30]-b[96] <= 0.0)
+  @constraint(m, e61, x[31]-b[97] <= 0.0)
+  @constraint(m, e62, x[32]-b[98] <= 0.0)
+  @constraint(m, e63, x[33]-b[99] <= 0.0)
+  @constraint(m, e64, x[34]-b[100] <= 0.0)
+  @constraint(m, e65, x[35]-b[101] <= 0.0)
+  @constraint(m, e66, x[36]-b[102] <= 0.0)
+  @constraint(m, e67, x[37]-b[103] <= 0.0)
+  @constraint(m, e68, x[2] >= 0.0)
+  @constraint(m, e69, x[3] >= 0.0)
+  @constraint(m, e70, x[4] >= 0.0)
+  @constraint(m, e71, x[5] >= 0.0)
+  @constraint(m, e72, x[6] >= 0.0)
+  @constraint(m, e73, x[7] >= 0.0)
+  @constraint(m, e74, x[8] >= 0.0)
+  @constraint(m, e75, x[9] >= 0.0)
+  @constraint(m, e76, x[10] >= 0.0)
+  @constraint(m, e77, x[11] >= 0.0)
+  @constraint(m, e78, x[12] >= 0.0)
+  @constraint(m, e79, x[13] >= 0.0)
+  @constraint(m, e80, x[14] >= 0.0)
+  @constraint(m, e81, x[15] >= 0.0)
+  @constraint(m, e82, x[16] >= 0.0)
+  @constraint(m, e83, x[17] >= 0.0)
+  @constraint(m, e84, x[18] >= 0.0)
+  @constraint(m, e85, x[19] >= 0.0)
+  @constraint(m, e86, x[20] >= 0.0)
+  @constraint(m, e87, x[21] >= 0.0)
+  @constraint(m, e88, x[22] >= 0.0)
+  @constraint(m, e89, x[23] >= 0.0)
+  @constraint(m, e90, x[24] >= 0.0)
+  @constraint(m, e91, x[25] >= 0.0)
+  @constraint(m, e92, x[26] >= 0.0)
+  @constraint(m, e93, x[27] >= 0.0)
+  @constraint(m, e94, x[28] >= 0.0)
+  @constraint(m, e95, x[29] >= 0.0)
+  @constraint(m, e96, x[30] >= 0.0)
+  @constraint(m, e97, x[31] >= 0.0)
+  @constraint(m, e98, x[32] >= 0.0)
+  @constraint(m, e99, x[33] >= 0.0)
+  @constraint(m, e100, x[34] >= 0.0)
+  @constraint(m, e101, x[35] >= 0.0)
+  @constraint(m, e102, x[36] >= 0.0)
+  @constraint(m, e103, x[37] >= 0.0)
+  @constraint(m, e104, b[74] <= 1.5)
+  @constraint(m, e105, b[75] <= 1.5)
+  @constraint(m, e106, b[76] <= 1.5)
+  @constraint(m, e107, b[77] <= 0.6)
+  @constraint(m, e108, b[78] <= 0.6)
+  @constraint(m, e109, b[79] <= 0.6)
+  @constraint(m, e110, b[86] <= 1.1)
+  @constraint(m, e111, b[87] <= 1.1)
+  @constraint(m, e112, b[88] <= 1.1)
+  @constraint(m, e113, b[89] <= 0.2)
+  @constraint(m, e114, b[90] <= 0.2)
+  @constraint(m, e115, b[91] <= 0.2)
+  @constraint(m, e116, b[74] <= 1.0)
+  @constraint(m, e117, b[75] <= 1.0)
+  @constraint(m, e118, b[76] <= 1.0)
+  @constraint(m, e119, b[77] <= 0.8)
+  @constraint(m, e120, b[78] <= 0.8)
+  @constraint(m, e121, b[79] <= 0.8)
+  @constraint(m, e122, b[86] <= 1.0)
+  @constraint(m, e123, b[87] <= 1.0)
+  @constraint(m, e124, b[88] <= 1.0)
+  @constraint(m, e125, b[89] <= 0.8)
+  @constraint(m, e126, b[90] <= 0.8)
+  @constraint(m, e127, b[91] <= 0.8)
+  @constraint(m, e128, -b[74] >= -1.3)
+  @constraint(m, e129, -b[75] >= -1.3)
+  @constraint(m, e130, -b[76] >= -1.3)
+  @constraint(m, e131, -b[77] >= -1.4)
+  @constraint(m, e132, -b[78] >= -1.4)
+  @constraint(m, e133, -b[79] >= -1.4)
+  @constraint(m, e134, -b[86] >= -1.7)
+  @constraint(m, e135, -b[87] >= -1.7)
+  @constraint(m, e136, -b[88] >= -1.7)
+  @constraint(m, e137, -b[89] >= -1.8)
+  @constraint(m, e138, -b[90] >= -1.8)
+  @constraint(m, e139, -b[91] >= -1.8)
+  @constraint(m, e140, -b[74] >= -1.0)
+  @constraint(m, e141, -b[75] >= -1.0)
+  @constraint(m, e142, -b[76] >= -1.0)
+  @constraint(m, e143, -b[77] >= -1.4)
+  @constraint(m, e144, -b[78] >= -1.4)
+  @constraint(m, e145, -b[79] >= -1.4)
+  @constraint(m, e146, -b[86] >= -1.0)
+  @constraint(m, e147, -b[87] >= -1.0)
+  @constraint(m, e148, -b[88] >= -1.0)
+  @constraint(m, e149, -b[89] >= -1.4)
+  @constraint(m, e150, -b[90] >= -1.4)
+  @constraint(m, e151, -b[91] >= -1.4)
+  @constraint(m, e152, -x[38]+b[96] <= 0.9)
+  @constraint(m, e153, -x[39]+b[97] <= 0.9)
+  @constraint(m, e154, -x[38]+b[99] <= 0.0)
+  @constraint(m, e155, -x[39]+b[100] <= 0.0)
+  @constraint(m, e156, -x[41]+b[102] <= 0.9)
+  @constraint(m, e157, -x[42]+b[103] <= 0.9)
+  @constraint(m, e158, -x[44]+b[96] <= 0.6)
+  @constraint(m, e159, -x[45]+b[97] <= 0.6)
+  @constraint(m, e160, -x[44]+b[99] <= 0.4)
+  @constraint(m, e161, -x[45]+b[100] <= 0.4)
+  @constraint(m, e162, -x[47]+b[102] <= 0.6)
+  @constraint(m, e163, -x[48]+b[103] <= 0.6)
+  @constraint(m, e164, -x[38]-b[96] >= -1.9)
+  @constraint(m, e165, -x[39]-b[97] >= -1.9)
+  @constraint(m, e166, -x[38]-b[99] >= -2.0)
+  @constraint(m, e167, -x[39]-b[100] >= -2.0)
+  @constraint(m, e168, -x[41]-b[102] >= -1.9)
+  @constraint(m, e169, -x[42]-b[103] >= -1.9)
+  @constraint(m, e170, -x[44]-b[96] >= -1.4)
+  @constraint(m, e171, -x[45]-b[97] >= -1.4)
+  @constraint(m, e172, -x[44]-b[99] >= -1.8)
+  @constraint(m, e173, -x[45]-b[100] >= -1.8)
+  @constraint(m, e174, -x[47]-b[102] >= -1.4)
+  @constraint(m, e175, -x[48]-b[103] >= -1.4)
+  @constraint(m, e176, b[95] <= 1.1)
+  @constraint(m, e177, b[98] <= 0.2)
+  @constraint(m, e178, b[101] <= 1.6)
+  @constraint(m, e179, b[95] <= 1.1)
+  @constraint(m, e180, b[98] <= 0.9)
+  @constraint(m, e181, b[101] <= 1.2)
+  @constraint(m, e182, -b[95] >= -1.7)
+  @constraint(m, e183, -b[98] >= -1.8)
+  @constraint(m, e184, -b[101] >= -1.2)
+  @constraint(m, e185, -b[95] >= -0.9)
+  @constraint(m, e186, -b[98] >= -1.3)
+  @constraint(m, e187, -b[101] >= -0.8)
+  @constraint(m, e188, b[68]+b[92] <= 1.0)
+  @constraint(m, e189, b[69]+b[93] <= 1.0)
+  @constraint(m, e190, b[70]+b[94] <= 1.0)
+  @constraint(m, e191, b[68]+b[95] <= 1.0)
+  @constraint(m, e192, b[69]+b[96] <= 1.0)
+  @constraint(m, e193, b[70]+b[97] <= 1.0)
+  @constraint(m, e194, b[68]+b[98] <= 1.0)
+  @constraint(m, e195, b[69]+b[99] <= 1.0)
+  @constraint(m, e196, b[70]+b[100] <= 1.0)
+  @constraint(m, e197, b[80]+b[92] <= 1.0)
+  @constraint(m, e198, b[81]+b[93] <= 1.0)
+  @constraint(m, e199, b[82]+b[94] <= 1.0)
+  @constraint(m, e200, b[80]+b[95] <= 1.0)
+  @constraint(m, e201, b[81]+b[96] <= 1.0)
+  @constraint(m, e202, b[82]+b[97] <= 1.0)
+  @constraint(m, e203, b[80]+b[98] <= 1.0)
+  @constraint(m, e204, b[81]+b[99] <= 1.0)
+  @constraint(m, e205, b[82]+b[100] <= 1.0)
+  @constraint(m, e206, b[71]+b[101] <= 1.0)
+  @constraint(m, e207, b[72]+b[102] <= 1.0)
+  @constraint(m, e208, b[73]+b[103] <= 1.0)
+  @constraint(m, e209, b[83]+b[101] <= 1.0)
+  @constraint(m, e210, b[84]+b[102] <= 1.0)
+  @constraint(m, e211, b[85]+b[103] <= 1.0)
+  @constraint(m, e212, b[92]+b[101] <= 1.0)
+  @constraint(m, e213, b[93]+b[102] <= 1.0)
+  @constraint(m, e214, b[94]+b[103] <= 1.0)
 
-  @NLconstraint(m, x[37]*x[55]-0.6*x[1]-0.2*x[13]+0.2*x[25]+0.2*x[28]+0.2*x[31] ==0.04)  #= e8: =#
-  @NLconstraint(m, x[40]*x[58]-0.6*x[4]-0.2*x[16]-0.2*x[25]+0.7*x[34] ==0.07)  #= e9: =#
-  @NLconstraint(m, x[43]*x[55]-0.4*x[1]-0.4*x[13]+0.5*x[25]+0.5*x[28]+0.5*x[31] ==0.1)  #= e10: =#
-  @NLconstraint(m, x[46]*x[58]-0.4*x[4]-0.4*x[16]-0.5*x[25]+0.6*x[34] ==0.06)  #= e11: =#
-  @NLconstraint(m, x[38]*x[56]-(x[37]*x[55]-(x[37]*x[26]+x[37]*x[29]+x[37]*x[32]))-0.6*x[2]-0.2*x[14] ==0)  #= e24: =#
-  @NLconstraint(m, x[39]*x[57]-(x[38]*x[56]-(x[38]*x[27]+x[38]*x[30]+x[38]*x[33]))-0.6*x[3]-0.2*x[15] ==0)  #= e25: =#
-  @NLconstraint(m, x[41]*x[59]-(x[40]*x[58]+x[37]*x[26]-x[40]*x[35])-0.6*x[5]-0.2*x[17] ==0)  #= e26: =#
-  @NLconstraint(m, x[42]*x[60]-(x[41]*x[59]+x[38]*x[27]-x[41]*x[36])-0.6*x[6]-0.2*x[18] ==0)  #= e27: =#
-  @NLconstraint(m, x[44]*x[56]-(x[43]*x[55]-(x[43]*x[26]+x[43]*x[29]+x[43]*x[32]))-0.4*x[2]-0.4*x[14] ==0)  #= e28: =#
-  @NLconstraint(m, x[45]*x[57]-(x[44]*x[56]-(x[44]*x[27]+x[44]*x[30]+x[44]*x[33]))-0.4*x[3]-0.4*x[15] ==0)  #= e29: =#
-  @NLconstraint(m, x[47]*x[59]-(x[46]*x[58]+x[43]*x[26]-x[46]*x[35])-0.4*x[5]-0.4*x[17] ==0)  #= e30: =#
-  @NLconstraint(m, x[48]*x[60]-(x[47]*x[59]+x[44]*x[27]-x[47]*x[36])-0.4*x[6]-0.4*x[18] ==0)  #= e31: =#
 
-  @constraint(m, x[1]+x[4]+x[7]+x[10]+x[49] ==1)  #= e2: =#
-  @constraint(m, x[13]+x[16]+x[19]+x[22]+x[52] ==1.1)  #= e3: =#
-  @constraint(m, -x[1]-x[13]+x[25]+x[28]+x[31]+x[55] ==0.2)  #= e4: =#
-  @constraint(m, -x[4]-x[16]-x[25]+x[34]+x[58] ==0.1)  #= e5: =#
-  @constraint(m, -x[7]-x[19]-x[28]-x[34]+x[61] ==1.55)  #= e6: =#
-  @constraint(m, -x[10]-x[22]-x[31]+x[64] ==0.49)  #= e7: =#
-  @constraint(m, x[2]+x[5]+x[8]+x[11]-x[49]+x[50] ==1)  #= e12: =#
-  @constraint(m, x[3]+x[6]+x[9]+x[12]-x[50]+x[51] ==0)  #= e13: =#
-  @constraint(m, x[14]+x[17]+x[20]+x[23]-x[52]+x[53] ==0.1)  #= e14: =#
-  @constraint(m, x[15]+x[18]+x[21]+x[24]-x[53]+x[54] ==0.9)  #= e15: =#
-  @constraint(m, -x[2]-x[14]+x[26]+x[29]+x[32]-x[55]+x[56] ==0)  #= e16: =#
-  @constraint(m, -x[3]-x[15]+x[27]+x[30]+x[33]-x[56]+x[57] ==0)  #= e17: =#
-  @constraint(m, -x[5]-x[17]-x[26]+x[35]-x[58]+x[59] ==0)  #= e18: =#
-  @constraint(m, -x[6]-x[18]-x[27]+x[36]-x[59]+x[60] ==0)  #= e19: =#
-  @constraint(m, -x[8]-x[20]-x[29]-x[35]-x[61]+x[62] ==-0.81)  #= e20: =#
-  @constraint(m, -x[9]-x[21]-x[30]-x[36]-x[62]+x[63] ==-0.88)  #= e21: =#
-  @constraint(m, -x[11]-x[23]-x[32]-x[64]+x[65] ==-0.14)  #= e22: =#
-  @constraint(m, -x[12]-x[24]-x[33]-x[65]+x[66] ==-0.1)  #= e23: =#
-  @constraint(m, x[1]-x[67]<=0)  #= e32: =#
-  @constraint(m, x[2]-x[68]<=0)  #= e33: =#
-  @constraint(m, x[3]-x[69]<=0)  #= e34: =#
-  @constraint(m, x[4]-x[70]<=0)  #= e35: =#
-  @constraint(m, x[5]-x[71]<=0)  #= e36: =#
-  @constraint(m, x[6]-x[72]<=0)  #= e37: =#
-  @constraint(m, x[7]-x[73]<=0)  #= e38: =#
-  @constraint(m, x[8]-x[74]<=0)  #= e39: =#
-  @constraint(m, x[9]-x[75]<=0)  #= e40: =#
-  @constraint(m, x[10]-x[76]<=0)  #= e41: =#
-  @constraint(m, x[11]-x[77]<=0)  #= e42: =#
-  @constraint(m, x[12]-x[78]<=0)  #= e43: =#
-  @constraint(m, x[13]-x[79]<=0)  #= e44: =#
-  @constraint(m, x[14]-x[80]<=0)  #= e45: =#
-  @constraint(m, x[15]-x[81]<=0)  #= e46: =#
-  @constraint(m, x[16]-x[82]<=0)  #= e47: =#
-  @constraint(m, x[17]-x[83]<=0)  #= e48: =#
-  @constraint(m, x[18]-x[84]<=0)  #= e49: =#
-  @constraint(m, x[19]-x[85]<=0)  #= e50: =#
-  @constraint(m, x[20]-x[86]<=0)  #= e51: =#
-  @constraint(m, x[21]-x[87]<=0)  #= e52: =#
-  @constraint(m, x[22]-x[88]<=0)  #= e53: =#
-  @constraint(m, x[23]-x[89]<=0)  #= e54: =#
-  @constraint(m, x[24]-x[90]<=0)  #= e55: =#
-  @constraint(m, x[25]-x[91]<=0)  #= e56: =#
-  @constraint(m, x[26]-x[92]<=0)  #= e57: =#
-  @constraint(m, x[27]-x[93]<=0)  #= e58: =#
-  @constraint(m, x[28]-x[94]<=0)  #= e59: =#
-  @constraint(m, x[29]-x[95]<=0)  #= e60: =#
-  @constraint(m, x[30]-x[96]<=0)  #= e61: =#
-  @constraint(m, x[31]-x[97]<=0)  #= e62: =#
-  @constraint(m, x[32]-x[98]<=0)  #= e63: =#
-  @constraint(m, x[33]-x[99]<=0)  #= e64: =#
-  @constraint(m, x[34]-x[100]<=0)  #= e65: =#
-  @constraint(m, x[35]-x[101]<=0)  #= e66: =#
-  @constraint(m, x[36]-x[102]<=0)  #= e67: =#
-  @constraint(m, x[1]>=0)  #= e68: =#
-  @constraint(m, x[2]>=0)  #= e69: =#
-  @constraint(m, x[3]>=0)  #= e70: =#
-  @constraint(m, x[4]>=0)  #= e71: =#
-  @constraint(m, x[5]>=0)  #= e72: =#
-  @constraint(m, x[6]>=0)  #= e73: =#
-  @constraint(m, x[7]>=0)  #= e74: =#
-  @constraint(m, x[8]>=0)  #= e75: =#
-  @constraint(m, x[9]>=0)  #= e76: =#
-  @constraint(m, x[10]>=0)  #= e77: =#
-  @constraint(m, x[11]>=0)  #= e78: =#
-  @constraint(m, x[12]>=0)  #= e79: =#
-  @constraint(m, x[13]>=0)  #= e80: =#
-  @constraint(m, x[14]>=0)  #= e81: =#
-  @constraint(m, x[15]>=0)  #= e82: =#
-  @constraint(m, x[16]>=0)  #= e83: =#
-  @constraint(m, x[17]>=0)  #= e84: =#
-  @constraint(m, x[18]>=0)  #= e85: =#
-  @constraint(m, x[19]>=0)  #= e86: =#
-  @constraint(m, x[20]>=0)  #= e87: =#
-  @constraint(m, x[21]>=0)  #= e88: =#
-  @constraint(m, x[22]>=0)  #= e89: =#
-  @constraint(m, x[23]>=0)  #= e90: =#
-  @constraint(m, x[24]>=0)  #= e91: =#
-  @constraint(m, x[25]>=0)  #= e92: =#
-  @constraint(m, x[26]>=0)  #= e93: =#
-  @constraint(m, x[27]>=0)  #= e94: =#
-  @constraint(m, x[28]>=0)  #= e95: =#
-  @constraint(m, x[29]>=0)  #= e96: =#
-  @constraint(m, x[30]>=0)  #= e97: =#
-  @constraint(m, x[31]>=0)  #= e98: =#
-  @constraint(m, x[32]>=0)  #= e99: =#
-  @constraint(m, x[33]>=0)  #= e100: =#
-  @constraint(m, x[34]>=0)  #= e101: =#
-  @constraint(m, x[35]>=0)  #= e102: =#
-  @constraint(m, x[36]>=0)  #= e103: =#
-  @constraint(m, x[73]<=1.5)  #= e104: =#
-  @constraint(m, x[74]<=1.5)  #= e105: =#
-  @constraint(m, x[75]<=1.5)  #= e106: =#
-  @constraint(m, x[76]<=0.6)  #= e107: =#
-  @constraint(m, x[77]<=0.6)  #= e108: =#
-  @constraint(m, x[78]<=0.6)  #= e109: =#
-  @constraint(m, x[85]<=1.1)  #= e110: =#
-  @constraint(m, x[86]<=1.1)  #= e111: =#
-  @constraint(m, x[87]<=1.1)  #= e112: =#
-  @constraint(m, x[88]<=0.2)  #= e113: =#
-  @constraint(m, x[89]<=0.2)  #= e114: =#
-  @constraint(m, x[90]<=0.2)  #= e115: =#
-  @constraint(m, x[73]<=1)  #= e116: =#
-  @constraint(m, x[74]<=1)  #= e117: =#
-  @constraint(m, x[75]<=1)  #= e118: =#
-  @constraint(m, x[76]<=0.8)  #= e119: =#
-  @constraint(m, x[77]<=0.8)  #= e120: =#
-  @constraint(m, x[78]<=0.8)  #= e121: =#
-  @constraint(m, x[85]<=1)  #= e122: =#
-  @constraint(m, x[86]<=1)  #= e123: =#
-  @constraint(m, x[87]<=1)  #= e124: =#
-  @constraint(m, x[88]<=0.8)  #= e125: =#
-  @constraint(m, x[89]<=0.8)  #= e126: =#
-  @constraint(m, x[90]<=0.8)  #= e127: =#
-  @constraint(m, -x[73]>=-1.3)  #= e128: =#
-  @constraint(m, -x[74]>=-1.3)  #= e129: =#
-  @constraint(m, -x[75]>=-1.3)  #= e130: =#
-  @constraint(m, -x[76]>=-1.4)  #= e131: =#
-  @constraint(m, -x[77]>=-1.4)  #= e132: =#
-  @constraint(m, -x[78]>=-1.4)  #= e133: =#
-  @constraint(m, -x[85]>=-1.7)  #= e134: =#
-  @constraint(m, -x[86]>=-1.7)  #= e135: =#
-  @constraint(m, -x[87]>=-1.7)  #= e136: =#
-  @constraint(m, -x[88]>=-1.8)  #= e137: =#
-  @constraint(m, -x[89]>=-1.8)  #= e138: =#
-  @constraint(m, -x[90]>=-1.8)  #= e139: =#
-  @constraint(m, -x[73]>=-1)  #= e140: =#
-  @constraint(m, -x[74]>=-1)  #= e141: =#
-  @constraint(m, -x[75]>=-1)  #= e142: =#
-  @constraint(m, -x[76]>=-1.4)  #= e143: =#
-  @constraint(m, -x[77]>=-1.4)  #= e144: =#
-  @constraint(m, -x[78]>=-1.4)  #= e145: =#
-  @constraint(m, -x[85]>=-1)  #= e146: =#
-  @constraint(m, -x[86]>=-1)  #= e147: =#
-  @constraint(m, -x[87]>=-1)  #= e148: =#
-  @constraint(m, -x[88]>=-1.4)  #= e149: =#
-  @constraint(m, -x[89]>=-1.4)  #= e150: =#
-  @constraint(m, -x[90]>=-1.4)  #= e151: =#
-  @constraint(m, -x[37]+x[95]<=0.9)  #= e152: =#
-  @constraint(m, -x[38]+x[96]<=0.9)  #= e153: =#
-  @constraint(m, -x[37]+x[98]<=0)  #= e154: =#
-  @constraint(m, -x[38]+x[99]<=0)  #= e155: =#
-  @constraint(m, -x[40]+x[101]<=0.9)  #= e156: =#
-  @constraint(m, -x[41]+x[102]<=0.9)  #= e157: =#
-  @constraint(m, -x[43]+x[95]<=0.6)  #= e158: =#
-  @constraint(m, -x[44]+x[96]<=0.6)  #= e159: =#
-  @constraint(m, -x[43]+x[98]<=0.4)  #= e160: =#
-  @constraint(m, -x[44]+x[99]<=0.4)  #= e161: =#
-  @constraint(m, -x[46]+x[101]<=0.6)  #= e162: =#
-  @constraint(m, -x[47]+x[102]<=0.6)  #= e163: =#
-  @constraint(m, -x[37]-x[95]>=-1.9)  #= e164: =#
-  @constraint(m, -x[38]-x[96]>=-1.9)  #= e165: =#
-  @constraint(m, -x[37]-x[98]>=-2)  #= e166: =#
-  @constraint(m, -x[38]-x[99]>=-2)  #= e167: =#
-  @constraint(m, -x[40]-x[101]>=-1.9)  #= e168: =#
-  @constraint(m, -x[41]-x[102]>=-1.9)  #= e169: =#
-  @constraint(m, -x[43]-x[95]>=-1.4)  #= e170: =#
-  @constraint(m, -x[44]-x[96]>=-1.4)  #= e171: =#
-  @constraint(m, -x[43]-x[98]>=-1.8)  #= e172: =#
-  @constraint(m, -x[44]-x[99]>=-1.8)  #= e173: =#
-  @constraint(m, -x[46]-x[101]>=-1.4)  #= e174: =#
-  @constraint(m, -x[47]-x[102]>=-1.4)  #= e175: =#
-  @constraint(m, x[94]<=1.1)  #= e176: =#
-  @constraint(m, x[97]<=0.2)  #= e177: =#
-  @constraint(m, x[100]<=1.6)  #= e178: =#
-  @constraint(m, x[94]<=1.1)  #= e179: =#
-  @constraint(m, x[97]<=0.9)  #= e180: =#
-  @constraint(m, x[100]<=1.2)  #= e181: =#
-  @constraint(m, -x[94]>=-1.7)  #= e182: =#
-  @constraint(m, -x[97]>=-1.8)  #= e183: =#
-  @constraint(m, -x[100]>=-1.2)  #= e184: =#
-  @constraint(m, -x[94]>=-0.9)  #= e185: =#
-  @constraint(m, -x[97]>=-1.3)  #= e186: =#
-  @constraint(m, -x[100]>=-0.8)  #= e187: =#
-  @constraint(m, x[67]+x[91]<=1)  #= e188: =#
-  @constraint(m, x[68]+x[92]<=1)  #= e189: =#
-  @constraint(m, x[69]+x[93]<=1)  #= e190: =#
-  @constraint(m, x[67]+x[94]<=1)  #= e191: =#
-  @constraint(m, x[68]+x[95]<=1)  #= e192: =#
-  @constraint(m, x[69]+x[96]<=1)  #= e193: =#
-  @constraint(m, x[67]+x[97]<=1)  #= e194: =#
-  @constraint(m, x[68]+x[98]<=1)  #= e195: =#
-  @constraint(m, x[69]+x[99]<=1)  #= e196: =#
-  @constraint(m, x[79]+x[91]<=1)  #= e197: =#
-  @constraint(m, x[80]+x[92]<=1)  #= e198: =#
-  @constraint(m, x[81]+x[93]<=1)  #= e199: =#
-  @constraint(m, x[79]+x[94]<=1)  #= e200: =#
-  @constraint(m, x[80]+x[95]<=1)  #= e201: =#
-  @constraint(m, x[81]+x[96]<=1)  #= e202: =#
-  @constraint(m, x[79]+x[97]<=1)  #= e203: =#
-  @constraint(m, x[80]+x[98]<=1)  #= e204: =#
-  @constraint(m, x[81]+x[99]<=1)  #= e205: =#
-  @constraint(m, x[70]+x[100]<=1)  #= e206: =#
-  @constraint(m, x[71]+x[101]<=1)  #= e207: =#
-  @constraint(m, x[72]+x[102]<=1)  #= e208: =#
-  @constraint(m, x[82]+x[100]<=1)  #= e209: =#
-  @constraint(m, x[83]+x[101]<=1)  #= e210: =#
-  @constraint(m, x[84]+x[102]<=1)  #= e211: =#
-  @constraint(m, x[91]+x[100]<=1)  #= e212: =#
-  @constraint(m, x[92]+x[101]<=1)  #= e213: =#
-  @constraint(m, x[93]+x[102]<=1)  #= e214: =#
+  # ----- Objective ----- #
+  @objective(m, Max, objvar)
+
+  m = m 		 # model get returned when including this script. 
+
   return m, 13.3594
 
 end
