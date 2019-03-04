@@ -84,12 +84,12 @@ function get_type_dict(obj)
 end
 
 """
-    state_is_optimal(state::MOI.TerminationStatusCode)
+    state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
 
-Returns true if either optimal or locally solved
+Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED`
 """
-function state_is_optimal(state::MOI.TerminationStatusCode)
-    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED
+function state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
+    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED || (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED)
 end
 
 """

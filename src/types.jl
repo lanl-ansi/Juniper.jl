@@ -29,6 +29,7 @@ mutable struct SolverOptions
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
     mip_solver                          :: Union{Nothing, JuMP.OptimizerFactory}
+    allow_almost_solved_integral        :: Bool  
     
     # only for testing
     force_parallel                      :: Bool
@@ -89,7 +90,7 @@ mutable struct JuniperProblem
 
     relaxation_time     :: Float64
     start_time          :: Float64
-    
+
     # Info  
     nintvars            :: Int64
     nbinvars            :: Int64
@@ -97,9 +98,9 @@ mutable struct JuniperProblem
     ncuts               :: Int64
     nbranches           :: Int64
     nlevels             :: Int64
-    
+
     fpump_info          :: Dict{Symbol,Float64}
-    
+
     # debug 
     debugDict           :: Dict{Symbol,Any}
 

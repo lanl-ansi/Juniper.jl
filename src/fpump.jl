@@ -335,14 +335,14 @@ function fpump(optimizer, m)
         mip_sols[hash(mip_sol)] = true
 
         nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol)
-        if !state_is_optimal(nlp_status)
+        if !state_is_optimal(nlp_status; allow_almost=true)
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(nlp_status) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
-            if !state_is_optimal(nlp_status)
+            if !state_is_optimal(nlp_status; allow_almost=true)
                 @warn "NLP couldn't be solved to optimality"
                 if check_print(ps,[:Table])
                     print_fp_table(mip_obj, NaN, time()-start_fpump, fields, field_chars, catol)
@@ -368,12 +368,15 @@ function fpump(optimizer, m)
         if are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(optimizer, m, mip_sol)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(real_status) &&
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(real_status; allow_almost=true) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 real_status,real_sol, real_obj = generate_real_nlp(optimizer, m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
-            if state_is_optimal(real_status)
+            if state_is_optimal(real_status) || (real_status == MOI.ALMOST_LOCALLY_SOLVED && m.options.allow_almost_solved_integral)
+                if real_status == MOI.ALMOST_LOCALLY_SOLVED
+                    @warn "Integral feasible point only almost locally solved. Disallowable with `allow_almost_solved_integral=false`"
+                end 
                 nlp_obj = real_obj
                 nlp_sol = real_sol
                 iscorrect = true

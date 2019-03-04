@@ -49,7 +49,7 @@ function solve_root_model!(jp::JuniperProblem)
     restarts = 0
     max_restarts = jp.options.num_resolve_root_relaxation
     jp.options.debug && debug_init(jp.debugDict)
-    while jp.status != MOI.OPTIMAL && jp.status != MOI.LOCALLY_SOLVED &&
+    while !state_is_optimal(jp.status; allow_almost=true) &&
         restarts < max_restarts && time()-jp.start_time < jp.options.time_limit
 
         # TODO freemodel for Knitro
@@ -62,6 +62,8 @@ function solve_root_model!(jp::JuniperProblem)
         jp.status = MOI.get(backend, MOI.TerminationStatus()) 
         restarts += 1
     end
-
+    if jp.status == MOI.ALMOST_LOCALLY_SOLVED
+        @warn "The relaxation is only almost locally solved."
+    end
     return restarts
 end

@@ -46,13 +46,19 @@ Set the state and best_bound property.
 Push integrals and new branch nodes to the step object
 Return state
 """
-function process_node!(m, step_obj, cnode, disc2var_idx, temp)
+function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
      # set bounds
     for i=1:m.num_var
         JuMP.set_lower_bound(m.x[i], cnode.l_var[i])
         JuMP.set_upper_bound(m.x[i], cnode.u_var[i])
     end
-    JuMP.set_start_value.(m.x[1:m.num_var], step_obj.node.solution)
+    if restarts > 0
+        println("Doing one restart")
+        restart_values = generate_random_restart(m)
+        JuMP.set_start_value.(m.x[1:m.num_var], restart_values)
+    else
+        JuMP.set_start_value.(m.x[1:m.num_var], step_obj.node.solution)
+    end
 
     old_mu_init = set_subsolver_option!(m, m.model, "nl", "Ipopt", :mu_init, 0.1 => 1e-5)                                   
 
@@ -66,11 +72,25 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp)
     objval = JuMP.objective_value(m.model)
     cnode.solution = JuMP.value.(m.x)
     cnode.relaxation_state = status
-    if status != MOI.OPTIMAL && status != MOI.LOCALLY_SOLVED && status != MOI.INFEASIBLE && status != MOI.LOCALLY_INFEASIBLE
+    if !state_is_optimal(status; allow_almost=true) && !state_is_infeasible(status)
         cnode.state = :Error
-    elseif status == MOI.OPTIMAL || status == MOI.LOCALLY_SOLVED
+    elseif state_is_optimal(status; allow_almost=true)
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
+        if status == MOI.ALMOST_LOCALLY_SOLVED && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
+            @warn "Only almost locally solved"
+        end
+
+        # if almost_solved_integral is not allowed but it is integral => restart and hope for the best
+        if cnode.state == :Integral && status == MOI.ALMOST_LOCALLY_SOLVED && !m.options.allow_almost_solved_integral
+            if restarts >= 1
+                cnode.state = :Almost_Solved
+                Base.finalize(backend)
+                return cnode.state
+            else 
+                return process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=restarts+1)
+            end
+        end
         if !temp
             push_integral_or_branch!(step_obj, cnode)
         end
