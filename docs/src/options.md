@@ -244,6 +244,14 @@ Sometimes the non linear solver doesn't find a feasible solution in the first ru
 This especially bad if this happens for the root relaxation. If there is no optimal/local optimal
 solution in the root relaxation you can use this option to resolve a couple of time until a solution is found or the number of resolves exceeded this value.
 
+## Extra options
+
+### allow\_almost\_solved\_integral::Bool [true]
+The non linear solver might return the status `ALMOST_LOCALLY_SOLVED` which means: 
+"The algorithm converged to a stationary point, local
+  optimal solution, or could not find directions for improvement within relaxed tolerances."
+Inside Juniper this is mostly considered as `LOCALLY_SOLVED` but you can use this option to restart the search once if solution is integral but only `ALMOST_LOCALLY_SOLVED` to maybe find a `LOCALLY_SOLVED` solution. 
+
 ## Logging
 
 ### log_levels::Vector{Symbol} [[:Table,:Info,:Options]]
