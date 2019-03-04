@@ -1,49 +1,39 @@
 include("POD_experiment/blend029.jl")
 include("POD_experiment/nous1.jl")
+include("basic/gamsworld.jl")
 
 @testset "POD instances" begin
 
-@testset "blend029 full strong branching" begin
+@testset "full strong branching" begin
     println("==================================")
-    println("blend029 full strong branching")
+    println("full strong branching")
     println("==================================")
 
-    m, objval = get_blend029()
+    m = batch_problem()
 
-    set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, with_optimizer(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
+            strong_branching_nsteps= 100,
             strong_branching_perc = 100,
-            strong_branching_nsteps = 100,
-            strong_restart = true,
+            strong_restart = false, 
             debug = true)
     ))
-
+    
     status = solve(m)
-
     @test status == MOI.LOCALLY_SOLVED
 
     juniper_val = JuMP.objective_value(m)
-    best_bound_val = JuMP.objective_bound(m)
-    gap_val = getobjgap(m)
 
-    println("Solution by Juniper")
     println("obj: ", juniper_val)
-    println("best_bound_val: ", best_bound_val)
-    println("gap_val: ", gap_val)
+
+    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 
     bm = JuMP.backend(m)
     innermodel = bm.optimizer.model.inner
     debugDict = innermodel.debugDict
     counter_test(debugDict,Juniper.getnbranches(innermodel))
-
-    @test isapprox(juniper_val, objval, atol=1e0)
-    @test isapprox(best_bound_val, objval, atol=1e0)
-    @test isapprox(gap_val, 0, atol=1e-2)
-
-    debugDict = internalmodel(m).debugDict
-    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
 end
 
 
