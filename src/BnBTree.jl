@@ -62,9 +62,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
 
     old_mu_init = set_subsolver_option!(m, m.model, "nl", "Ipopt", :mu_init, 0.1 => 1e-5)                                   
 
-    JuMP.optimize!(m.model)
-    backend = JuMP.backend(m.model)
-    status = MOI.get(backend, MOI.TerminationStatus()) 
+    status, backend = optimize_get_status_backend(m.model)
 
     # reset mu_init
     reset_subsolver_option!(m, "nl", "Ipopt", :mu_init, old_mu_init)

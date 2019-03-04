@@ -236,3 +236,19 @@ function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
         setfield!(jp, :mip_solver_options, sub_solver_options)
     end
 end
+
+"""
+    optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
+
+Run optimize! and get the status and the backend
+"""
+function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
+    if solver == nothing
+        JuMP.optimize!(model)
+    else
+        JuMP.optimize!(model, solver)
+    end
+    backend = JuMP.backend(model)
+    status = MOI.get(backend, MOI.TerminationStatus()) 
+    return status, backend
+end

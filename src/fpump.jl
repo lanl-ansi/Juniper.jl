@@ -67,8 +67,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     time_left < 0 && (time_left = 1.0)
     old_time_limit = set_subsolver_option!(m, mip_model, "mip", "Cbc", :seconds, Inf => time_left)                                   
     
-    JuMP.optimize!(mip_model)
-    status = MOI.get(backend, MOI.TerminationStatus()) 
+    status, backend = optimize_get_status_backend(mip_model)
 
     reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
 
@@ -119,8 +118,7 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
     
 
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
-    JuMP.optimize!(nlp_model)
-    status = MOI.get(backend, MOI.TerminationStatus()) 
+    status, backend = optimize_get_status_backend(nlp_model)
 
     nlp_sol = JuMP.value.(nx)
     nlp_obj = JuMP.objective_value(nlp_model)
@@ -192,8 +190,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         JuMP.add_NL_constraint(rmodel, constr_expr)
     end
 
-    JuMP.optimize!(rmodel)
-    status = MOI.get(backend, MOI.TerminationStatus()) 
+    status, backend = optimize_get_status_backend(rmodel)
 
     real_sol = JuMP.value.(rx)
     obj_val = JuMP.objective_value(rmodel)

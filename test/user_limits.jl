@@ -1,4 +1,4 @@
-include("POD_experiment/blend029.jl")
+include("POD_experiment/FLay02H.jl")
 
 @testset "User limit testing" begin
 
@@ -32,37 +32,25 @@ include("POD_experiment/blend029.jl")
     @test 0.1 <= gap_val <= 0.5
 end
 
-@testset "blend029 1s limit" begin
+@testset "FLay02H time limit" begin
     println("==================================")
-    println("blend029 1s limit")
+    println("FLay02H time limit")
     println("==================================")
 
-    m,objval = get_blend029()
+    m = get_FLay02H()
 
     set_optimizer(m, with_optimizer(
         Juniper.Optimizer,
         DefaultTestSolver(
-            branch_strategy=:StrongPseudoCost, 
-            time_limit = 1, # second
-            incumbent_constr = true
-        )
+            branch_strategy=:StrongPseudoCost,
+            time_limit = 5,
+            incumbent_constr = true)
     ))
 
     status = solve(m)
 
-    @test status == MOI.TIME_LIMIT
-
-    juniper_val = JuMP.objective_value(m)
-    best_bound_val = JuMP.objective_bound(m)
-    gap_val = getobjgap(m)
-
-    println("Solution by Juniper")
-    println("obj: ", juniper_val)
-    println("best_bound_val: ", best_bound_val)
-    println("gap_val: ", gap_val)
-
-    @test best_bound_val >= objval
-    @test getsolvetime(m) <= 4 # it might be a bit higher than 1s
+    @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
+    @test getsolvetime(m) <= 15 # it might be a bit higher than 5s
 end
 
 end
