@@ -97,14 +97,6 @@ git-tree-sha1 = "db9f08540c1a23269acbae5d520c79f4722899f4"
 uuid = "4076af6c-e467-56ae-b986-b466b2749572"
 version = "0.19.0"
 
-[[Juniper]]
-deps = ["Distributed", "JSON", "JuMP", "LinearAlgebra", "Logging", "MathOptInterface", "Random", "Statistics", "Test"]
-git-tree-sha1 = "c3e33fa131acb728e7d134d2602047842e9b27aa"
-repo-rev = "moi-wrapper"
-repo-url = "/home/ole/Julia/Juniper"
-uuid = "2ddba703-00a4-53a7-87a5-e8b9971dde84"
-version = "0.2.5+"
-
 [[LibGit2]]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 
