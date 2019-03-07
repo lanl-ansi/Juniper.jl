@@ -22,7 +22,7 @@ include("basic/gamsworld.jl")
     status = solve(m)
     inner = internalmodel(m)
     @test status == MOI.LOCALLY_SOLVED
-    @test isapprox(getvalue(x), 5, atol=sol_atol)
+    @test isapprox(JuMP.value(x), 5, atol=sol_atol)
     @test Juniper.getnsolutions(inner) == 1
     @test inner.primal_start[1] == 3
 end
