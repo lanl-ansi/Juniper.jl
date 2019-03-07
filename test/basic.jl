@@ -2,6 +2,32 @@ include("basic/gamsworld.jl")
 
 @testset "basic tests" begin
 
+@testset "no objective and start value" begin
+    println("==================================")
+    println("No objective and start value")
+    println("==================================")
+    juniper = DefaultTestSolver(log_levels=[:Table])
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper)
+    )
+
+    @variable(m, x, Int, start=3)
+
+    @constraint(m, x >= 0)
+    @constraint(m, x <= 5)
+    @NLconstraint(m, x^2 >= 17)
+   
+    status = solve(m)
+    inner = internalmodel(m)
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(getvalue(x), 5, atol=sol_atol)
+    @test Juniper.getnsolutions(inner) == 1
+    @test inner.primal_start[1] == 3
+end
+
+
 @testset "bruteforce" begin
     println("==================================")
     println("Bruteforce")

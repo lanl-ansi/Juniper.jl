@@ -39,9 +39,10 @@ mutable struct VariableInfo
     is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
     is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
     is_integer::Bool      # Implies variable is MOI.Integer
+    start::Real           # Primal start
     name::String
 end
-VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, false, "")
+VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, false, 0.0, "")
 
 """
 Optimizer struct

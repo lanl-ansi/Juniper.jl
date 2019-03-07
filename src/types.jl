@@ -58,6 +58,7 @@ mutable struct JuniperProblem
     best_bound          :: Float64
 
     x                   :: Vector{JuMP.VariableRef}
+    primal_start        :: Vector{Real}
     num_constr          :: Int64
     num_nl_constr       :: Int64
     num_q_constr        :: Int64

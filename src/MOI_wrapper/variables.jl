@@ -61,9 +61,18 @@ is_fixed(model::Optimizer, vi::VI) =
     model.variable_info[vi.value].is_fixed
 
 """ 
-Primal-start support for Juniper (change if needed)
+Primal-start support for Juniper 
 """
-MOI.supports(::Optimizer, ::MOI.VariablePrimalStart, ::Type{VI}) = false
+MOI.supports(::Optimizer, ::MOI.VariablePrimalStart, ::Type{VI}) = true
+
+function MOI.set(model::Optimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex, value::Union{Real, Nothing})
+    check_inbounds(model, vi)
+    if value == nothing
+        value = 0.0
+    end
+    model.variable_info[vi.value].start = value
+    return
+end
 
 """
 MOI.VariableName attribute support 

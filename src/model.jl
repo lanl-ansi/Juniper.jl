@@ -9,6 +9,11 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     ub = jp.u_var
     # all continuous we solve relaxation first
     @variable(jp.model, lb[i] <= x[i=1:jp.num_var] <= ub[i])
+
+    for i=1:jp.num_var
+        JuMP.set_start_value(x[i], jp.primal_start[i])
+    end
+
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
