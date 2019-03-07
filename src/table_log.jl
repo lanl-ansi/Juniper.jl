@@ -94,14 +94,16 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
     end
     precision = 2
     if isdefined(tree,:incumbent) && found_both == 2
-        while round(tree.incumbent.objval; digits=precision) == round(tree.best_bound; digits=precision) 
-            if length(string(tree.incumbent.objval,precision+1)) > min_field_chars-2
-                break
+        if tree.incumbent.objval != tree.best_bound
+            while round(tree.incumbent.objval; digits=precision) == round(tree.best_bound; digits=precision) && precision < 10
+                if length(string(tree.incumbent.objval,precision+1)) > min_field_chars-2
+                    break
+                end
+                if length(string(tree.best_bound,precision+1)) > min_field_chars-2
+                    break
+                end
+                precision += 1
             end
-            if length(string(tree.best_bound,precision+1)) > min_field_chars-2
-                break
-            end
-            precision += 1
         end
     end
 
@@ -125,16 +127,24 @@ function get_table_line(p, tree, node, step_obj, start_time, fields, field_chars
                 b = tree.best_bound
                 o = tree.incumbent.objval
                 val = round(abs(b-o)/abs(o)*100; digits=2)
-                if length(string(val)) > field_chars[i]
-                    if val > 0 && val < tree.options.mip_gap*100
-                        val = "< "*string(tree.options.mip_gap*100)*"%"
-                    elseif val > 1000
-                        val = ">>"
+                if isnan(val)
+                    if o == 0 && b == o
+                        val = "0%"
+                    else
+                        val = "NaN%"
+                    end
+                else
+                    if length(string(val)) > field_chars[i]
+                        if val > 0 && val < tree.options.mip_gap*100
+                            val = "< "*string(tree.options.mip_gap*100)*"%"
+                        elseif val > 1000
+                            val = ">>"
+                        else
+                            val = string(val)*"%"
+                        end
                     else
                         val = string(val)*"%"
                     end
-                else
-                    val = string(val)*"%"
                 end
             else
                 val = "-"
