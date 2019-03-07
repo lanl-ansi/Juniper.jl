@@ -14,7 +14,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
         expr_dereferencing!(obj_expr, jp.model)
         JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
-    else
+    elseif optimizer.objective != nothing
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
         MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
     end
