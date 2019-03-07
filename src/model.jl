@@ -94,8 +94,8 @@ function MathProgBase.optimize!(m::JuniperModel)
 
     nw = nworkers()
     if nw < m.options.processors
+        @warn "Julia was started with less processors than you defined in your options. Start julia with: `julia -p "*string(m.options.processors)*"`"
         m.options.processors = nw
-        @warn "Julia was started with less processors then you define in your options"
     end
 
     create_root_model!(m)
