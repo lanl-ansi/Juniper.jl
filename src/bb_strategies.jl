@@ -222,7 +222,7 @@ function branch_strong_on!(m,opts,step_obj,
     if need_to_resolve && status == :Normal 
         status = :Resolve
     end
-
+    
     return status, max_gain_var, left_node, right_node, gains, strong_restarts
 end
 
