@@ -108,6 +108,17 @@ function new_default_step_obj(m,node)
     step_obj.branch           = []
     step_obj.counter          = 0
     step_obj.upd_gains        = :None
-    step_obj.strong_disc_vars  = Int64[]
+    step_obj.strong_disc_vars = Int64[]
+    step_obj.branch_strategy  = :None
+    step_obj.strong_branching = nothing
     return step_obj
+end
+
+function new_default_strong_branch_step_obj(var_idx)
+    strong_step_obj = StrongBranchStep()
+    strong_step_obj.var_idx                 = var_idx
+    strong_step_obj.l_relaxation_state      = :None
+    strong_step_obj.r_relaxation_state      = :None
+    strong_step_obj.init_restart            = false
+    return strong_step_obj
 end

@@ -20,16 +20,21 @@ function get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter
     status = :Normal
     if branch_strat == :MostInfeasible
         idx = branch_mostinfeasible(m, node, disc2var_idx)
+        step_obj.branch_strategy = :MostInfeasible
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
             idx = branch_mostinfeasible(m, node, disc2var_idx)
+            step_obj.branch_strategy = :MostInfeasible
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m, opts, disc2var_idx, step_obj, counter)
+            step_obj.branch_strategy = :Strong
         else
             idx = branch_pseudo(m, node, disc2var_idx, gains, opts.gain_mu, opts.atol)
+            step_obj.branch_strategy = :Pseudo
         end
     elseif branch_strat == :Reliability
         status, idx, strong_restarts = branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
+        step_obj.branch_strategy = :Reliability
     end
     step_obj.state = status
     step_obj.var_idx = idx
@@ -133,8 +138,8 @@ function branch!(m, opts, step_obj, counter, disc2var_idx; temp=false)
     if opts.debug
         path_l = copy(node.path)
         path_r = copy(node.path)
-        push!(path_l,node)
-        push!(path_r,node)
+        push!(path_l,node.hash)
+        push!(path_r,node.hash)
     else
         path_l = []
         path_r = []

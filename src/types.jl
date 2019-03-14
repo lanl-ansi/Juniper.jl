@@ -139,7 +139,7 @@ mutable struct BnBNode
     state               :: Symbol
     relaxation_state    :: Symbol
     best_bound          :: Float64
-    path                :: Vector{BnBNode}
+    path                :: Vector{String}   # list of parent hashes
     hash                :: String
 end
 
@@ -176,6 +176,15 @@ mutable struct BnBTreeObj
     BnBTreeObj() = new()
 end
 
+mutable struct StrongBranchStep
+    var_idx             :: Int64
+    l_relaxation_state  :: Symbol
+    r_relaxation_state  :: Symbol
+    init_restart        :: Bool
+
+    StrongBranchStep() = new()
+end
+
 # the object holds information for the current step
 mutable struct StepObj
     node                :: BnBNode # current branch node
@@ -195,7 +204,9 @@ mutable struct StepObj
     r_nd                :: BnBNode
     counter             :: Int64
     upd_gains           :: Symbol
-    strong_disc_vars     :: Vector{Int64}
+    strong_disc_vars    :: Vector{Int64}
+    branch_strategy     :: Symbol # the strategy that is used in this step
+    strong_branching    :: Union{Nothing,Vector{StrongBranchStep}} # used only if debug=true and branch_strategy of this step is :Strong
 
     StepObj() = new()
 end

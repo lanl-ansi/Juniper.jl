@@ -116,6 +116,13 @@ function branch_strong_on!(m,opts,step_obj,
         return gain_l, gain_r, gain
     end
 
+    function add_strong_step(strong_step,l_nd,r_nd; restart=false) 
+        strong_step.l_relaxation_state = l_nd.relaxation_state
+        strong_step.r_relaxation_state = r_nd.relaxation_state
+        strong_step.init_restart = restart
+        push!(step_obj.strong_branching, strong_step)
+    end
+
     strong_time = time()
 
     node = step_obj.node
@@ -137,6 +144,7 @@ function branch_strong_on!(m,opts,step_obj,
     atol = opts.atol
 
     need_to_resolve = false
+    opts.debug && (step_obj.strong_branching = [])
 
     while restart 
         strong_restarts += 1 # is init with -1
@@ -156,7 +164,8 @@ function branch_strong_on!(m,opts,step_obj,
 
             # branch on the current variable and get the corresponding children
             l_nd,r_nd = branch!(m, opts, step_obj, counter, disc2var_idx; temp=true)
-
+            opts.debug && (strong_step = new_default_strong_branch_step_obj(var_idx))
+               
             # no current restart => we can set max_gain and variable
             gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
 
@@ -165,6 +174,7 @@ function branch_strong_on!(m,opts,step_obj,
                 status = :GlobalInfeasible
                 left_node = l_nd
                 right_node = r_nd
+                opts.debug && add_strong_step(strong_step,l_nd,r_nd)
                 break
             end
 
@@ -175,6 +185,7 @@ function branch_strong_on!(m,opts,step_obj,
                     status = :LocalInfeasible
                     left_node = l_nd
                     right_node = r_nd
+                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
                     break
                 end
                 need_to_resolve, restart, new_infeasible_disc_vars, set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type, disc2var_idx)
@@ -191,6 +202,7 @@ function branch_strong_on!(m,opts,step_obj,
                     gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
                     max_gain = gain
                     set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
+                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
                     break
                 end
 
@@ -211,6 +223,7 @@ function branch_strong_on!(m,opts,step_obj,
                 need_to_resolve = false
             end
             set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
+            opts.debug && add_strong_step(strong_step,l_nd,r_nd;restart=restart)
             if restart
                 break
             end
