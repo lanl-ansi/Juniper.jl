@@ -171,8 +171,8 @@ end
 
 mutable struct StrongBranchStep
     var_idx             :: Int64
-    l_relaxation_state  :: Symbol
-    r_relaxation_state  :: Symbol
+    l_relaxation_state  :: MOI.TerminationStatusCode
+    r_relaxation_state  :: MOI.TerminationStatusCode
     init_restart        :: Bool
 
     StrongBranchStep() = new()
