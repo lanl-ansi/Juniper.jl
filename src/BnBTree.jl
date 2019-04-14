@@ -489,9 +489,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                                 break
                             end
                         end
-                        if !still_running
-                            break
-                        end
+                        !still_running && break
 
                         if isbreak_after_step!(tree)
                             still_running = false
@@ -519,9 +517,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                             still_running = false
                         end
 
-                        if bbreak
-                            still_running = false
-                        end
+                        bbreak && (still_running = false)
 
                         if check_print(ps,[:Table])
                             if length(tree.branch_nodes) > 0
@@ -531,9 +527,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                             last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
                         end
 
-                        if !still_running
-                            break
-                        end
+                        !still_running && break
                     end
                 end
             end
