@@ -21,6 +21,9 @@ include("basic/gamsworld.jl")
    
     status = solve(m)
     inner = internalmodel(m)
+    @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
+    @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
+    @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.value(x), 5, atol=sol_atol)
     @test Juniper.getnsolutions(inner) == 1
@@ -315,6 +318,9 @@ end
     println("Status: ", status)
 
     @test status == MOI.LOCALLY_INFEASIBLE
+    @test JuMP.termination_status(m) == MOI.LOCALLY_INFEASIBLE
+    @test JuMP.primal_status(m) == MOI.INFEASIBLE_POINT
+    @test JuMP.dual_status(m) == MOI.INFEASIBLE_POINT
     @test isnan(getobjgap(m))
 end
 
