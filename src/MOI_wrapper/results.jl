@@ -11,6 +11,15 @@ function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
         return MOI.INFEASIBLE_POINT
     end
 end
+
+function MOI.get(model::Optimizer, ::MOI.DualStatus)
+    if state_is_optimal(model.inner.status; allow_almost=true) 
+        return MOI.FEASIBLE_POINT
+    else
+        return MOI.INFEASIBLE_POINT
+    end
+end
+
 	
 function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
