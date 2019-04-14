@@ -166,7 +166,6 @@ function create_root_model!(m::JuniperModel)
     ub = m.u_var
     # all continuous we solve relaxation first
     @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
-    println(m.start_value)
     setvalue(x[1:m.num_var], m.start_value)
 
     # define the objective function
