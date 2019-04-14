@@ -4,6 +4,10 @@ function isbreak_mip_gap(tree)
         b = tree.best_bound
         f = incu.objval
         gap = abs(b-f)/abs(f)
+        # if f and g are 0 the gap would be NaN but it's gap=0
+        if isapprox(b,f,atol=tree.options.atol)
+            gap = 0 # doesn't really equal 0 but should break 
+        end
         if gap <= tree.options.mip_gap
             default_opts = get_default_options()
             if tree.options.mip_gap > default_opts.mip_gap
