@@ -503,7 +503,7 @@ end
         juniper_reliable_restart)
     )
 
-    @variable(m, x >= 0, Int)
+    @variable(m, x >= 0, Int, start=2)
     @variable(m, y >= 0)
     @variable(m, 0 <= u <= 10, Int)
     @variable(m, w == 1)
@@ -516,7 +516,7 @@ end
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
     println("x: ", JuMP.value(x))
-    println("y: ", JuMP.value(x))
+    println("y: ", JuMP.value(y))
 
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
@@ -547,7 +547,7 @@ end
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
     println("x: ", JuMP.value(x))
-    println("y: ", JuMP.value(x))
+    println("y: ", JuMP.value(y))
 
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
@@ -578,7 +578,7 @@ end
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
     println("x: ", JuMP.value(x))
-    println("y: ", JuMP.value(x))
+    println("y: ", JuMP.value(y))
 
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
@@ -609,7 +609,7 @@ end
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
     println("x: ", JuMP.value(x))
-    println("y: ", JuMP.value(x))
+    println("y: ", JuMP.value(y))
 
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.objective_value(m), -12.162277, atol=opt_atol)
