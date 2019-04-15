@@ -289,6 +289,7 @@ end
         Juniper.Optimizer,
         juniper_all_solutions_p
     ))
+    JuMP.set_start_value.(x, zeros(4))
 
     status = solve(m)
     @test Juniper.getnbranches(internalmodel(m)) == nbranches

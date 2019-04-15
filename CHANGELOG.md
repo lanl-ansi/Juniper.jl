@@ -1,10 +1,15 @@
 # Juniper.jl Changelog
 
-### Staged
+### v0.3.0
 - MPB -> MOI
 - JuMP 0.19
 - Dropped support for Julia versions < 1.0
+
+### v0.2.6
 - bugfix in init_strong_restart
+- bugfix in mip_gap if objval=0
+- bugfix if gap was 0 in table printing 
+- support for primal start values
 
 ### v0.2.5
 - add linear constraints using @constraint in root model

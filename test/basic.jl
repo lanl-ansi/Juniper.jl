@@ -284,7 +284,7 @@ end
     )
 
     println("Create variables/constr/obj")
-    @variable(m, 1 <= x <= 5)
+    @variable(m, 1 <= x <= 5, start = 2.7)
     @variable(m, -2 <= y <= 2)
 
     @objective(m, Min, -x-y)
