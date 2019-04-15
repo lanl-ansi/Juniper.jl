@@ -73,6 +73,7 @@ mutable struct JuniperModel <: MathProgBase.AbstractNonlinearModel
     num_var         :: Int64
     l_var           :: Vector{Float64}
     u_var           :: Vector{Float64}
+    start_value     :: Vector{Float64}
     l_constr        :: Vector{Float64}
     u_constr        :: Vector{Float64}
 

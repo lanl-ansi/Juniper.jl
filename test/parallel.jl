@@ -296,6 +296,7 @@ end
     nbranches = Juniper.getnbranches(internalmodel(m))
 
     setsolver(m, juniper_all_solutions_p)
+    setvalue(x, zeros(4))
 
     status = solve(m)
     @test Juniper.getnbranches(internalmodel(m)) == nbranches

@@ -231,7 +231,7 @@ end
     m = Model(solver=juniper_strong_restart)
 
     println("Create variables/constr/obj")
-    @variable(m, 1 <= x <= 5)
+    @variable(m, 1 <= x <= 5, start = 2.7)
     @variable(m, -2 <= y <= 2)
 
     @objective(m, Min, -x-y)
@@ -415,7 +415,7 @@ end
     println("==================================")
     m = Model(solver=juniper_reliable_restart)
 
-    @variable(m, x >= 0, Int)
+    @variable(m, x >= 0, Int, start = 1)
     @variable(m, y >= 0)
     @variable(m, 0 <= u <= 10, Int)
     @variable(m, w == 1)
@@ -428,7 +428,7 @@ end
     status = solve(m)
     println("Obj: ", getobjectivevalue(m))
     println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("y: ", getvalue(y))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -455,7 +455,7 @@ end
     status = solve(m)
     println("Obj: ", getobjectivevalue(m))
     println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("y: ", getvalue(y))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)
@@ -480,9 +480,14 @@ end
     @NLconstraint(m, y^2 <= u*w)
 
     status = solve(m)
+    # use MPB set start value function directly after one solve
+    inner_model = internalmodel(m)
+    MathProgBase.setwarmstart!(inner_model, [1,1,2,1])
+    status = solve(m)
+
     println("Obj: ", getobjectivevalue(m))
     println("x: ", getvalue(x))
-    println("y: ", getvalue(x))
+    println("y: ", getvalue(y))
 
     @test status == :Optimal
     @test isapprox(getobjectivevalue(m), -12.162277, atol=opt_atol)

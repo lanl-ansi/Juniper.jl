@@ -39,6 +39,7 @@ using JuMP
 
 using Ipopt
 using Cbc
+using MathProgBase
 # using PowerModels
 
 using Juniper

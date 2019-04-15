@@ -66,6 +66,7 @@ function MathProgBase.loadproblem!(
     m.obj_sense = sense
     m.solution = fill(NaN, m.num_var)
     m.var_type = fill(:Cont,num_var)
+    m.start_value = zeros(m.num_var)
 
     MathProgBase.initialize(m.d, [:ExprGraph,:Jac,:Grad])
 end
@@ -165,6 +166,7 @@ function create_root_model!(m::JuniperModel)
     ub = m.u_var
     # all continuous we solve relaxation first
     @variable(m.model, lb[i] <= x[i=1:m.num_var] <= ub[i])
+    setvalue(x[1:m.num_var], m.start_value)
 
     # define the objective function
     obj_expr = MathProgBase.obj_expr(m.d)
@@ -221,7 +223,7 @@ function solve_root_model!(m::JuniperModel)
     return restarts
 end
 
-MathProgBase.setwarmstart!(m::JuniperModel, x) = x
+MathProgBase.setwarmstart!(m::JuniperModel, x) = (m.start_value = x)
 
 """
     MathProgBase.setvartype!(m::JuniperModel, v::Vector{Symbol})
