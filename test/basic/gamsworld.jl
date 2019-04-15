@@ -50,6 +50,9 @@ function batch_problem()
     @NLobjective(m, Min, 250*exp(x1 + 0.6*x7) + 250*exp(x2 + 0.6*x8) + 250*exp(x3 + 0.6*x9)
      + 250*exp(x4 + 0.6*x10) + 250*exp(x5 + 0.6*x11) + 250*exp(x6 + 0.6*x12))
 
+    @NLconstraint(m, 250*exp(x1 + 0.6*x7) + 250*exp(x2 + 0.6*x8) + 250*exp(x3 + 0.6*x9)
+    + 250*exp(x4 + 0.6*x10) + 250*exp(x5 + 0.6*x11) + 250*exp(x6 + 0.6*x12) <= 290000)
+
     @constraint(m, x7 - x13 >= 2.06686275947298)
     @constraint(m, x8 - x13 >= 0.693147180559945)
     @constraint(m, x9 - x13 >= 1.64865862558738)
