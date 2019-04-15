@@ -1,7 +1,10 @@
 # Juniper.jl Changelog
 
-### Staging
+### v0.2.6
 - bugfix in init_strong_restart
+- bugfix in mip_gap if objval=0
+- bugfix if gap was 0 in table printing 
+- support for primal start values
 
 ### v0.2.5
 - add linear constraints using @constraint in root model
