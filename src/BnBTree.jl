@@ -345,7 +345,7 @@ end
     upd_tree_obj!(tree, step_obj, time_obj)
 
 Update the tree obj like new incumbent or new branch nodes using the step_obj
-Return false if it's the end of the algorithm (checking different break rules)
+Return true if it's the end of the algorithm (checking different break rules)
 """
 function upd_tree_obj!(tree, step_obj, time_obj)
     node = step_obj.node
@@ -373,11 +373,7 @@ function upd_tree_obj!(tree, step_obj, time_obj)
     end
 
     upd_time_obj!(time_obj, step_obj)
-    if still_running
-        return false
-    else
-        return true
-    end
+    return !still_running
 end
 
 """
