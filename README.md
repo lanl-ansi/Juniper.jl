@@ -1,6 +1,6 @@
 # Juniper
 
-Release: [![Juniper](http://pkg.julialang.org/badges/Juniper_0.5.svg)](http://pkg.julialang.org/detail/Juniper) [![Juniper](http://pkg.julialang.org/badges/Juniper_0.6.svg)](http://pkg.julialang.org/detail/Juniper) [![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/stable)
+Release: [![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/stable)
 
 Dev: [![Build Status](https://travis-ci.org/lanl-ansi/Juniper.jl.svg?branch=master)](https://travis-ci.org/lanl-ansi/Juniper.jl) [![codecov](https://codecov.io/gh/lanl-ansi/Juniper.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper.jl)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/latest)
