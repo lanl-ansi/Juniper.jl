@@ -1,13 +1,8 @@
-using Base,Logging
+using Base, Logging
+
+using Test, Distributed
 
 
-if VERSION > v"0.7.0-"
-    using Test, Distributed
-end
-
-if VERSION < v"0.7.0-"
-    using Base.Test
-end
 
 
 if nworkers() > 1
@@ -24,23 +19,22 @@ end
 println("Workers:", nworkers())
 
 
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Statistics
-    using Random
-end
 
-if VERSION < v"0.7.0-"
-    using Compat
-end
+using LinearAlgebra
+using Statistics
+using Random
 
 
 using JuMP
 
 using Ipopt
 using Cbc
-using MathProgBase
 # using PowerModels
+
+using MathOptInterface 
+
+const MOI = MathOptInterface 
+const MOIU = MOI.Utilities
 
 using Juniper
 
@@ -50,13 +44,36 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-function DefaultTestSolver(;nl_solver=IpoptSolver(print_level=0), solver_args...)
+
+function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0, sb="yes"), solver_args...)
     solver_args_dict = Dict{Symbol,Any}()
     solver_args_dict[:log_levels] = []
+    solver_args_dict[:nl_solver] = nl_solver
     for v in solver_args
         solver_args_dict[v[1]] = v[2]
     end
-    return JuniperSolver(nl_solver; solver_args_dict...)
+    return solver_args_dict
+end
+
+function solve(m::Model)
+    JuMP.optimize!(m)
+    bm = JuMP.backend(m)
+    return MOI.get(bm, MOI.TerminationStatus()) 
+end
+
+function getsolvetime(m::Model)
+    bm = JuMP.backend(m)
+    return MOI.get(bm, MOI.SolveTime()) 
+end
+
+function internalmodel(m::Model)
+    bm = JuMP.backend(m)
+    return bm.optimizer.model.inner
+end
+
+function getobjgap(m::Model)
+    bm = JuMP.backend(m)
+    return MOI.get(bm, MOI.RelativeGap()) 
 end
 
 juniper_strong_restart_2 = DefaultTestSolver(

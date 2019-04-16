@@ -13,7 +13,7 @@ function is_type_correct(x, var_type, atol)
 end
 
 """
-are_type_correct(sol, types, disc2var_idx, atol)
+    are_type_correct(sol, types, disc2var_idx, atol)
 
 Check whether all variables have the correct type
 """

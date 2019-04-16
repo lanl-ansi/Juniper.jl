@@ -20,16 +20,21 @@ function get_branching_disc_idx!(m, step_obj, opts, disc2var_idx, gains, counter
     status = :Normal
     if branch_strat == :MostInfeasible
         idx = branch_mostinfeasible(m, node, disc2var_idx)
+        step_obj.branch_strategy = :MostInfeasible
     elseif branch_strat == :PseudoCost || branch_strat == :StrongPseudoCost
         if counter == 1 && branch_strat == :PseudoCost
             idx = branch_mostinfeasible(m, node, disc2var_idx)
+            step_obj.branch_strategy = :MostInfeasible
         elseif counter <= opts.strong_branching_nsteps && branch_strat == :StrongPseudoCost
             status, idx, strong_restarts = branch_strong!(m, opts, disc2var_idx, step_obj, counter)
+            step_obj.branch_strategy = :Strong
         else
             idx = branch_pseudo(m, node, disc2var_idx, gains, opts.gain_mu, opts.atol)
+            step_obj.branch_strategy = :Pseudo
         end
     elseif branch_strat == :Reliability
         status, idx, strong_restarts = branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
+        step_obj.branch_strategy = :Reliability
     end
     step_obj.state = status
     step_obj.var_idx = idx
@@ -46,60 +51,56 @@ Set the state and best_bound property.
 Push integrals and new branch nodes to the step object
 Return state
 """
-function process_node!(m, step_obj, cnode, disc2var_idx, temp)
+function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
      # set bounds
     for i=1:m.num_var
-        JuMP.setlowerbound(m.x[i], cnode.l_var[i])
-        JuMP.setupperbound(m.x[i], cnode.u_var[i])
+        JuMP.set_lower_bound(m.x[i], cnode.l_var[i])
+        JuMP.set_upper_bound(m.x[i], cnode.u_var[i])
     end
-    setvalue(m.x[1:m.num_var],step_obj.node.solution)
-
-    if occursin("Ipopt", string(m.nl_solver))
-        overwritten = false
-        old_mu_init = 0.1 # default value in Ipopt
-        for i=1:length(m.nl_solver.options)
-            if m.nl_solver.options[i][1] == :mu_init
-                old_mu_init = m.nl_solver.options[i][2]
-                m.nl_solver.options[i] = (:mu_init, 1e-5)
-                overwritten = true
-                break
-            end
-        end
-        if !overwritten
-            push!(m.nl_solver.options, (:mu_init, 1e-5))
-        end
+    if restarts > 0
+        println("Doing one restart")
+        restart_values = generate_random_restart(m)
+        JuMP.set_start_value.(m.x[1:m.num_var], restart_values)
+    else
+        JuMP.set_start_value.(m.x[1:m.num_var], step_obj.node.solution)
     end
 
-    status = JuMP.solve(m.model, suppress_warnings=true)
+    old_mu_init = set_subsolver_option!(m, m.model, "nl", "Ipopt", :mu_init, 0.1 => 1e-5)                                   
+
+    status, backend = optimize_get_status_backend(m.model)
 
     # reset mu_init
-    if occursin("Ipopt", string(m.nl_solver))
-        for i=1:length(m.nl_solver.options)
-            if m.nl_solver.options[i][1] == :mu_init
-                m.nl_solver.options[i] = (:mu_init, old_mu_init)
-                break
-            end
-        end
-    end
+    reset_subsolver_option!(m, "nl", "Ipopt", :mu_init, old_mu_init)
 
-    objval = getobjectivevalue(m.model)
-    cnode.solution = getvalue(m.x)
+    objval = JuMP.objective_value(m.model)
+    cnode.solution = JuMP.value.(m.x)
     cnode.relaxation_state = status
-    if status == :Error
+    if !state_is_optimal(status; allow_almost=true) && !state_is_infeasible(status)
         cnode.state = :Error
-    elseif status == :Optimal
+    elseif state_is_optimal(status; allow_almost=true)
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
+        if status == MOI.ALMOST_LOCALLY_SOLVED && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
+            @warn "Only almost locally solved"
+        end
+
+        # if almost_solved_integral is not allowed but it is integral => restart and hope for the best
+        if cnode.state == :Integral && status == MOI.ALMOST_LOCALLY_SOLVED && !m.options.allow_almost_solved_integral
+            if restarts >= 1
+                cnode.state = :Almost_Solved
+                Base.finalize(backend)
+                return cnode.state
+            else 
+                return process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=restarts+1)
+            end
+        end
         if !temp
             push_integral_or_branch!(step_obj, cnode)
         end
     else
         cnode.state = :Infeasible
     end
-    internal_model = internalmodel(m.model)
-    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-        MathProgBase.freemodel!(internal_model)
-    end
+    Base.finalize(backend)
     return cnode.state
 end
 
@@ -133,8 +134,8 @@ function branch!(m, opts, step_obj, counter, disc2var_idx; temp=false)
     if opts.debug
         path_l = copy(node.path)
         path_r = copy(node.path)
-        push!(path_l,node)
-        push!(path_r,node)
+        push!(path_l,node.hash)
+        push!(path_r,node.hash)
     else
         path_l = []
         path_r = []
@@ -192,7 +193,7 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
     if !isdefined(tree,:incumbent) || factor*node.best_bound > factor*tree.incumbent.objval
         objval = node.best_bound
         solution = copy(node.solution)
-        status = :Optimal
+        status = MOI.LOCALLY_SOLVED
         tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
         if !tree.options.all_solutions
             bound!(tree)
@@ -222,15 +223,7 @@ end
 Add a constraint >=/<= incumbent
 """
 function add_incumbent_constr(m, incumbent)
-    obj_expr = MathProgBase.obj_expr(m.d)
-    if m.obj_sense == :Min
-        obj_constr = Expr(:call, :<=, obj_expr, incumbent.objval)
-    else
-        obj_constr = Expr(:call, :>=, obj_expr, incumbent.objval)
-    end
-    Juniper.expr_dereferencing!(obj_constr, m.model)
-    # TODO: Change RHS instead of adding new (doesn't work for NL constraints atm)
-    JuMP.addNLconstraint(m.model, obj_constr)
+    add_obj_constraint(m, incumbent.objval)
 end
 
 """
@@ -242,14 +235,12 @@ function add_obj_epsilon_constr(tree)
     # add constr for objval
     if tree.options.obj_epsilon > 0
         ϵ = tree.options.obj_epsilon
-        obj_expr = MathProgBase.obj_expr(tree.m.d)
         if tree.m.obj_sense == :Min
-            obj_constr = Expr(:call, :<=, obj_expr, (1+ϵ)*tree.m.objval)
+            rhs = (1+ϵ)*tree.m.objval
         else
-            obj_constr = Expr(:call, :>=, obj_expr, (1-ϵ)*tree.m.objval)
+            rhs = (1-ϵ)*tree.m.objval
         end
-        Juniper.expr_dereferencing!(obj_constr, tree.m.model)
-        JuMP.addNLconstraint(tree.m.model, obj_constr)
+        add_obj_constraint(tree.m, rhs)
         tree.m.ncuts += 1
     end
 end
@@ -358,7 +349,7 @@ function upd_tree_obj!(tree, step_obj, time_obj)
     if step_obj.state == :GlobalInfeasible
         # if there is no incumbent yet
         if !isdefined(tree,:incumbent)
-            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, NaN)
+            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.LOCALLY_INFEASIBLE, NaN)
         end # it will terminate and use the current solution as optimal (might want to rerun as an option)
         still_running = false
     end
@@ -462,7 +453,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     counter = 0
 
     for p=2:np
-        VERSION > v"0.7.0-" ? (seed = Random.seed!) : (seed = srand)
+        seed = Random.seed!
         remotecall_fetch(seed, p, 1)
         sendto(p, m=tree.m)
         sendto(p, is_newincumbent=false)
@@ -498,9 +489,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                                 break
                             end
                         end
-                        if !still_running
-                            break
-                        end
+                        !still_running && break
 
                         if isbreak_after_step!(tree)
                             still_running = false
@@ -528,9 +517,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                             still_running = false
                         end
 
-                        if bbreak
-                            still_running = false
-                        end
+                        bbreak && (still_running = false)
 
                         if check_print(ps,[:Table])
                             if length(tree.branch_nodes) > 0
@@ -540,9 +527,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                             last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
                         end
 
-                        if !still_running
-                            break
-                        end
+                        !still_running && break
                     end
                 end
             end
@@ -569,10 +554,14 @@ function solvemip(tree::BnBTreeObj)
     # check if already integral
     if are_type_correct(tree.m.solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
-        objval = getobjectivevalue(tree.m.model)
-        sol = getvalue(tree.m.x)
-        bbound = getobjectivebound(tree.m.model)
-        tree.incumbent = Incumbent(objval,sol,:Optimal,bbound)
+        objval = JuMP.objective_value(tree.m.model)
+        sol = JuMP.value.(tree.m.x)
+        bbound = try 
+            JuMP.objective_bound(tree.m.model)
+        catch
+            JuMP.objective_value(tree.m.model)
+        end
+        tree.incumbent = Incumbent(objval,sol,MOI.LOCALLY_SOLVED,bbound)
         return tree.incumbent
     end
 
@@ -616,13 +605,13 @@ function solvemip(tree::BnBTreeObj)
 
     if !isdefined(tree,:incumbent)
         # infeasible
-        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), :Infeasible, tree.best_bound)
+        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.LOCALLY_INFEASIBLE, tree.best_bound)
     end
 
     # update best bound in incumbent
     tree.incumbent.best_bound = tree.best_bound
 
-    if tree.options.obj_epsilon != 0 && tree.incumbent.status == :Infeasible
+    if tree.options.obj_epsilon != 0 && state_is_infeasible(tree.incumbent.status)
         @warn "Maybe only infeasible because of obj_epsilon."
     end
 

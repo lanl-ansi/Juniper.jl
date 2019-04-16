@@ -1,6 +1,7 @@
 
 # Options for the solver (more details like defaults in solver.jl)
 mutable struct SolverOptions
+    nl_solver                           :: Union{Nothing, JuMP.OptimizerFactory} # needs to be set
     log_levels                          :: Vector{Symbol}
     atol                                :: Float64
     num_resolve_root_relaxation         :: Int64
@@ -27,7 +28,8 @@ mutable struct SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Nothing, MathProgBase.AbstractMathProgSolver}
+    mip_solver                          :: Union{Nothing, JuMP.OptimizerFactory}
+    allow_almost_solved_integral        :: Bool  
     
     # only for testing
     force_parallel                      :: Bool
@@ -38,83 +40,73 @@ mutable struct SolverOptions
     fixed_gain_mu                       :: Bool
 end
 
-mutable struct JuniperSolverObj <: MathProgBase.AbstractMathProgSolver
-    nl_solver   :: MathProgBase.AbstractMathProgSolver
-    options     :: Juniper.SolverOptions
-end
-
 mutable struct SolutionObj
     solution    :: Vector{Float64}
     objval      :: Float64
 end
 
-mutable struct Aff
-    sense     :: Symbol
-    var_idx   :: Vector{Int64}
-    coeff     :: Vector{Float64}
-    rhs       :: Float64
+# Juniper MOI struct 
 
-    Aff() = new()
-end
-
-mutable struct JuniperModel <: MathProgBase.AbstractNonlinearModel
-    nl_solver       :: MathProgBase.AbstractMathProgSolver
+mutable struct JuniperProblem 
+    nl_solver           :: JuMP.OptimizerFactory
+    nl_solver_options   :: Vector{Tuple}
    
-    model           :: JuMP.Model
-        
-    status          :: Symbol
-    objval          :: Float64
-    best_bound      :: Float64
+    model               :: JuMP.Model
 
-    x               :: Vector{JuMP.Variable}
-    num_constr      :: Int64
-    num_nl_constr   :: Int64
-    num_l_constr    :: Int64
-    num_var         :: Int64
-    l_var           :: Vector{Float64}
-    u_var           :: Vector{Float64}
-    start_value     :: Vector{Float64}
-    l_constr        :: Vector{Float64}
-    u_constr        :: Vector{Float64}
+    status              :: MOI.TerminationStatusCode
+    objval              :: Float64
+    best_bound          :: Float64
 
-    affs            :: Vector{Aff}
+    x                   :: Vector{JuMP.VariableRef}
+    primal_start        :: Vector{Real}
+    num_constr          :: Int64
+    num_nl_constr       :: Int64
+    num_q_constr        :: Int64
+    num_l_constr        :: Int64
+    num_var             :: Int64
+    l_var               :: Vector{Float64}
+    u_var               :: Vector{Float64}
 
-    disc2var_idx    :: Vector{Int64}
-    var2disc_idx    :: Vector{Int64}
+    has_nl_objective    :: Bool
+    nlp_evaluator       :: MOI.AbstractNLPEvaluator
 
-    var_type        :: Vector{Symbol}
-    isconstrlinear  :: Vector{Bool}
-    obj_sense       :: Symbol
-    d               :: MathProgBase.AbstractNLPEvaluator
-    num_disc_var :: Int64
+    objective           :: Union{SVF, SAF, SQF, Nothing}
 
-    solution        :: Vector{Float64}
+    disc2var_idx        :: Vector{Int64}
+    var2disc_idx        :: Vector{Int64}
 
-    soltime         :: Float64
-    options         :: SolverOptions
-    solutions       :: Vector{SolutionObj}
-    nsolutions      :: Int64
+    var_type            :: Vector{Symbol}
+    obj_sense           :: Symbol
+    num_disc_var        :: Int64
 
-    mip_solver      :: MathProgBase.AbstractMathProgSolver
+    solution            :: Vector{Float64}
 
-    relaxation_time :: Float64
-    start_time      :: Float64
+    soltime             :: Float64
+    options             :: SolverOptions
+    solutions           :: Vector{SolutionObj}
+    nsolutions          :: Int64
 
-    # Info
-    nintvars        :: Int64
-    nbinvars        :: Int64
-    nnodes          :: Int64
-    ncuts           :: Int64
-    nbranches       :: Int64
-    nlevels         :: Int64
+    mip_solver          :: JuMP.OptimizerFactory
+    mip_solver_options  :: Vector{Tuple}
 
-    fpump_info      :: Dict{Symbol,Float64}
+    relaxation_time     :: Float64
+    start_time          :: Float64
 
-    # debug
-    debugDict        :: Dict{Symbol,Any}
+    # Info  
+    nintvars            :: Int64
+    nbinvars            :: Int64
+    nnodes              :: Int64
+    ncuts               :: Int64
+    nbranches           :: Int64
+    nlevels             :: Int64
 
-    JuniperModel() = new()
-end
+    fpump_info          :: Dict{Symbol,Float64}
+
+    # debug 
+    debugDict           :: Dict{Symbol,Any}
+
+    JuniperProblem() = new()
+end 
 
 ###########################################################################
 ########################## FPump ##########################################
@@ -138,16 +130,16 @@ mutable struct BnBNode
     solution            :: Vector{Float64}
     var_idx             :: Int64
     state               :: Symbol
-    relaxation_state    :: Symbol
+    relaxation_state    :: MOI.TerminationStatusCode
     best_bound          :: Float64
-    path                :: Vector{BnBNode}
+    path                :: Vector{String}   # list of parent hashes
     hash                :: String
 end
 
 mutable struct Incumbent
     objval      :: Float64
     solution    :: Vector{Float64}
-    status      :: Symbol
+    status      :: MOI.TerminationStatusCode
     best_bound  :: Float64
 end
 
@@ -162,7 +154,7 @@ mutable struct GainObj
 end
 
 mutable struct BnBTreeObj
-    m               :: Juniper.JuniperModel
+    m               :: Juniper.JuniperProblem
     incumbent       :: Incumbent
     obj_gain        :: GainObj
     disc2var_idx    :: Vector{Int64}
@@ -175,6 +167,15 @@ mutable struct BnBTreeObj
     best_bound      :: Float64
 
     BnBTreeObj() = new()
+end
+
+mutable struct StrongBranchStep
+    var_idx             :: Int64
+    l_relaxation_state  :: MOI.TerminationStatusCode
+    r_relaxation_state  :: MOI.TerminationStatusCode
+    init_restart        :: Bool
+
+    StrongBranchStep() = new()
 end
 
 # the object holds information for the current step
@@ -196,7 +197,9 @@ mutable struct StepObj
     r_nd                :: BnBNode
     counter             :: Int64
     upd_gains           :: Symbol
-    strong_disc_vars     :: Vector{Int64}
+    strong_disc_vars    :: Vector{Int64}
+    branch_strategy     :: Symbol # the strategy that is used in this step
+    strong_branching    :: Union{Nothing,Vector{StrongBranchStep}} # used only if debug=true and branch_strategy of this step is :Strong
 
     StepObj() = new()
 end

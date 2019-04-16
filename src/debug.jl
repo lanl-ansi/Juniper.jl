@@ -1,6 +1,6 @@
 step_obj_primitives = [:var_idx,:state,:nrestarts,:gain_gap,
-                       :strong_disc_vars,:idx_time,:node_idx_time,:upd_gains_time,:branch_time,
-                       :counter,:upd_gains]
+                       :strong_disc_vars,:idx_time,:node_idx_time,:upd_gains_time,:branch_strategy,:branch_time,
+                       :counter,:upd_gains,:strong_branching]
 node_primitives = [:level,:var_idx,:l_var,:u_var,:solution,:state,:relaxation_state,:best_bound]
 gain_obj_primitives = [:minus,:plus,:minus_counter,:plus_counter]
 
@@ -22,22 +22,24 @@ function get_entry_dict(step_obj)
     gain_obj_dict = typedict(step_obj.obj_gain, gain_obj_primitives)
 
     step_obj_dict[:node] = node_dict
-    step_obj_dict[:obj_gain] = gain_obj_dict
+    if step_obj_dict[:branch_strategy] == :Strong
+        step_obj_dict[:obj_gain] = gain_obj_dict
+    end
     d[:step_obj] = step_obj_dict
 
     d_l[:hash] = step_obj.l_nd.hash
-    n_l[:state] =step_obj.l_nd.state
-    n_l[:best_bound] =step_obj.l_nd.best_bound
-    n_l[:relaxation_state] =step_obj.l_nd.relaxation_state
+    n_l[:state] = step_obj.l_nd.state
+    n_l[:best_bound] = step_obj.l_nd.best_bound
+    n_l[:relaxation_state] = step_obj.l_nd.relaxation_state
     if n_l[:state] == :Integral
         n_l[:solution] = step_obj.l_nd.solution
     end
     d_r[:hash] = step_obj.r_nd.hash
-    n_r[:state] =step_obj.r_nd.state
-    n_r[:best_bound] =step_obj.r_nd.best_bound
-    n_r[:relaxation_state] =step_obj.r_nd.relaxation_state
+    n_r[:state] = step_obj.r_nd.state
+    n_r[:best_bound] = step_obj.r_nd.best_bound
+    n_r[:relaxation_state] = step_obj.r_nd.relaxation_state
     if n_r[:state] == :Integral
-        n_r[:solution] =step_obj.r_nd.solution
+        n_r[:solution] = step_obj.r_nd.solution
     end
     d_l[:step_obj] = Dict{Symbol,Any}()
     d_r[:step_obj] = Dict{Symbol,Any}()
@@ -64,11 +66,10 @@ function push_step2treeDict!(d, step_obj)
     else 
         path = copy(node.path)
         cd = d
-        pnode = popfirst!(path)
-        push!(path,step_obj.node)
+        phash = popfirst!(path)
+        push!(path,step_obj.node.hash)
         while length(path) > 0
-            pnode = popfirst!(path)
-            phash = pnode.hash
+            phash = popfirst!(path)
             if cd[:children][1][:hash] == phash
                 cd = cd[:children][1]
             else 
@@ -92,6 +93,7 @@ function debug_fill_basic(d,m,restarts)
     d[:info][:sense] = m.obj_sense
     d[:info][:nintvars] = m.nintvars
     d[:info][:nbinvars] = m.nbinvars
+    d[:info][:var2disc_idx] = m.var2disc_idx
 end
 
 

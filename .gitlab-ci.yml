@@ -6,48 +6,17 @@ cache:
     - vendor/julia
 
 # Below is the template to run your tests in Julia
-.test_template: &test_6
+.test_template: &test_11
   before_script:
     - mkdir -p vendor/apt
     - mkdir -p vendor/julia
     - apt-get update -yqq
     - apt-get update -qq && apt-get -o dir::cache::archives="vendor/apt" install -y -qq wget git gcc gfortran liblapack-dev libgmp-dev libglpk-dev cmake g++ build-essential pkg-config
-    - mkdir -p /root/.julia/v0.6
-    - cp -r vendor/julia/. /root/.julia/v0.6/
-    - ls -a /root/.julia/v0.6/
-    - rm -f /root/.julia/v0.6/.cache
-    - ls -a /root/.julia/v0.6/
-
-  script:
-    # Let's run the tests. Substitute `coverage = false` below, if you do not
-    # want coverage results.
-    - julia -e 'Pkg.update();'
-    - julia -e 'if "Juniper" in keys(Pkg.installed()) Pkg.rm("Juniper"); Pkg.rm("Juniper") end'
-    - julia -e 'Pkg.clone(pwd());'
-    - ls -a /root/.julia/v0.6/
-    - julia -e 'Pkg.add("Ipopt")'
-    - julia -e 'Pkg.test("Juniper",
-      coverage = true)'
-    # Comment out below if you do not want coverage results.
-    - julia -e 'Pkg.add("Coverage"); cd(Pkg.dir("Juniper"));
-      using Coverage; cl, tl = get_summary(process_folder());
-      println("(", cl/tl*100, "%) covered")'
-    - pwd
-    - ls -a
-    - cp -r /root/.julia/v0.6/. vendor/julia/
-
-# Below is the template to run your tests in Julia
-.test_template: &test_10
-  before_script:
-    - mkdir -p vendor/apt
-    - mkdir -p vendor/julia
-    - apt-get update -yqq
-    - apt-get update -qq && apt-get -o dir::cache::archives="vendor/apt" install -y -qq wget git gcc gfortran liblapack-dev libgmp-dev libglpk-dev cmake g++ build-essential pkg-config
-    - mkdir -p /root/.julia/v1.0
-    - cp -r vendor/julia/. /root/.julia/v1.0/
-    - ls -a /root/.julia/v1.0/
-    - rm -f /root/.julia/v1.0/.cache
-    - ls -a /root/.julia/v1.0/
+    - mkdir -p /root/.julia/v1.1
+    - cp -r vendor/julia/. /root/.julia/v1.1/
+    - ls -a /root/.julia/v1.1/
+    - rm -f /root/.julia/v1.1/.cache
+    - ls -a /root/.julia/v1.1/
 
   script:
     # Let's run the tests. Substitute `coverage = false` below, if you do not
@@ -55,7 +24,7 @@ cache:
     - julia -e 'using Pkg; Pkg.update();'
     - julia -e 'using Pkg; if "Juniper" in keys(Pkg.installed()) Pkg.rm("Juniper"); Pkg.rm("Juniper") end'
     - julia -e 'using Pkg; Pkg.clone(pwd());'
-    - ls -a /root/.julia/v1.0/
+    - ls -a /root/.julia/v1.1/
     - julia -e 'using Pkg; Pkg.add("Ipopt")'
     - julia -e 'using Pkg; Pkg.test("Juniper",
       coverage = true)'
@@ -65,11 +34,42 @@ cache:
       println("(", cl/tl*100, "%) covered")'
     - pwd
     - ls -a
-    - cp -r /root/.julia/v1.0/. vendor/julia/
+    - cp -r /root/.julia/v1.1/. vendor/julia/
 
-test:0.6.2:
-  image: julia:0.6.2
-  <<: *test_6
+# Below is the template to run your tests in Julia
+.test_template: &test_10
+  before_script:
+    - mkdir -p vendor/apt
+    - mkdir -p vendor/julia
+    - apt-get update -yqq
+    - apt-get update -qq && apt-get -o dir::cache::archives="vendor/apt" install -y -qq wget git gcc gfortran liblapack-dev libgmp-dev libglpk-dev cmake g++ build-essential pkg-config
+    - mkdir -p /root/.julia/v1.1
+    - cp -r vendor/julia/. /root/.julia/v1.1/
+    - ls -a /root/.julia/v1.1/
+    - rm -f /root/.julia/v1.1/.cache
+    - ls -a /root/.julia/v1.1/
+
+  script:
+    # Let's run the tests. Substitute `coverage = false` below, if you do not
+    # want coverage results.
+    - julia -e 'using Pkg; Pkg.update();'
+    - julia -e 'using Pkg; if "Juniper" in keys(Pkg.installed()) Pkg.rm("Juniper"); Pkg.rm("Juniper") end'
+    - julia -e 'using Pkg; Pkg.clone(pwd());'
+    - ls -a /root/.julia/v1.1/
+    - julia -e 'using Pkg; Pkg.add("Ipopt")'
+    - julia -e 'using Pkg; Pkg.test("Juniper",
+      coverage = true)'
+    # Comment out below if you do not want coverage results.
+    - julia -e 'using Pkg; Pkg.add("Coverage"); cd(Pkg.dir("Juniper"));
+      using Coverage; cl, tl = get_summary(process_folder());
+      println("(", cl/tl*100, "%) covered")'
+    - pwd
+    - ls -a
+    - cp -r /root/.julia/v1.1/. vendor/julia/
+
+test:1.1.0:
+  image: julia:1.1.0
+  <<: *test_11
 
 test:1.0.1:
   image: julia:1.0.1

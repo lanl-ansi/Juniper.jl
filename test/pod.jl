@@ -1,63 +1,63 @@
-include("POD_experiment/blend029.jl")
 include("POD_experiment/nous1.jl")
+include("basic/gamsworld.jl")
 
 @testset "POD instances" begin
 
-@testset "blend029 full strong branching" begin
+@testset "full strong branching" begin
     println("==================================")
-    println("blend029 full strong branching")
+    println("full strong branching")
     println("==================================")
 
-    m,objval = get_blend029()
+    m = batch_problem()
 
-    setsolver(m, DefaultTestSolver(
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
+            strong_branching_nsteps= 100,
             strong_branching_perc = 100,
-            strong_branching_nsteps = 100,
-            strong_restart = true,
-            debug = true
+            strong_restart = false, 
+            debug = true)
     ))
+    
     status = solve(m)
+    @test status == MOI.LOCALLY_SOLVED
 
-    @test status == :Optimal
+    juniper_val = JuMP.objective_value(m)
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
-    gap_val = getobjgap(m)
-
-    println("Solution by Juniper")
     println("obj: ", juniper_val)
-    println("best_bound_val: ", best_bound_val)
-    println("gap_val: ", gap_val)
 
-    @test isapprox(juniper_val, objval, atol=1e0)
-    @test isapprox(best_bound_val, objval, atol=1e0)
-    @test isapprox(gap_val, 0, atol=1e-2)
+    @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 
-    debugDict = internalmodel(m).debugDict
-    counter_test(debugDict,Juniper.getnbranches(internalmodel(m)))
+    bm = JuMP.backend(m)
+    innermodel = bm.optimizer.model.inner
+    debugDict = innermodel.debugDict
+    counter_test(debugDict,Juniper.getnbranches(innermodel))
 end
 
 
-@testset "blend029 break strong branching time limit" begin
+@testset "break strong branching time limit" begin
     println("==================================")
-    println("blend029 full strong branching")
+    println("break strong branching time limit")
     println("==================================")
 
-    m,objval = get_blend029()
+    m = batch_problem()
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_approx_time_limit=0.01,
             time_limit = 4,
-            strong_restart = false
+            strong_restart = false)
     ))
+
     status = solve(m)
 
-    @test status == :Optimal || status == :UserLimit
+    @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
+    juniper_val = JuMP.objective_value(m)
+    best_bound_val = JuMP.objective_bound(m)
     gap_val = getobjgap(m)
 
     # maximization problem
@@ -71,14 +71,17 @@ end
 
     m = get_nous1()
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart = true,
-            mip_solver=CbcSolver(logLevel=0)
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
+
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 end
 
 @testset "nous1 no restart" begin
@@ -88,37 +91,44 @@ end
 
     m = get_nous1()
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_restart = false,
-            mip_solver=CbcSolver(logLevel=0)
+            strong_restart=false,
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
     ))
+
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 end
 
 
 
-@testset "blend029 reliability" begin
+@testset "reliability" begin
     println("==================================")
-    println("blend029 reliability")
+    println("reliability")
     println("==================================")
 
-    m,objval = get_blend029()
+    m = batch_problem()
 
-    setsolver(m, DefaultTestSolver(
+    set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
             branch_strategy=:Reliability,
             reliability_branching_perc = 50,
             reliability_branching_threshold = 5,
-            strong_restart = true
+            strong_restart = true,
+            debug = true)
     ))
+
     status = solve(m)
 
-    @test status == :Optimal
+    @test status == MOI.LOCALLY_SOLVED
 
-    juniper_val = getobjectivevalue(m)
-    best_bound_val = getobjbound(m)
+    juniper_val = JuMP.objective_value(m)
+    best_bound_val = JuMP.objective_bound(m)
     gap_val = getobjgap(m)
 
     println("Solution by Juniper")
@@ -126,9 +136,15 @@ end
     println("best_bound_val: ", best_bound_val)
     println("gap_val: ", gap_val)
 
+    objval = 285506.5082
     @test isapprox(juniper_val, objval, atol=1e0)
     @test isapprox(best_bound_val, objval, atol=1e0)
     @test isapprox(gap_val, 0, atol=1e-2)
+
+    bm = JuMP.backend(m)
+    innermodel = bm.optimizer.model.inner
+    debugDict = innermodel.debugDict
+    counter_test(debugDict,Juniper.getnbranches(innermodel))
     end
 
 end

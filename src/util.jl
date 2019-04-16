@@ -6,56 +6,14 @@ function expr_dereferencing!(expr, m)
         if isa(expr.args[i], Union{Float64,Int64})
             k = 0
         elseif expr.args[i].head == :ref
-            @assert isa(expr.args[i].args[2], Int)
-            expr.args[i] = Variable(m, expr.args[i].args[2])
+            @assert isa(expr.args[i].args[2], MOI.VariableIndex)
+            expr.args[i] = JuMP.VariableRef(m, expr.args[i].args[2])
         elseif expr.args[i].head == :call
             expr_dereferencing!(expr.args[i], m)
         else
             error("expr_dereferencing :: Unexpected term in expression tree.")
         end
     end
-end
-
-"""
-    expr_dereferencing_fixing!(expr, m, var_types, sol)
-
-Fix the value of discrete variables in an expression 
-"""
-function expr_dereferencing_fixing!(expr, m, var_types, sol)
-    for i in 2:length(expr.args)
-        if isa(expr.args[i], Union{Float64,Int64})
-            k = 0
-        elseif expr.args[i].head == :ref
-            @assert isa(expr.args[i].args[2], Int)
-            if var_types[expr.args[i].args[2]] != :Cont
-                expr.args[i] = sol[expr.args[i].args[2]]
-            else
-                expr.args[i] = Variable(m, expr.args[i].args[2])
-            end
-        elseif expr.args[i].head == :call
-            expr_dereferencing_fixing!(expr.args[i], m, var_types, sol)
-        else
-            error("expr_dereferencing :: Unexpected term in expression tree.")
-        end
-    end
-end
-
-"""
-    divide_nl_l_constr(m::JuniperModel)
-
-Get # of linear and non linear constraints and save for each index if linear or non linear    
-"""
-function divide_nl_l_constr(m::JuniperModel)
-    isconstrlinear = Array{Bool}(undef, m.num_constr)
-    m.num_l_constr = 0
-    for i = 1:m.num_constr
-        isconstrlinear[i] = MathProgBase.isconstrlinear(m.d, i)
-        if isconstrlinear[i]
-            m.num_l_constr += 1
-        end
-    end
-    m.num_nl_constr = m.num_constr - m.num_l_constr  
-    m.isconstrlinear = isconstrlinear
 end
 
 function generate_random_restart(m; cont=true)
@@ -98,111 +56,6 @@ function generate_random_restart(m; cont=true)
 end
 
 """
-    construct_affine_vector(m)
-
-Construct a vector of affine expressions for all linear functions using the derivative
-"""
-function construct_affine_vector(m)
-    js = MathProgBase.jac_structure(m.d)
-
-    jg = zeros(length(js[1]))
-    MathProgBase.eval_jac_g(m.d, jg, ones(m.num_var))
-
-    # Construct the data structure for our affine constraints
-    aff = Vector{Aff}(undef, m.num_l_constr)
-    for i=1:m.num_l_constr
-        aff[i] = Aff()
-        aff[i].var_idx = []
-        aff[i].coeff = []
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        aff[i].rhs = constr_expr.args[3]
-        aff[i].sense = constr_expr.args[1]
-    end
-
-    # if linear constraint the derivative are the coeffs
-    idx = 1
-    lconstr2constr = Vector{Int64}()
-    constr2lconstr = Vector{Int64}()
-    c = 1
-    for i=1:m.num_constr
-        if m.isconstrlinear[i]
-            push!(lconstr2constr,i)
-            push!(constr2lconstr,c)
-            c+=1
-        else
-            push!(constr2lconstr,0)
-        end
-    end
-
-    for row in js[1]
-        if m.isconstrlinear[row]
-            col = js[2][idx]
-            aidx = constr2lconstr[row]
-            push!(aff[row].var_idx, col)
-            push!(aff[row].coeff, jg[idx])
-        end
-        idx += 1
-    end
-    return aff
-end
-
-
-""" 
-    construct_complete_affine_matrix(m)
-
-Construct full affine matrix by using m.affs and all variables 
-use construct_disc_affine_matrix if only interested in discrete variables
-"""
-function construct_complete_affine_matrix(m)
-    mat = zeros(length(m.affs),m.num_var)
-    i = 1
-    for aff in m.affs
-        for part_idx in 1:length(aff.var_idx)
-            var = aff.var_idx[part_idx]
-            coeff = aff.coeff[part_idx]
-            mat[i,var] = coeff
-        end
-        i += 1
-    end
-    return mat
-end
-
-""" 
-    construct_disc_affine_matrix(m; only_non_zero=true)
-
-Construct full affine matrix by using m.affs and only discrete variables 
-use construct_complete_affine_matrix if interested in all variables
-if only_non_zero is set to true all rows with all zeros are removed
-"""
-function construct_disc_affine_matrix(m; only_non_zero=true)
-    mat = zeros(length(m.affs),m.num_disc_var)
-    i = 1
-    non_zero_idx = []
-    for aff in m.affs
-        non_zero = false
-        for part_idx in 1:length(aff.var_idx)
-            var = aff.var_idx[part_idx]
-            if m.var_type[var] != :Cont
-                coeff = aff.coeff[part_idx]
-                disc_var = m.var2disc_idx[var]
-                mat[i,disc_var] = coeff
-                non_zero = true
-            end
-        end
-        if non_zero
-            push!(non_zero_idx,i)
-        end
-        i += 1
-    end
-
-    if only_non_zero
-        return mat[non_zero_idx,:]
-    end
-
-    return mat
-end
-
-"""
     get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
 
 Get all discrete variables which aren't close to discrete yet based on atol 
@@ -219,4 +72,183 @@ function get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
         push!(reasonable_disc_vars,i)
     end
     return reasonable_disc_vars
+end
+
+function get_type_dict(obj)
+    T = typeof(obj)
+    type_dict = Dict{Symbol,Type}()
+    for (name, typ) in zip(fieldnames(T), T.types)
+        type_dict[name] = typ
+    end
+    return type_dict
+end
+
+"""
+    state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
+
+Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED`
+"""
+function state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
+    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED || (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED)
+end
+
+"""
+    state_is_infeasible(state::MOI.TerminationStatusCode)
+
+Returns true if either infeasible or locally infeasible
+"""
+function state_is_infeasible(state::MOI.TerminationStatusCode)
+    return state == MOI.INFEASIBLE || state == MOI.LOCALLY_INFEASIBLE
+end
+
+"""
+    add_obj_constraint(jp::JuniperProblem, rhs::Float64)
+
+Add a constraint for the objective based on whether the objective is linear/quadratic or non linear.
+If the objective sense is :MIN than add objective <= rhs else objective >= rhs
+"""
+function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
+    if jp.has_nl_objective
+        obj_expr = MOI.objective_expr(jp.nlp_evaluator)
+        if jp.obj_sense == :Min
+            obj_constr = Expr(:call, :<=, obj_expr, rhs)
+        else
+            obj_constr = Expr(:call, :>=, obj_expr, rhs)
+        end
+        Juniper.expr_dereferencing!(obj_constr, jp.model)
+        JuMP.add_NL_constraint(jp.model, obj_constr)
+    else # linear or quadratic
+        backend = JuMP.backend(jp.model);
+        if isa(jp.objective, MOI.SingleVariable)
+            if jp.obj_sense == :Min
+                JuMP.set_upper_bound(jp.x[jp.objective.variable.value], rhs)
+            else
+                JuMP.set_lower_bound(jp.x[jp.objective.variable.value], rhs)
+            end
+        else
+            if jp.obj_sense == :Min
+                MOI.add_constraint(backend, jp.objective, MOI.LessThan(rhs))
+            else
+                MOI.add_constraint(backend, jp.objective, MOI.GreaterThan(rhs))
+            end
+        end
+    end
+end
+
+
+"""
+    evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
+
+Evaluate the objective whether it is non linear, linear or quadratic
+"""
+function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
+    if optimizer.nlp_data.has_objective
+        return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
+    else
+        return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
+    end
+end
+
+"""
+    set_subsolver_option!(jp::JuniperProblem, model::JuMP.model, type_of_subsolver::String,
+                          subsolver_name::String, param::Symbol, change::Pair)
+
+Set the optimizer of the model if the subsolver_name is part of the name of the optimizer.
+Change the option `param` of the sub_solver. i.e `change=0.1 => 1e-5` means the default 
+normally is 0.1 and will be changed to 1e-5.
+Normally reset_subsolver_option! should be run to return to reset this change after `optimize!`
+Return the previous value of the param option or if not previously set return change.first   
+"""
+function set_subsolver_option!(jp::JuniperProblem, model::JuMP.Model, type_of_subsolver::String,
+                              subsolver_name::String, param::Symbol, change::Pair)
+
+    old_value = change.first
+    if type_of_subsolver == "nl"
+        sub_solver = getfield(jp, :nl_solver)
+        sub_solver_options = getfield(jp, :nl_solver_options)
+    elseif type_of_subsolver == "mip"
+        sub_solver = getfield(jp, :mip_solver)
+        sub_solver_options = getfield(jp, :mip_solver_options)
+    end
+
+    if occursin(subsolver_name, string(sub_solver))
+        overwritten = false
+        for i=1:length(sub_solver_options)
+            if sub_solver_options[i][1] == param
+                old_value = sub_solver_options[i][2]
+                sub_solver_options[i] = (param, change.second)
+                overwritten = true
+                break
+            end
+        end
+        if !overwritten
+            push!(sub_solver_options, (param, change.second))
+        end
+        sub_solver = with_optimizer(sub_solver.constructor; sub_solver_options...)
+    end
+
+    if type_of_subsolver == "nl"
+        setfield!(jp, :nl_solver, sub_solver)
+        setfield!(jp, :nl_solver_options, sub_solver_options)
+        JuMP.set_optimizer(model, jp.nl_solver)  
+    elseif type_of_subsolver == "mip"
+        setfield!(jp, :mip_solver, sub_solver)
+        setfield!(jp, :mip_solver_options, sub_solver_options)
+        JuMP.set_optimizer(model, jp.mip_solver) 
+    end
+
+    
+    return old_value
+end
+
+"""
+    reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+                            subsolver_name::String, param::Symbol, value)
+
+Resets the subsolver option `param` to `value` if the subsolver for the type i.e "nl" matches
+`subsolver_name`. `value` is normally get by calling `set_subsolver_option!`
+"""
+function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
+                                subsolver_name::String, param::Symbol, value)
+    if type_of_subsolver == "nl"
+        sub_solver = getfield(jp, :nl_solver)
+        sub_solver_options = getfield(jp, :nl_solver_options)
+    elseif type_of_subsolver == "mip"
+        sub_solver = getfield(jp, :mip_solver)
+        sub_solver_options = getfield(jp, :mip_solver_options)
+    end
+
+    if occursin(subsolver_name, string(sub_solver))
+        for i=1:length(sub_solver_options)
+            if sub_solver_options[i][1] == param
+                sub_solver_options[i] = (param, value)
+                break
+            end
+        end
+        sub_solver = with_optimizer(sub_solver.constructor; sub_solver_options...)
+    end
+
+    if type_of_subsolver == "nl"
+        setfield!(jp, :nl_solver, sub_solver)
+        setfield!(jp, :nl_solver_options, sub_solver_options)
+    elseif type_of_subsolver == "mip"
+        setfield!(jp, :mip_solver, sub_solver)
+        setfield!(jp, :mip_solver_options, sub_solver_options)
+    end
+end
+
+"""
+    optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
+
+Run optimize! and get the status and the backend
+"""
+function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
+    if solver == nothing
+        JuMP.optimize!(model)
+    else
+        JuMP.optimize!(model, solver)
+    end
+    backend = JuMP.backend(model)
+    status = MOI.get(backend, MOI.TerminationStatus()) 
+    return status, backend
 end

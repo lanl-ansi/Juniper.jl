@@ -5,6 +5,7 @@ A solver for MINLP problems using a NLP solver and Branch and Bound
 =#
 
 function get_default_options()
+    nl_solver                           = nothing
     log_levels                          = [:Options,:Table,:Info]
     atol                                = 1e-6
     num_resolve_root_relaxation         = 3
@@ -34,11 +35,12 @@ function get_default_options()
     traverse_strategy                   = :BFS
     # Feasibility Pump  
     feasibility_pump                    = true # changes to false if mip_solver not provided
-    feasibility_pump_time_limit         = 60
+    feasibility_pump_time_limit         = 60.0
     feasibility_pump_tolerance_counter  = 5
     tabu_list_length                    = 30
     num_resolve_nlp_feasibility_pump    = 1
     mip_solver                          = nothing
+    allow_almost_solved_integral        = true
 
     # Only for testing
     force_parallel                      = false
@@ -48,19 +50,19 @@ function get_default_options()
 
     fixed_gain_mu                       = false
 
-    return SolverOptions(log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
+    return SolverOptions(nl_solver,log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
         strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy,
         feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
         tabu_list_length,num_resolve_nlp_feasibility_pump,
-        mip_solver, force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
+        mip_solver, allow_almost_solved_integral, force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
 end
 
 function combine_options(options)
     branch_strategies = Dict{Symbol,Bool}()
-    for strat in [:StrongPseudoCost,:PseudoCost,:Reliability,:MostInfeasible]
+    for strat in [:StrongPseudoCost, :PseudoCost, :Reliability, :MostInfeasible]
         branch_strategies[strat] = true
     end
 
@@ -81,14 +83,26 @@ function combine_options(options)
             options_dict[:log_levels] = Symbol[]
         end
     end
+
+    if !haskey(options_dict, :nl_solver)
+        @error "The option nl_solver has to be set i.e with nl_solver = Ipopt.Optimizer"
+    end
+
     defaults = get_default_options()
     if defaults.feasibility_pump == true && (!haskey(options_dict, :mip_solver) || options_dict[:mip_solver] == nothing)
         defaults.feasibility_pump = false
     end
 
     # if gain mu is specified we shouldn't change it later
-    if haskey(options_dict,:gain_mu)
+    if haskey(options_dict, :gain_mu)
         options_dict[:fixed_gain_mu] = true
+    end
+
+    # if time limit is set make sure to reduce the time limit for the feasibility pump
+    if haskey(options_dict, :time_limit) && !haskey(options_dict, :feasibility_pump_time_limit)
+        if options_dict[:time_limit] < defaults.feasibility_pump_time_limit
+            setfield!(defaults, :feasibility_pump_time_limit, convert(Float64, options_dict[:time_limit]))
+        end
     end
 
     for fname in fieldnames(SolverOptions)
@@ -116,15 +130,10 @@ function combine_options(options)
             end
 
             if fieldtype(SolverOptions, fname) != typeof(options_dict[fname])
-                options_dict[fname] = convert(fieldtype(SolverOptions,fname), options_dict[fname])
+                options_dict[fname] = convert(fieldtype(SolverOptions, fname), options_dict[fname])
             end
             setfield!(defaults, fname, options_dict[fname])
         end
     end
     return defaults
-end
-
-function JuniperSolver(nl_solver::MathProgBase.AbstractMathProgSolver;options...)
-    options_obj = combine_options(options)
-    return JuniperSolverObj(nl_solver,options_obj)
 end

@@ -1,29 +1,26 @@
 """
-    generate_mip(m, nlp_sol, aff, tabu_list)
+    generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
 
-Generate a mip using the linear constraints (aff) of the original model
+Generate a mip using the linear constraints of the original model
+TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
-function generate_mip(m, nlp_sol, aff, tabu_list)
-    mip_model = Model(solver=m.mip_solver)
-    lb = m.l_var
-    ub = m.u_var
-    @variable(mip_model, lb[i] <= mx[i=1:m.num_var] <= ub[i])
-    for i=1:m.num_var
-        if m.var_type[i] == :Int
-            setcategory(mx[i], :Int)
-        elseif m.var_type[i] == :Bin
-            setcategory(mx[i], :Bin)
-        end
-    end
+function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
+    mip_model = Model(with_optimizer(m.mip_solver))
+    @variable(mip_model, 
+        m.l_var[i] <= mx[i = 1:m.num_var] <= m.u_var[i], 
+        binary = m.var_type[i] == :Bin, 
+        integer = m.var_type[i] == :Int
+    )
 
-    for c in aff
-        if c.sense == :(>=)
-            @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) >= c.rhs)
-        elseif c.sense == :(<=)
-            @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) <= c.rhs)
-        elseif c.sense == :(==)
-            @constraint(mip_model, sum(mx[c.var_idx[i]]*c.coeff[i] for i=1:length(c.var_idx)) == c.rhs)
+    backend = JuMP.backend(mip_model);
+
+    llc = optimizer.linear_le_constraints
+    lgc = optimizer.linear_ge_constraints
+    lec = optimizer.linear_eq_constraints
+    for constr_type in [llc, lgc, lec]
+        for constr in constr_type
+            MOI.add_constraint(backend, constr[1], constr[2])
         end
     end
 
@@ -64,116 +61,142 @@ function generate_mip(m, nlp_sol, aff, tabu_list)
 
     @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
 
-    # Break the mip solver if it takes too long or throw a warning when this option isn't available
-    try
-        MathProgBase.setparameters!(m.mip_solver, TimeLimit=m.options.feasibility_pump_time_limit)
-    catch
-       @warn "Set parameters is not supported"
-    end
+    # Break the mip solver if it takes too long or throw a warning when this option isn't available 
+    current_time = time()-start_fpump  
+    time_left = m.options.feasibility_pump_time_limit-current_time
+    time_left < 0 && (time_left = 1.0)
+    old_time_limit = set_subsolver_option!(m, mip_model, "mip", "Cbc", :seconds, Inf => time_left)                                   
+    
+    status, backend = optimize_get_status_backend(mip_model)
 
-    status = solve(mip_model)
+    reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
 
     # round mip values
-    values = getvalue(mx)
+    values = JuMP.value.(mx)
     for i=1:m.num_disc_var
         vi = m.disc2var_idx[i]
         values[vi] = round(values[vi])
     end
-    return status, values, getobjectivevalue(mip_model)
+    return status, values, JuMP.objective_value(mip_model)
 end
 
 """
-    generate_nlp(m, mip_sol; random_start=false)
+    generate_nlp(optimizer, m, mip_sol; random_start=false)
 
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
-function generate_nlp(m, mip_sol; random_start=false)
-    nlp_model = Model(solver=m.nl_solver)
-    lb = m.l_var
-    ub = m.u_var
-
-    @variable(nlp_model, lb[i] <= nx[i=1:m.num_var] <= ub[i])
+function generate_nlp(optimizer, m, mip_sol; random_start=false)
+    nlp_model = Model(with_optimizer(m.nl_solver))
+    @variable(nlp_model, m.l_var[i] <= nx[i=1:m.num_var] <= m.u_var[i])
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
-            setvalue(nx[i], restart_values[i])
+            JuMP.set_start_value(nx[i], restart_values[i])
         end
     else
-        setvalue(nx[1:m.num_var],mip_sol)
+        JuMP.set_start_value.(nx[1:m.num_var],mip_sol)
     end
 
     # add all constraints
-    for i=1:m.num_constr
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing!(constr_expr, nlp_model)
-        JuMP.addNLconstraint(nlp_model, constr_expr)
+    backend = JuMP.backend(nlp_model);
+    llc = optimizer.linear_le_constraints
+    lgc = optimizer.linear_ge_constraints
+    lec = optimizer.linear_eq_constraints
+    qlc = optimizer.quadratic_le_constraints
+    qgc = optimizer.quadratic_ge_constraints
+    qec = optimizer.quadratic_eq_constraints
+    for constr_type in [llc, lgc, lec, qlc, qgc, qec]
+        for constr in constr_type
+            MOI.add_constraint(backend, constr[1], constr[2])
+        end
     end
+    for i in 1:m.num_nl_constr
+        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
+        expr_dereferencing!(constr_expr, nlp_model)
+        JuMP.add_NL_constraint(nlp_model, constr_expr)
+    end
+    
 
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
-    setsolver(nlp_model, m.nl_solver)
-    status = solve(nlp_model)
-    nlp_sol = getvalue(nx)
-    nx_val = getvalue(nx)
-    nlp_obj = getobjectivevalue(nlp_model)
+    status, backend = optimize_get_status_backend(nlp_model)
 
-    internal_model = internalmodel(nlp_model)
-    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-        MathProgBase.freemodel!(internal_model)
-    end
+    nlp_sol = JuMP.value.(nx)
+    nlp_obj = JuMP.objective_value(nlp_model)
+
+    Base.finalize(backend)
 
     return status, nlp_sol, nlp_obj
 end
 
 """
-    generate_real_nlp(m, sol; random_start=false)
+    generate_real_nlp(optimizer, m, sol; random_start=false)
 
 Generate the orignal nlp and get the objective for that
 """
-function generate_real_nlp(m, sol; random_start=false)
+function generate_real_nlp(optimizer, m, sol; random_start=false)
     if m.num_var == m.num_disc_var
-        nlp_obj = MathProgBase.eval_f(m.d, sol)
-        status = :Optimal
+        if optimizer.nlp_data.has_objective
+            nlp_obj = MOI.eval_objective(optimizer.nlp_data.evaluator, sol)
+        else
+            nlp_obj = evaluate_objective(optimizer, m, sol)
+        end
+        status = MOI.OPTIMAL
         return status, sol, nlp_obj
     end
 
-    rmodel = Model(solver=m.nl_solver)
-    lb = m.l_var
-    ub = m.u_var
+    rmodel = Model(with_optimizer(m.nl_solver))
 
-    @variable(rmodel, lb[i] <= rx[i=1:m.num_var] <= ub[i])
+    @variable(rmodel, m.l_var[i] <= rx[i=1:m.num_var] <= m.u_var[i])
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
             if m.var_type[i] == :Cont
-                setvalue(rx[i], restart_values[i])
+                JuMP.set_start_value(rx[i], restart_values[i])
             end # discrete will be fixed anyway
         end
     end
     for i=1:m.num_disc_var
         vi = m.disc2var_idx[i]
-        JuMP.fix(rx[vi], sol[vi])
+        JuMP.fix(rx[vi], sol[vi]; force=true)
     end
 
     # define the objective function
-    obj_expr = MathProgBase.obj_expr(m.d)
-    expr_dereferencing_fixing!(obj_expr, rmodel, m.var_type, sol)
-    JuMP.setNLobjective(rmodel, m.obj_sense, obj_expr)
-
-    # add all constraints
-    for i=1:m.num_constr
-        constr_expr = MathProgBase.constr_expr(m.d,i)
-        expr_dereferencing_fixing!(constr_expr, rmodel, m.var_type, sol)
-        JuMP.addNLconstraint(rmodel, constr_expr)
+    # TODO check whether it is supported
+    if optimizer.nlp_data.has_objective
+        obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
+        expr_dereferencing!(obj_expr, rmodel)
+        JuMP.set_NL_objective(rmodel, optimizer.sense, obj_expr)
+    else
+        MOI.set(rmodel, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
+        MOI.set(rmodel, MOI.ObjectiveSense(), optimizer.sense)
     end
 
-    status = solve(rmodel)
-    real_sol = getvalue(rx)
-    obj_val = getobjectivevalue(rmodel)
 
-    internal_model = internalmodel(rmodel)
-    if hasmethod(MathProgBase.freemodel!, Tuple{typeof(internal_model)})
-        MathProgBase.freemodel!(internal_model)
+    backend = JuMP.backend(rmodel);
+    llc = optimizer.linear_le_constraints
+    lgc = optimizer.linear_ge_constraints
+    lec = optimizer.linear_eq_constraints
+    qlc = optimizer.quadratic_le_constraints
+    qgc = optimizer.quadratic_ge_constraints
+    qec = optimizer.quadratic_eq_constraints
+    for constr_type in [llc, lgc, lec, qlc, qgc, qec]
+        for constr in constr_type
+            MOI.add_constraint(backend, constr[1], constr[2])
+        end
     end
+    for i in 1:m.num_nl_constr
+        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
+        expr_dereferencing!(constr_expr, rmodel)
+        JuMP.add_NL_constraint(rmodel, constr_expr)
+    end
+
+    status, backend = optimize_get_status_backend(rmodel)
+
+    real_sol = JuMP.value.(rx)
+    obj_val = JuMP.objective_value(rmodel)
+
+    Base.finalize(backend)
+
     return status, real_sol, obj_val
 end
 
@@ -190,7 +213,7 @@ function add!(t::TabuList, m, sol)
     end
 end
 
-function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
+function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars, catol)
     ln = ""
     i = 1
     arr = []
@@ -200,10 +223,22 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
             if isnan(mip_obj)
                 val = "-"
             else
-                val = string(round(mip_obj; digits=4))
+                digits = 4
+                if mip_obj < 1e-4
+                    digits = convert(Int,floor(log10(1/catol)))
+                end
+                val = string(round(mip_obj; digits=digits))
             end
         elseif f == :NLPobj
-            val = string(round(nlp_obj; digits=4))
+            if isnan(nlp_obj)
+                val = "-"
+            else
+                digits = 4
+                if nlp_obj < 1e-4
+                    digits = convert(Int,floor(log10(1/catol)))
+                end
+                val = string(round(nlp_obj; digits=digits))
+            end
         elseif f == :Time
             val = string(round(t; digits=1))
         end
@@ -225,12 +260,12 @@ function get_fp_table(mip_obj,nlp_obj,t, fields, field_chars)
 end
 
 """
-    fpump(m)
+    fpump(optimizer, m)
 
 Run the feasibility pump
 """
-function fpump(m)
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+function fpump(optimizer, m)
+    Random.seed!(1)
 
     if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
         return m.solution, m.objval
@@ -272,19 +307,19 @@ function fpump(m)
 
         # generate a mip or just round if no linear constraints
         if m.num_l_constr > 0
-            mip_status, mip_sol, mip_obj = generate_mip(m, nlp_sol, m.affs, tabu_list)
+            mip_status, mip_sol, mip_obj = generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
         else
             # if no linear constraints just round the discrete variables
             mip_obj = NaN
             mip_sol = copy(nlp_sol)
-            mip_status = :Optimal
+            mip_status = MOI.OPTIMAL
             for vi=1:m.num_disc_var
                 vidx = m.disc2var_idx[vi]
                 mip_sol[vidx] = round(mip_sol[vidx])
             end
         end
-        if mip_status != :Optimal
-            @warn "MIP couldn't be solved to optimality"
+        if mip_status != MOI.OPTIMAL
+            @warn "MIP couldn't be solved to optimality. Terminated with status: "*string(mip_status)
             break
         end
 
@@ -296,22 +331,25 @@ function fpump(m)
         add!(tabu_list, m, mip_sol)
         mip_sols[hash(mip_sol)] = true
 
-        nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol)
-        if nlp_status != :Optimal
+        nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol)
+        if !state_is_optimal(nlp_status; allow_almost=true)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && nlp_status != :Optimal &&
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(nlp_status) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
-                nlp_status, nlp_sol, nlp_obj = generate_nlp(m, mip_sol; random_start=true)
+                nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
-            if nlp_status != :Optimal
+            if !state_is_optimal(nlp_status; allow_almost=true)
                 @warn "NLP couldn't be solved to optimality"
+                if check_print(ps,[:Table])
+                    print_fp_table(mip_obj, NaN, time()-start_fpump, fields, field_chars, catol)
+                end
                 break
             end
         end
 
         if check_print(ps,[:Table])
-            print_fp_table(mip_obj, nlp_obj, time()-start_fpump, fields, field_chars)
+            print_fp_table(mip_obj, nlp_obj, time()-start_fpump, fields, field_chars, catol)
         end
 
         # if the current tolerance was nearly reached 5 times
@@ -325,20 +363,23 @@ function fpump(m)
         # if the difference is near 0 => try to improve the obj by using the original obj
         # set atol for type correct to a low value as it is checked with real_nlp anyway
         if are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
-            real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol)
+            real_status,real_sol, real_obj = generate_real_nlp(optimizer, m, mip_sol)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && real_status != :Optimal &&
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(real_status; allow_almost=true) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
-                real_status,real_sol, real_obj = generate_real_nlp(m, mip_sol; random_start=true)
+                real_status,real_sol, real_obj = generate_real_nlp(optimizer, m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
-            if real_status == :Optimal
+            if state_is_optimal(real_status) || (real_status == MOI.ALMOST_LOCALLY_SOLVED && m.options.allow_almost_solved_integral)
+                if real_status == MOI.ALMOST_LOCALLY_SOLVED
+                    @warn "Integral feasible point only almost locally solved. Disallowable with `allow_almost_solved_integral=false`"
+                end 
                 nlp_obj = real_obj
                 nlp_sol = real_sol
                 iscorrect = true
                 break
             elseif are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol)
-                nlp_obj = MathProgBase.eval_f(m.d, nlp_sol)
+                nlp_obj = evaluate_objective(optimizer, m, nlp_sol)
                 iscorrect = true
                 @warn "Real objective wasn't solved to optimality"
                 break

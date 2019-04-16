@@ -17,9 +17,7 @@ You need the global optimum? Check out [Alpine.jl](http://github.com/lanl-ansi/A
 
 Juniper can be installed via:
 
-`Pkg.add("Juniper")` 
-
-or `] add Juniper` for Julia v0.7 and v1.
+`] add Juniper` for Julia v1.
 
 Then adding it to your project by
 
@@ -31,16 +29,19 @@ You also have to import your NLP solver i.e.
 
 as well as [JuMP](http://www.juliaopt.org/JuMP.jl)
 
-Define `JuniperSolver` as your solver:
+Define `Juniper` as the optimizer:
 
 ```
-solver = JuniperSolver(IpoptSolver(print_level=0))
+optimizer = Juniper.Optimizer
+params = Dict{Symbol,Any}()
+params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
 ```
 
 And give it a go:
 
 ```
-m = Model(solver=solver)
+using LinearAlgebra # for the dot product
+m = Model(with_optimizer(optimizer, params))
 
 v = [10,20,12,23,42]
 w = [12,45,12,22,21]
@@ -50,7 +51,12 @@ w = [12,45,12,22,21]
 
 @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-status = solve(m)
+optimize!(m)
+
+# retrieve the objective value, corresponding x values and the status
+println(JuMP.value.(x))
+println(JuMP.objective_value(m))
+println(JuMP.termination_status(m))
 ```
 
 This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.
@@ -59,8 +65,10 @@ It is recommended to specify a mip solver as well i.e.
 
 ```
 using Cbc
-solver = JuniperSolver(IpoptSolver(print_level=0);   
-                       mip_solver=CbcSolver())
+optimizer = Juniper.Optimizer
+params = Dict{Symbol,Any}()
+params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
+params[:mip_solver] = with_optimizer(Cbc.Optimizer, logLevel=0)
 ```
 
 Then the feasibility pump is used to find a feasible solution before the branch and bound part starts. This turned out to be highly effective.

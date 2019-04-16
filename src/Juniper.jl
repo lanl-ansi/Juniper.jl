@@ -1,30 +1,22 @@
 module Juniper
 
-using MathProgBase
-using JuMP
+import JuMP
+using JuMP: @variable, @constraint, @objective, Model, with_optimizer
 using JSON
+using LinearAlgebra
+using Random
+using Distributed
+using Statistics
 
-if VERSION < v"0.7.0-"
-    import Compat: occursin
-    import Compat: Nothing
-    import Compat: round
-    import Compat: @warn
-    import Compat: pushfirst!
-    import Compat: popfirst!
-    import Compat: Array
-    import Compat: undef
-    import Compat: hasmethod
-    import Compat: findall
-end
+using MathOptInterface
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Random
-    using Distributed
-    using Statistics
-end
-
-
+# functions
+const SVF = MOI.SingleVariable
+const SAF = MOI.ScalarAffineFunction{Float64}
+const SQF = MOI.ScalarQuadraticFunction{Float64}
+const VECTOR = MOI.VectorOfVariables
 
 include("types.jl")
 
@@ -46,6 +38,6 @@ include("printing.jl")
 include("solver.jl")
 include("model.jl")
 include("BnBTree.jl")
-
+include("MOI_wrapper/MOI_wrapper.jl")
 
 end

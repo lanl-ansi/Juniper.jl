@@ -11,8 +11,9 @@ You can get some statistics after the problem is solved.
 | nbranches | Number of branches                           |
 | nlevels   | Deepest level reached (Root node is level 1) |
 
-To access these statistics you can use `m.internalModel` i.e.:
+To access these statistics you can use `JuMP.backend(m)` i.e.:
 
 ```
-m.internalModel.nintvars
+internal_model = JuMP.backend(m)
+println("#IntVars: ", internal_model.optimizer.model.inner.nintvars)
 ```

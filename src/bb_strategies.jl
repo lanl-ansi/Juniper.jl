@@ -34,7 +34,7 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
 
     # set the bounds directly for the node
     # also update the best bound and the solution
-    if l_nd.relaxation_state != :Optimal
+    if !state_is_optimal(l_nd.relaxation_state)
         # the solution shouldn't be updated when the current max_gain_var is then type correct
         if max_gain_var == 0 || !is_type_correct(r_nd.solution[max_gain_var],var_type[max_gain_var],atol)
             # if all variables reasonable_disc_vars are type correct => just continue with thetree
@@ -116,16 +116,16 @@ function branch_strong_on!(m,opts,step_obj,
         return gain_l, gain_r, gain
     end
 
+    function add_strong_step(strong_step,l_nd,r_nd; restart=false) 
+        strong_step.l_relaxation_state = l_nd.relaxation_state
+        strong_step.r_relaxation_state = r_nd.relaxation_state
+        strong_step.init_restart = restart
+        push!(step_obj.strong_branching, strong_step)
+    end
+
     strong_time = time()
 
     node = step_obj.node
-
-    left_node = nothing
-    right_node = nothing
-
-    max_gain = -Inf # then one is definitely better
-    max_gain_var = 0
-    max_gain_disc_var = 0
     strong_restarts = -1
     restart = true
     status = :Normal
@@ -137,6 +137,11 @@ function branch_strong_on!(m,opts,step_obj,
     atol = opts.atol
 
     need_to_resolve = false
+    opts.debug && (step_obj.strong_branching = [])
+
+    max_gain = -Inf # then one is definitely better
+    max_gain_var = 0
+    max_gain_disc_var = 0
 
     while restart 
         strong_restarts += 1 # is init with -1
@@ -156,25 +161,28 @@ function branch_strong_on!(m,opts,step_obj,
 
             # branch on the current variable and get the corresponding children
             l_nd,r_nd = branch!(m, opts, step_obj, counter, disc2var_idx; temp=true)
-
+            opts.debug && (strong_step = new_default_strong_branch_step_obj(var_idx))
+               
             # no current restart => we can set max_gain and variable
             gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
 
-            if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal && counter == 1
+            if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state) && counter == 1
                 # TODO: Might be Error/UserLimit instead of infeasible
                 status = :GlobalInfeasible
                 left_node = l_nd
                 right_node = r_nd
+                opts.debug && add_strong_step(strong_step,l_nd,r_nd)
                 break
             end
 
             # check if one part is infeasible => update bounds & restart if strong restart is true
-            if l_nd.relaxation_state != :Optimal || r_nd.relaxation_state != :Optimal
-                if l_nd.relaxation_state != :Optimal && r_nd.relaxation_state != :Optimal
+            if !state_is_optimal(l_nd.relaxation_state) || !state_is_optimal(r_nd.relaxation_state)
+                if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state)
                     # TODO: Might be Error/UserLimit instead of infeasible
                     status = :LocalInfeasible
                     left_node = l_nd
                     right_node = r_nd
+                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
                     break
                 end
                 need_to_resolve, restart, new_infeasible_disc_vars, set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type, disc2var_idx)
@@ -191,6 +199,7 @@ function branch_strong_on!(m,opts,step_obj,
                     gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
                     max_gain = gain
                     set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
+                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
                     break
                 end
 
@@ -200,7 +209,7 @@ function branch_strong_on!(m,opts,step_obj,
             end
 
             # don't update maximum if restart
-            if gain > max_gain && !restart 
+            if gain > max_gain && !restart
                 max_gain = gain
                 max_gain_var = var_idx
                 max_gain_disc_var = disc_var_idx
@@ -211,6 +220,7 @@ function branch_strong_on!(m,opts,step_obj,
                 need_to_resolve = false
             end
             set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
+            opts.debug && add_strong_step(strong_step,l_nd,r_nd;restart=restart)
             if restart
                 break
             end
@@ -263,10 +273,7 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
     end
 
     # compute the gain for each reasonable candidate and choose the highest
-    left_node = nothing
-    right_node = nothing
-
-    status, max_gain_var,  left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
+    status, max_gain_var, left_node, right_node, gains, strong_restarts = branch_strong_on!(m,opts,step_obj,
         reasonable_disc_vars, disc2var_idx, opts.strong_restart, counter)
 
     step_obj.obj_gain += gains
@@ -279,7 +286,6 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
         node.state = :Done
         node.var_idx = max_gain_var
     end
-
 
     @assert max_gain_var != 0 || status == :LocalInfeasible || status == :GlobalInfeasible || node.state == :Infeasible
     return status, max_gain_var, strong_restarts
@@ -389,7 +395,7 @@ function score(q_m, q_p, mu)
 end
 
 function diff_obj(node, cnode)
-    if cnode.relaxation_state == :Optimal
+    if state_is_optimal(cnode.relaxation_state)
         return abs(node.best_bound - cnode.best_bound)
     else
         return Inf
