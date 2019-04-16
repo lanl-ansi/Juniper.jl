@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Basic usage",
     "category": "section",
-    "text": "The latest version can be installed via:Pkg.add(\"Juniper\")or for Julia v0.7 and v1:] add Juniper as ] is used to get to interact with the package manager.Then adding it to your project byusing JuniperYou also have to import your NLP solver i.e.using Ipoptas well as JuMPDefine JuniperSolver as your solver:solver = JuniperSolver(IpoptSolver(print_level=0))And give it a go:m = Model(solver=solver)\n\nv = [10,20,12,23,42]\nw = [12,45,12,22,21]\n@variable(m, x[1:5], Bin)\n\n@objective(m, Max, dot(v,x))\n\n@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   \n\nstatus = solve(m)\nThis solver is a NLP solver therefore you should have at least one NLconstraint or NLobjective."
+    "text": "The latest version can be installed via:] add Juniper as ] is used to get to interact with the package manager.Then adding it to your project byusing JuniperYou also have to import your NLP solver i.e.using Ipoptas well as JuMPDefine Juniper as the optimizer:optimizer = Juniper.Optimizer\nparams = Dict{Symbol,Any}()\nparams[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)And give it a go:using LinearAlgebra # for the dot product\nm = Model(with_optimizer(optimizer, params))\n\nv = [10,20,12,23,42]\nw = [12,45,12,22,21]\n@variable(m, x[1:5], Bin)\n\n@objective(m, Max, dot(v,x))\n\n@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   \n\noptimize!(m)\n\n# retrieve the objective value, corresponding x values and the status\nprintln(JuMP.value.(x))\nprintln(JuMP.objective_value(m))\nprintln(JuMP.termination_status(m))This solver is a NLP solver therefore you should have at least one NLconstraint or NLobjective.Juniper is specialized for non convex problems which get solved locally optimal. It will solve convex problems as well but specialized solvers for convex problems should be preferred then.    "
 },
 
 {
@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "General",
     "category": "section",
-    "text": "The most basic configuration of Juniper is:JuniperSolver(IpoptSolver(print_level=0))The first argument defines the solver for the relaxation here IpoptSolver. Ipopt is used for all our test cases. The Ipopt julia package is described here. The solver itself can have parameters i.e print_level=0.JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned hereYou can add options doing the following:m = Model()\njuniper = JuniperSolver(IpoptSolver(print_level=0);\n    branch_strategy=:StrongPseudoCost\n)\nsetsolver(m, juniper)In this example the strategy used for branching is defined.In the following the options are explained. The type for the option is given after :: and the default value in [].Attention: The default values might change in the future after several tests were executed to determine the best overall options. "
+    "text": "The most basic configuration of Juniper is:optimizer = Juniper.Optimizer\nparams = Dict{Symbol,Any}()\nparams[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)and then creating the model with:m = Model(with_optimizer(optimizer, params))The argument nl_solver defines the solver for the relaxation here IpoptSolver. Ipopt is used for all our test cases. The Ipopt julia package is described here. The solver itself can have parameters i.e print_level=0.JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned hereYou can add options by adding another key, value per to the params dictionary:params[:branch_strategy] = :StrongPseudoCostIn this example the strategy used for branching is defined.In the following the options are explained. The type for the option is given after :: and the default value in [].Attention: The default values might change in the future after several tests were executed to determine the best overall options. "
 },
 
 {
@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Options",
     "title": "mip_solver::MathProgBase.AbstractMathProgSolver [nothing]",
     "category": "section",
-    "text": "This has to be set to a mip solver if the feasibility pump should be used. A list of some MIP solvers is mentioned here.If you want to use GLPK you would need to useusing GLPKMathProgInterfaceand set the option with mip_solver=GLPKSolverMIP()"
+    "text": "This has to be set to a mip solver if the feasibility pump should be used. A list of some MIP solvers is mentioned here.If you want to use Cbc you would need to useusing Cbcand set the option with params[:mip_solver] = with_optimizer(Cbc.Optimizer, logLevel=0)"
 },
 
 {
@@ -337,6 +337,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "options.html#Extra-options-1",
+    "page": "Options",
+    "title": "Extra options",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "options.html#allow_almost_solved_integral::Bool-[true]-1",
+    "page": "Options",
+    "title": "allow_almost_solved_integral::Bool [true]",
+    "category": "section",
+    "text": "The non linear solver might return the status ALMOST_LOCALLY_SOLVED which means:  \"The algorithm converged to a stationary point, local   optimal solution, or could not find directions for improvement within relaxed tolerances.\" Inside Juniper this is mostly considered as LOCALLY_SOLVED but you can use this option to restart the search once if solution is integral but only ALMOST_LOCALLY_SOLVED to maybe find a LOCALLY_SOLVED solution. "
+},
+
+{
     "location": "options.html#Logging-1",
     "page": "Options",
     "title": "Logging",
@@ -365,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Extras",
     "title": "Statistics",
     "category": "section",
-    "text": "You can get some statistics after the problem is solved.Variable Description\nnintvars Number of integer variables\nnbinvars Number of binary variables\nnnodes Number of explored nodes in branch and bound\nncuts Number of cuts\nnbranches Number of branches\nnlevels Deepest level reached (Root node is level 1)To access these statistics you can use m.internalModel i.e.:m.internalModel.nintvars"
+    "text": "You can get some statistics after the problem is solved.Variable Description\nnintvars Number of integer variables\nnbinvars Number of binary variables\nnnodes Number of explored nodes in branch and bound\nncuts Number of cuts\nnbranches Number of branches\nnlevels Deepest level reached (Root node is level 1)To access these statistics you can use JuMP.backend(m) i.e.:internal_model = JuMP.backend(m)\nprintln(\"#IntVars: \", internal_model.optimizer.model.inner.nintvars)"
 },
 
 ]}
