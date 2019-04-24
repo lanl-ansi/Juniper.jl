@@ -1,5 +1,6 @@
 name = "Juniper"
-uuid = "75be3022-610a-11e9-35a7-e955f4898f51"
+uuid = "2ddba703-00a4-53a7-87a5-e8b9971dde84"
+repo = "https://github.com/lanl-ansi/Juniper.jl.git"
 authors = ["Ole Kröger <o.kroeger@wikunia.de>", "Kaarthik Sundar kaarthik@lanl.gov"]
 version = "0.4.0"
 
