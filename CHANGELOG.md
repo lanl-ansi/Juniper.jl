@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### v0.3.0
+### v0.4.0
 - MPB -> MOI
 - JuMP 0.19
 - Dropped support for Julia versions < 1.0
