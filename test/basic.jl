@@ -560,20 +560,29 @@ end
     println("One Integer small MostInfeasible")
     println("==================================")
     
-    m = Model(with_optimizer(
-        Juniper.Optimizer,
-        juniper_mosti)
-    )
+    m = Model()    
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
     @variable(m, 0 <= u <= 10, Int)
     @variable(m, w == 1)
 
-    @objective(m, Min, -3x - y)
+    special_minimizer_fct(x,y) = -3x-y
+    register_args = [:special_minimizer_fct, 2, special_minimizer_fct]
+    JuMP.register(m, register_args...; autodiff=true)
+
+    @NLobjective(m,Min,special_minimizer_fct(x, y))
 
     @constraint(m, 3x + 10 <= 20)
     @NLconstraint(m, y^2 <= u*w)
+
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            branch_strategy=:MostInfeasible,
+            registered_functions=[Juniper.register(register_args...; autodiff=true)]
+        ))
+    )
 
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))

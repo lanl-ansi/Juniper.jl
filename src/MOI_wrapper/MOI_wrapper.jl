@@ -91,6 +91,10 @@ function MOI.eval_hessian_lagrangian(::EmptyNLPEvaluator, H, x, σ, μ)
 end
 empty_nlp_data() = MOI.NLPBlockData([], EmptyNLPEvaluator(), false)
 
+function register(s::Symbol, dimension::Integer, f::Function; autodiff::Bool=false)
+    return RegisteredFunction(s, dimension, f, autodiff)
+end
+
 """
 Optimizer struct constructor 
 """
