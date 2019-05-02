@@ -1,6 +1,6 @@
 function init(start_time, m; inc_sol = nothing, inc_obj = nothing)
 
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+    Random.seed!(1)
 
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, :Optimal, m.objval,[],hash_val)

@@ -4,27 +4,10 @@ using MathProgBase
 using JuMP
 using JSON
 
-if VERSION < v"0.7.0-"
-    import Compat: occursin
-    import Compat: Nothing
-    import Compat: round
-    import Compat: @warn
-    import Compat: pushfirst!
-    import Compat: popfirst!
-    import Compat: Array
-    import Compat: undef
-    import Compat: hasmethod
-    import Compat: findall
-end
-
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Random
-    using Distributed
-    using Statistics
-end
-
-
+using LinearAlgebra
+using Random
+using Distributed
+using Statistics
 
 include("types.jl")
 

@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.3.0
+- removes support for Julia < v1
+
 ### v0.2.6
 - bugfix in init_strong_restart
 - bugfix in mip_gap if objval=0

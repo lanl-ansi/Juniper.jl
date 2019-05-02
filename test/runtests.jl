@@ -1,14 +1,7 @@
 using Base,Logging
 
 
-if VERSION > v"0.7.0-"
-    using Test, Distributed
-end
-
-if VERSION < v"0.7.0-"
-    using Base.Test
-end
-
+using Test, Distributed
 
 if nworkers() > 1
     rmprocs(workers())
@@ -24,16 +17,9 @@ end
 println("Workers:", nworkers())
 
 
-if VERSION > v"0.7.0-"
-    using LinearAlgebra
-    using Statistics
-    using Random
-end
-
-if VERSION < v"0.7.0-"
-    using Compat
-end
-
+using LinearAlgebra
+using Statistics
+using Random
 
 using JuMP
 

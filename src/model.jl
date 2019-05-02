@@ -53,7 +53,7 @@ function MathProgBase.loadproblem!(
     l_constr::Vector{Float64}, u_constr::Vector{Float64},
     sense::Symbol, d::MathProgBase.AbstractNLPEvaluator)
 
-    VERSION > v"0.7.0-" ? Random.seed!(1) : srand(1)
+    Random.seed!(1)
 
     # initialise other fields
     m.num_var = num_var

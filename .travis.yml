@@ -3,8 +3,6 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
-  - 0.7
   - 1.0
   - 1.1
 cache:
@@ -13,18 +11,10 @@ cache:
 addons:
   apt_packages:
     - gfortran
-before_install:
-- |
-    if [[ "$TRAVIS_JULIA_VERSION" == "0.6" ]]; then
-      julia -e 'if "Juniper" in keys(Pkg.installed()) Pkg.rm("Juniper"); Pkg.rm("Juniper") end'
-      julia -e 'Pkg.update()'
-    else
-      julia -e 'using Pkg; Pkg.update()'
-    fi
-script:
-  julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.clone(pwd()); Pkg.test("Juniper", coverage=true)'
+
 after_success:
-  julia -e '(VERSION >= v"0.7" && using Pkg); Pkg.add("Coverage"); cd(Pkg.dir("Juniper")); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+
 jobs:
   include:
     - stage: "Documentation"

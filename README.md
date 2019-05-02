@@ -17,9 +17,7 @@ You need the global optimum? Check out [Alpine.jl](http://github.com/lanl-ansi/A
 
 Juniper can be installed via:
 
-`Pkg.add("Juniper")` 
-
-or `] add Juniper` for Julia v0.7 and v1.
+`] add Juniper`
 
 Then adding it to your project by
 
