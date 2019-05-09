@@ -2,6 +2,8 @@ mutable struct RegisteredFunction
     s         :: Symbol
     dimension :: Integer
     f         :: Function
+    gradf     :: Union{Nothing, Function}
+    grad2f    :: Union{Nothing, Function}
     autodiff  :: Bool
 end
 

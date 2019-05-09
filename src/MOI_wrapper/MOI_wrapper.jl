@@ -92,7 +92,15 @@ end
 empty_nlp_data() = MOI.NLPBlockData([], EmptyNLPEvaluator(), false)
 
 function register(s::Symbol, dimension::Integer, f::Function; autodiff::Bool=false)
-    return RegisteredFunction(s, dimension, f, autodiff)
+    return RegisteredFunction(s, dimension, f, nothing, nothing, autodiff)
+end
+
+function register(s::Symbol, dimension::Integer, f::Function, gradf::Function; autodiff::Bool=false)
+    return RegisteredFunction(s, dimension, f, gradf, nothing, autodiff)
+end
+
+function register(s::Symbol, dimension::Integer, f::Function, gradf::Function, grad2f::Function; autodiff::Bool=false)
+    return RegisteredFunction(s, dimension, f, gradf, grad2f, autodiff)
 end
 
 """

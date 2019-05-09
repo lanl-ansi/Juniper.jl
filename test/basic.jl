@@ -35,22 +35,34 @@ end
     println("==================================")
     println("Bruteforce")
     println("==================================")
+
+    m = Model()
+    
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    special_minimizer_fct(x) = x
+    grad(x) = 1.0
+    grad2(x) = 0.0
+
+    register_args = [:special_minimizer_fct, 1, special_minimizer_fct, grad, grad2]
+    JuMP.register(m, register_args...)
+
+    @NLobjective(m,Min,special_minimizer_fct(x[1]))
+
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true,
-        debug = true
+        debug = true,
+        registered_functions=[Juniper.register(register_args...)]
     )
 
-    m = Model(with_optimizer(
+    JuMP.set_optimizer(m, with_optimizer(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions
+        )
     )
-
-    @variable(m, 1 <= x[1:4] <= 5, Int)
-
-    @objective(m, Min, x[1])
 
     @constraint(m, x[1] >= 0.9)
     @constraint(m, x[1] <= 1.1)
@@ -498,17 +510,37 @@ end
     println("==================================")
     println("One Integer small Reliable")
     println("==================================")
-    m = Model(with_optimizer(
-        Juniper.Optimizer,
-        juniper_reliable_restart)
-    )
+    m = Model()
 
     @variable(m, x >= 0, Int, start=2)
     @variable(m, y >= 0)
     @variable(m, 0 <= u <= 10, Int)
     @variable(m, w == 1)
 
-    @objective(m, Min, -3x - y)
+    myf(x,y) = -3x-y
+    function ∇f(g,x,y)
+        g[1] = -3
+        g[2] = -1
+    end
+
+    register_args = [:myf, 2, myf, ∇f]
+    JuMP.register(m, register_args...)
+
+    @NLobjective(m,Min,myf(x,y))
+
+    juniper_reliable_restart_registered = DefaultTestSolver(
+        branch_strategy=:Reliability,
+        reliability_branching_perc = 25,
+        reliability_branching_threshold = 2,
+        strong_restart = true,
+        registered_functions=[Juniper.register(register_args...)]
+    )
+
+    JuMP.set_optimizer(m, with_optimizer(
+        Juniper.Optimizer,
+        juniper_reliable_restart_registered
+        )
+    )
 
     @constraint(m, 3x + 10 <= 20)
     @NLconstraint(m, y^2 <= u*w)
