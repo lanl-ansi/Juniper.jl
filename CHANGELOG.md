@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.4.1
+- Support for user defined functions see issue #118
+
 ### v0.4.0
 - MPB -> MOI
 - JuMP 0.19
