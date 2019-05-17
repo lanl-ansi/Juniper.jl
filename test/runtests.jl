@@ -119,6 +119,7 @@ start = time()
     include("parallel.jl")
     include("fpump.jl")
     include("pod.jl")
+    include("minlp_tests.jl")
     # include("power_models_acp.jl")
     # include("power_models_socwr.jl")
 end
