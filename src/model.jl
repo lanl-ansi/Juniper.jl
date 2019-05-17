@@ -14,6 +14,18 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         JuMP.set_start_value(x[i], jp.primal_start[i])
     end
 
+    if jp.options.registered_functions != nothing
+        for reg_f in jp.options.registered_functions
+            if reg_f.gradf == nothing
+                JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f; autodiff=reg_f.autodiff)
+            elseif reg_f.grad2f == nothing
+                JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf)
+            else
+                JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf, reg_f.grad2f)
+            end
+        end
+    end
+
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)

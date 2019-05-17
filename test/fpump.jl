@@ -12,7 +12,12 @@ include("basic/gamsworld.jl")
 
     m = Model()
     @variable(m, x[1:10], Bin)
-    @NLconstraint(m, x[1]^2+x[2]^2 == 0)
+
+    special_constr_fct(x,y) = x^2+y^2
+    register_args = [:special_constr_fct, 2, special_constr_fct]
+    JuMP.register(m, register_args...; autodiff=true)
+
+    @NLconstraint(m, special_constr_fct(x[1],x[2]) == 0)
     @objective(m, Max, sum(x))
 
     set_optimizer(m, with_optimizer(
@@ -21,7 +26,9 @@ include("basic/gamsworld.jl")
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0),
+            registered_functions=[Juniper.register(register_args...; autodiff=true)]
+            )
     ))
 
     status = solve(m)
