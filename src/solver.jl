@@ -14,7 +14,7 @@ function get_default_options()
     # Strong branching  
     strong_branching_perc               = 100
     strong_branching_nsteps             = 1
-    strong_branching_approx_time_limit  = 100
+    strong_branching_time_limit         = 100
     strong_restart                      = true
     # Reliability branching     
     reliability_branching_threshold     = 5 # reliability param
@@ -52,7 +52,7 @@ function get_default_options()
     fixed_gain_mu                       = false
 
     return SolverOptions(nl_solver,log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
-        strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
+        strong_branching_perc,strong_branching_nsteps,strong_branching_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,traverse_strategy,

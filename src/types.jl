@@ -18,7 +18,7 @@ mutable struct SolverOptions
     gain_mu                             :: Float64
     strong_branching_perc               :: Float64
     strong_branching_nsteps             :: Int64
-    strong_branching_approx_time_limit  :: Float64
+    strong_branching_time_limit  :: Float64
     strong_restart                      :: Bool
     reliability_branching_threshold     :: Int64
     reliability_branching_perc          :: Float64

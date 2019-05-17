@@ -47,7 +47,7 @@ end
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_branching_approx_time_limit=0.01,
+            strong_branching_time_limit=0.01,
             time_limit = 4,
             strong_restart = false)
     ))
