@@ -146,6 +146,10 @@ mutable struct BnBNode
     hash                :: String
 end
 
+function Base.copy(b::BnBNode) 
+    return BnBNode(b.idx, b.level, b.l_var, b.u_var, b.solution, b.var_idx, b.state, b.relaxation_state, b.best_bound, b.path, b.hash)
+end
+
 mutable struct Incumbent
     objval      :: Float64
     solution    :: Vector{Float64}

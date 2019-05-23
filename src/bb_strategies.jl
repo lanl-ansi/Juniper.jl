@@ -37,9 +37,10 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
     if !state_is_optimal(l_nd.relaxation_state)
         # the solution shouldn't be updated when the current max_gain_var is then type correct
         if max_gain_var == 0 || !is_type_correct(r_nd.solution[max_gain_var],var_type[max_gain_var],atol)
-            # if all variables reasonable_disc_vars are type correct => just continue with thetree
+            # if all variables reasonable_disc_vars are type correct => just continue with the tree
             # no restarts and no change in bounds
             if !all_reasonable_type_correct(r_nd.solution, disc2var_idx, reasonable_disc_vars, atol)
+                println("Change l_var and solution")
                 node.l_var[var_idx] = ceil(node.solution[var_idx])
                 node.best_bound = r_nd.best_bound
                 node.solution = r_nd.solution
@@ -52,6 +53,7 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
         # the solution shouldn't be updated when the current max_gain_var is then type correct
         if max_gain_var == 0 || !is_type_correct(l_nd.solution[max_gain_var],var_type[max_gain_var],atol)
             if !all_reasonable_type_correct(l_nd.solution, disc2var_idx, reasonable_disc_vars, atol)
+                println("Change u_var and solution")
                 node.u_var[var_idx] = floor(node.solution[var_idx])
                 node.best_bound = l_nd.best_bound
                 node.solution = l_nd.solution
@@ -123,14 +125,28 @@ function branch_strong_on!(m,opts,step_obj,
         push!(step_obj.strong_branching, strong_step)
     end
 
+    current_disc_var_idx = 0
+    function get_next_disc_var()
+        current_disc_var_idx += 1
+        if current_disc_var_idx > length(reasonable_disc_vars)
+            return 0, 0
+        end
+        return reasonable_disc_vars[current_disc_var_idx], current_disc_var_idx
+    end
+
+    np = nprocs()  # determine the number of processes available
+    if opts.processors+1 < np
+        np = opts.processors+1
+    end
+
     strong_time = time()
 
     node = step_obj.node
     strong_restarts = -1
     restart = true
     status = :Normal
-    node = step_obj.node
     infeasible_disc_vars = zeros(Int64,0)
+    restart_infeasible_disc_vars = infeasible_disc_vars[:]
     gains = init_gains(m.num_disc_var)
   
     left_node, right_node = nothing, nothing
@@ -142,91 +158,155 @@ function branch_strong_on!(m,opts,step_obj,
     max_gain = -Inf # then one is definitely better
     max_gain_var = 0
     max_gain_disc_var = 0
+    restart_node = copy(node)
 
+    discs_in_order = []
+    l_var_hashes = []
+    u_var_hashes = []
+    restart_need_to_resolve = false
+
+    println("reasonable_disc_vars: ", reasonable_disc_vars)
     while restart 
-        strong_restarts += 1 # is init with -1
         restart = false
-        for disc_var_idx in reasonable_disc_vars
-            # don't rerun if the variable has already one infeasible node
-            if disc_var_idx in infeasible_disc_vars
-                continue
-            end
-            var_idx = disc2var_idx[disc_var_idx]
-            step_obj.var_idx = var_idx
-            u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
-            # don't rerun if bounds are exact or is type correct
-            if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx], atol)
-                continue
-            end
+        current_disc_var_idx = 0
+        strong_restarts += 1 # is init with -1
+        restart_rank = -1
+        node = restart_node
+        infeasible_disc_vars = restart_infeasible_disc_vars[:]
+        # if restart_need_to_resolve 
+            # need_to_resolve = restart_need_to_resolve
+        # end
+        parallel_break = false
+        println("START/RESTART")
+        @sync begin
+            for p=1:np
+                if p != myid() || np == 1
+                    @async begin
+                        while true
+                            parallel_break && break
+                            # rank is used so that the first rank is used for restart purposes
+                            # this makes it like sequential  
+                            disc_var_idx, rank = get_next_disc_var()
+                            if disc_var_idx == 0 
+                                break
+                            end
+                            # don't rerun if the variable has already one infeasible node
+                            if disc_var_idx in infeasible_disc_vars
+                                continue
+                            end
+                            var_idx = disc2var_idx[disc_var_idx]
+                            # println("var_idx: ", var_idx)
+                            println("disc_var_idx: ", disc_var_idx)
+                            step_obj.var_idx = var_idx
+                            u_b, l_b = node.u_var[var_idx], node.l_var[var_idx]
+                            # don't rerun if bounds are exact or is type correct
+                            if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx], atol)
+                                continue
+                            end
 
-            # branch on the current variable and get the corresponding children
-            l_nd,r_nd = branch!(m, opts, step_obj, counter, disc2var_idx; temp=true)
-            opts.debug && (strong_step = new_default_strong_branch_step_obj(var_idx))
-               
-            # no current restart => we can set max_gain and variable
-            gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
+                            # branch on the current variable and get the corresponding children
+                            l_nd,r_nd = remotecall_fetch(branch!, p, m, opts, step_obj, counter, disc2var_idx; temp=true)
+                            node.var_idx = var_idx
+                            # println("rank: ", rank)
+                            # println("disc_var_idx: ", disc_var_idx)
+                            # println("sol hash: ", hash(node.solution))
+                            # println("l_nd: ", l_nd.relaxation_state)
+                            # println("r_nd: ", r_nd.relaxation_state)
 
-            if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state) && counter == 1
-                # TODO: Might be Error/UserLimit instead of infeasible
-                status = :GlobalInfeasible
-                left_node = l_nd
-                right_node = r_nd
-                opts.debug && add_strong_step(strong_step,l_nd,r_nd)
-                break
-            end
+                            opts.debug && (strong_step = new_default_strong_branch_step_obj(var_idx))
 
-            # check if one part is infeasible => update bounds & restart if strong restart is true
-            if !state_is_optimal(l_nd.relaxation_state) || !state_is_optimal(r_nd.relaxation_state)
-                if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state)
-                    # TODO: Might be Error/UserLimit instead of infeasible
-                    status = :LocalInfeasible
-                    left_node = l_nd
-                    right_node = r_nd
-                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
-                    break
+                            # no current restart => we can set max_gain and variable
+                            gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
+
+                            if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state) && counter == 1
+                                # TODO: Might be Error/UserLimit instead of infeasible
+                                status = :GlobalInfeasible
+                                left_node = l_nd
+                                right_node = r_nd
+                                opts.debug && add_strong_step(strong_step,l_nd,r_nd)
+                                parallel_break = true
+                                break
+                            end
+
+                            # check if one part is infeasible => update bounds & restart if strong restart is true
+                            if !state_is_optimal(l_nd.relaxation_state) || !state_is_optimal(r_nd.relaxation_state)
+                                if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state) && !restart
+                                    # TODO: Might be Error/UserLimit instead of infeasible
+                                    status = :LocalInfeasible
+                                    left_node = l_nd
+                                    right_node = r_nd
+                                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
+                                    parallel_break = true
+                                    break
+                                end
+                                restart_copy_node = copy(node)
+                                need_to_resolve, local_restart, local_new_infeasible_disc_vars, set_to_last_var = init_strong_restart!(restart_copy_node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type, disc2var_idx)
+                                # it was decided to restart but not on this run as this one has a higher rank
+                                if restart && (!local_restart || rank > restart_rank)
+                                    parallel_break = true
+                                    break
+                                end
+
+                                if local_restart
+                                    println("restart on disc_var_idx: ", disc_var_idx)
+                                    restart_infeasible_disc_vars = local_new_infeasible_disc_vars
+                                    restart = true
+                                    restart_rank = rank
+                                    restart_node = copy(restart_copy_node)
+                                end
+                            
+                                # only variables where one branch is infeasible => no restart and break
+                                if set_to_last_var
+                                    println("set_to_last_var: ", set_to_last_var)
+                                    max_gain_var = var_idx
+                                    max_gain_disc_var = disc_var_idx
+                                    left_node = l_nd
+                                    right_node = r_nd
+                                    restart = false
+                                    need_to_resolve = false
+                                    gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
+                                    max_gain = gain
+                                    set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
+                                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
+                                    parallel_break = true
+                                    break
+                                end
+
+                                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
+                                    println("time limit 1")
+                                    restart = false
+                                end
+                            end
+                            time_end = time()
+
+                            # don't update maximum if restart
+                            if gain > max_gain && (!restart || time_end-m.start_time >= opts.time_limit)
+                                println("dvidx: ", disc_var_idx, " setting max_gain: ", gain)
+                                max_gain = gain
+                                max_gain_var = var_idx
+                                max_gain_disc_var = disc_var_idx
+                                left_node = l_nd
+                                right_node = r_nd
+                                # we are changing the bounds if one branch is infeasible then the current
+                                # selection might not work anymore => we have to resolve it later
+                                need_to_resolve = false
+                            end
+                            set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
+                            opts.debug && add_strong_step(strong_step,l_nd,r_nd;restart=restart)
+                            if time_end-m.start_time >= opts.time_limit
+                                println("time limit 2")
+                                parallel_break = true
+                                restart = false
+                                break
+                            end
+
+                            if restart
+                                parallel_break = true
+                                break
+                            end
+                        end
+                    end
                 end
-                need_to_resolve, restart, new_infeasible_disc_vars, set_to_last_var = init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd, reasonable_disc_vars, infeasible_disc_vars, left_node, right_node, strong_restart, max_gain_var, opts.atol, m.var_type, disc2var_idx)
-                infeasible_disc_vars = new_infeasible_disc_vars
-
-                # only variables where one branch is infeasible => no restart and break
-                if set_to_last_var
-                    max_gain_var = var_idx
-                    max_gain_disc_var = disc_var_idx
-                    left_node = l_nd
-                    right_node = r_nd
-                    restart = false
-                    need_to_resolve = false
-                    gain_l, gain_r, gain = get_current_gains(node, l_nd, r_nd)
-                    max_gain = gain
-                    set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
-                    opts.debug && add_strong_step(strong_step,l_nd,r_nd)
-                    break
-                end
-
-                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
-                    restart = false
-                end
-            end
-
-            # don't update maximum if restart
-            if gain > max_gain && !restart
-                max_gain = gain
-                max_gain_var = var_idx
-                max_gain_disc_var = disc_var_idx
-                left_node = l_nd
-                right_node = r_nd
-                # we are changing the bounds if one branch is infeasible then the current
-                # selection might not work anymore => we have to resolve it later
-                need_to_resolve = false
-            end
-            set_temp_gains!(gains, gain_l, gain_r, disc_var_idx)
-            opts.debug && add_strong_step(strong_step,l_nd,r_nd;restart=restart)
-            if restart
-                break
-            end
-
-            if time()-m.start_time >= opts.time_limit
-                break
             end
         end
     end
@@ -235,7 +315,8 @@ function branch_strong_on!(m,opts,step_obj,
     if need_to_resolve && status == :Normal 
         status = :Resolve
     end
-    
+    println("status: ", status)
+
     return status, max_gain_var, left_node, right_node, gains, strong_restarts
 end
 
@@ -365,6 +446,10 @@ function branch_pseudo(m, node, disc2var_idx, obj_gain, mu, atol)
             u_b = node.u_var[var_idx]
             l_b = node.l_var[var_idx]
             # if the upper bound is the lower bound => should be type correct
+            println("disc_var_idx: ", l_idx)
+            println("node.solution[var_idx]: ", node.solution[var_idx])
+            println("u_b: ", u_b)
+            println("l_b: ", l_b)
             @assert !isapprox(u_b, l_b; atol=atol)
             idx = var_idx
             break
