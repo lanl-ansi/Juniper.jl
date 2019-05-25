@@ -37,7 +37,7 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
     if !state_is_optimal(l_nd.relaxation_state)
         # the solution shouldn't be updated when the current max_gain_var is then type correct
         if max_gain_var == 0 || !is_type_correct(r_nd.solution[max_gain_var],var_type[max_gain_var],atol)
-            # if all variables reasonable_disc_vars are type correct => just continue with thetree
+            # if all variables reasonable_disc_vars are type correct => just continue with the tree
             # no restarts and no change in bounds
             if !all_reasonable_type_correct(r_nd.solution, disc2var_idx, reasonable_disc_vars, atol)
                 node.l_var[var_idx] = ceil(node.solution[var_idx])
@@ -356,7 +356,7 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
 end
 
 function branch_pseudo(m, node, disc2var_idx, obj_gain, mu, atol)
-    # use the one with highest obj_gain which is currently continous
+    # use the one with highest obj_gain which is currently continuous
     idx = 0
     scores, sort_idx = sorted_score_idx(node.solution, obj_gain, disc2var_idx, mu)
     for l_idx in sort_idx

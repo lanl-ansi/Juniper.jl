@@ -72,8 +72,13 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
     # reset mu_init
     reset_subsolver_option!(m, "nl", "Ipopt", :mu_init, old_mu_init)
 
-    objval = JuMP.objective_value(m.model)
-    cnode.solution = JuMP.value.(m.x)
+    objval = NaN
+    cnode.solution = fill(NaN, m.num_var)
+    if state_is_optimal(status)
+        objval = JuMP.objective_value(m.model)
+        cnode.solution = JuMP.value.(m.x)
+    end
+
     cnode.relaxation_state = status
     if !state_is_optimal(status; allow_almost=true) && !state_is_infeasible(status)
         cnode.state = :Error
@@ -182,7 +187,7 @@ end
 """
     update_incumbent!(tree::BnBTreeObj, node::BnBNode)
 
-Get's called if new integral solution was found.
+Gets called if new integral solution was found.
 Check whether it's a new incumbent and update if necessary
 """
 function update_incumbent!(tree::BnBTreeObj, node::BnBNode)

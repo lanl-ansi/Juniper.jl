@@ -70,14 +70,21 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     status, backend = optimize_get_status_backend(mip_model)
 
     reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
+    obj_val = NaN
+    values = fill(NaN,m.num_var)
+    if state_is_optimal(status)
+        obj_val = JuMP.objective_value(mip_model)
 
-    # round mip values
-    values = JuMP.value.(mx)
-    for i=1:m.num_disc_var
-        vi = m.disc2var_idx[i]
-        values[vi] = round(values[vi])
+        # round mip values
+        values = JuMP.value.(mx)
+        for i=1:m.num_disc_var
+            vi = m.disc2var_idx[i]
+            values[vi] = round(values[vi])
+        end
     end
-    return status, values, JuMP.objective_value(mip_model)
+
+  
+    return status, values, obj_val
 end
 
 """
@@ -120,8 +127,12 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
     status, backend = optimize_get_status_backend(nlp_model)
 
-    nlp_sol = JuMP.value.(nx)
-    nlp_obj = JuMP.objective_value(nlp_model)
+    nlp_obj = NaN
+    nlp_sol = fill(NaN,m.num_var)
+    if state_is_optimal(status)
+        nlp_obj = JuMP.objective_value(nlp_model)
+        nlp_sol = JuMP.value.(nx)
+    end 
 
     Base.finalize(backend)
 
@@ -131,7 +142,7 @@ end
 """
     generate_real_nlp(optimizer, m, sol; random_start=false)
 
-Generate the orignal nlp and get the objective for that
+Generate the original nlp and get the objective for that
 """
 function generate_real_nlp(optimizer, m, sol; random_start=false)
     if m.num_var == m.num_disc_var
@@ -192,8 +203,12 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
 
     status, backend = optimize_get_status_backend(rmodel)
 
-    real_sol = JuMP.value.(rx)
-    obj_val = JuMP.objective_value(rmodel)
+    obj_val = NaN
+    real_sol = fill(NaN,m.num_var)
+    if state_is_optimal(status)
+        obj_val = JuMP.objective_value(rmodel)
+        real_sol = JuMP.value.(rx)
+    end 
 
     Base.finalize(backend)
 
