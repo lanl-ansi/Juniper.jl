@@ -72,7 +72,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
     obj_val = NaN
     values = fill(NaN,m.num_var)
-    if state_is_optimal(status)
+    if state_is_optimal(status; allow_almost=true)
         obj_val = JuMP.objective_value(mip_model)
 
         # round mip values
@@ -129,7 +129,7 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
 
     nlp_obj = NaN
     nlp_sol = fill(NaN,m.num_var)
-    if state_is_optimal(status)
+    if state_is_optimal(status; allow_almost=true)
         nlp_obj = JuMP.objective_value(nlp_model)
         nlp_sol = JuMP.value.(nx)
     end 
@@ -205,7 +205,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
 
     obj_val = NaN
     real_sol = fill(NaN,m.num_var)
-    if state_is_optimal(status)
+    if state_is_optimal(status; allow_almost=true)
         obj_val = JuMP.objective_value(rmodel)
         real_sol = JuMP.value.(rx)
     end 
@@ -387,7 +387,7 @@ function fpump(optimizer, m)
             end
             if state_is_optimal(real_status) || (real_status == MOI.ALMOST_LOCALLY_SOLVED && m.options.allow_almost_solved_integral)
                 if real_status == MOI.ALMOST_LOCALLY_SOLVED
-                    @warn "Integral feasible point only almost locally solved. Disallowable with `allow_almost_solved_integral=false`"
+                    @warn "Integral feasible point only almost locally solved. Disable with `allow_almost_solved_integral=false`"
                 end 
                 nlp_obj = real_obj
                 nlp_sol = real_sol
