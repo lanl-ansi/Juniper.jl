@@ -86,10 +86,11 @@ end
 """
     state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
 
-Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED`
+Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED` and `ALMOST_OPTIMAL`
 """
 function state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
-    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED || (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED)
+    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED || 
+            (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED) || (allow_almost && state == MOI.ALMOST_OPTIMAL)
 end
 
 """
