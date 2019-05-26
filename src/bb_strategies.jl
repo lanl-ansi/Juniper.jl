@@ -247,7 +247,8 @@ function branch_strong_on!(m,opts,step_obj,
                                 strong_obj.need_to_resolve = local_need_to_resolve
                                 strong_obj.restart = local_restart
                                 strong_obj.set_to_last_var = local_set_to_last_var
-                                strong_obj.infeasible_disc_vars = copy(new_infeasible_disc_vars)
+                                # that is already a copy
+                                strong_obj.infeasible_disc_vars = new_infeasible_disc_vars
 
                                 # only variables where one branch is infeasible => no restart and break
                                 if strong_obj.set_to_last_var

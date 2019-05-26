@@ -113,7 +113,7 @@ start = time()
 
 @testset "Juniper" begin
     include("debug.jl")
-    # include("functions.jl")
+    include("functions.jl")
     include("basic.jl")
     include("user_limits.jl")
     include("parallel.jl")

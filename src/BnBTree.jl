@@ -500,8 +500,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
         end
     end
 
-
-    if !bbreak
+    if !bbreak && length(tree.branch_nodes) > 0
         @sync begin
             for p=1:np
                 if p != myid() || np == 1
@@ -528,7 +527,6 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                                 still_running = false
                                 break
                             end
-
                             counter += 1
                             run_counter += 1
                             if isdefined(tree,:incumbent)
