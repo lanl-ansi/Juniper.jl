@@ -31,6 +31,7 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
     restart = false
     set_to_last_var = false
     need_to_resolve = false
+    new_infeasible_disc_vars = copy(infeasible_disc_vars)
 
     # set the bounds directly for the node
     # also update the best bound and the solution
@@ -45,7 +46,7 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
                 node.best_bound = r_nd.best_bound
                 node.solution = r_nd.solution
                 need_to_resolve = true
-                push!(infeasible_disc_vars, disc_var_idx)
+                push!(new_infeasible_disc_vars, disc_var_idx)
                 strong_restart && (restart = true)
             end
         end
@@ -58,19 +59,19 @@ function init_strong_restart!(node, var_idx, disc_var_idx, l_nd, r_nd,
                 node.best_bound = l_nd.best_bound
                 node.solution = l_nd.solution
                 need_to_resolve = true
-                push!(infeasible_disc_vars, disc_var_idx)
+                push!(new_infeasible_disc_vars, disc_var_idx)
                 strong_restart && (restart = true)
             end
         end
     end
 
 
-    if length(reasonable_disc_vars) == length(infeasible_disc_vars)
+    if length(reasonable_disc_vars) == length(new_infeasible_disc_vars)
         # basically branching on the last infeasible variable 
         set_to_last_var = true
         restart = false
     end
-    return need_to_resolve, restart, infeasible_disc_vars, set_to_last_var
+    return need_to_resolve, restart, new_infeasible_disc_vars, set_to_last_var
 end
 
 """
@@ -143,6 +144,7 @@ function branch_strong_on!(m,opts,step_obj,
         strong_obj.right_node = nothing
         strong_obj.gains = init_gains(m.num_disc_var)
         strong_obj.set_to_last_var = false
+        strong_obj.infeasible_disc_vars = zeros(Int64,0)
         return strong_obj, reasonable_disc_vars[current_disc_var_idx], current_disc_var_idx
     end
 
@@ -153,7 +155,6 @@ function branch_strong_on!(m,opts,step_obj,
 
     strong_time = time()
 
-    node = step_obj.node
     strong_restarts = -1
     restart = true
     status = :Normal
@@ -194,12 +195,12 @@ function branch_strong_on!(m,opts,step_obj,
                             if disc_var_idx == 0
                                 break
                             end
-                            push!(strong_objs, strong_obj)
                             strong_step_obj = strong_obj.step_obj
                             node = strong_step_obj.node
 
                             # don't rerun if the variable has already one infeasible node
                             if disc_var_idx in infeasible_disc_vars
+                                var_idx = disc2var_idx[disc_var_idx]
                                 continue
                             end
                             var_idx = disc2var_idx[disc_var_idx]
@@ -209,11 +210,13 @@ function branch_strong_on!(m,opts,step_obj,
                             if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[var_idx],m.var_type[var_idx], atol)
                                 continue
                             end
-
+                            push!(strong_objs, strong_obj)
+                            
                             # branch on the current variable and get the corresponding children
-                            l_nd,r_nd = branch!(m, opts, strong_step_obj, counter, disc2var_idx; temp=true)
-                            # println("var_idx: ", var_idx)
-                            # println("node.var_idx: ", node.var_idx)
+                            l_nd,r_nd = remotecall_fetch(branch!, p, m, opts, strong_step_obj, counter, disc2var_idx; temp=true)
+                            # in parallel the above call is by value not reference :/ => update node.var_idx here
+                            node.var_idx = var_idx
+
                             opts.debug && (strong_step = new_default_strong_branch_step_obj(var_idx))
                             
                             # no current restart => we can set max_gain and variable
@@ -244,7 +247,7 @@ function branch_strong_on!(m,opts,step_obj,
                                 strong_obj.need_to_resolve = local_need_to_resolve
                                 strong_obj.restart = local_restart
                                 strong_obj.set_to_last_var = local_set_to_last_var
-                                infeasible_disc_vars = new_infeasible_disc_vars
+                                strong_obj.infeasible_disc_vars = copy(new_infeasible_disc_vars)
 
                                 # only variables where one branch is infeasible => no restart and break
                                 if strong_obj.set_to_last_var
@@ -299,13 +302,14 @@ function branch_strong_on!(m,opts,step_obj,
         # here we combine the parallel runs to something we can actually use
         # if restart we take the one which called restart the first
         sort!(strong_objs, by= so->so.rank)
+        gains = init_gains(m.num_disc_var)
         # println("RECOMBINATION")
-        # TODO: Combine the gain information
         for so in strong_objs
             #= println("rank: ", so.rank)
             println("restart: ", so.restart)
             println("need_to_resolve: ", so.need_to_resolve) =#
             gains += so.gains
+
             if so.restart
                 restart = true
                 need_to_resolve = so.need_to_resolve
@@ -313,9 +317,11 @@ function branch_strong_on!(m,opts,step_obj,
                 max_gain_var = so.max_gain_var
                 max_gain_disc_var = so.max_gain_disc_var
                 step_obj = copy(so.step_obj)
+                infeasible_disc_vars = copy(so.infeasible_disc_vars)
                 break
             end
         end
+
         if !restart
             max_gain = -Inf
             for so in strong_objs
@@ -333,6 +339,17 @@ function branch_strong_on!(m,opts,step_obj,
                     step_obj = copy(so.step_obj)
                 end
             end
+            if max_gain == -Inf
+                @assert status == :LocalInfeasible || status == :GlobalInfeasible
+                for so in strong_objs
+                    if !state_is_optimal(so.left_node.relaxation_state) && !state_is_optimal(so.right_node.relaxation_state)
+                        left_node = so.left_node
+                        right_node = so.right_node
+                        step_obj = copy(so.step_obj)
+                        break
+                    end
+                end
+            end
         end
     end
 
@@ -340,8 +357,6 @@ function branch_strong_on!(m,opts,step_obj,
     if need_to_resolve && status == :Normal 
         status = :Resolve
     end
-    println("status: ", status)
-    println("max_gain_var: ", max_gain_var)
 
     return status, max_gain_var, left_node, right_node, gains, strong_restarts
 end

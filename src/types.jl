@@ -234,17 +234,18 @@ function Base.copy(s::StepObj)
 end
 
 mutable struct StrongObj
-    rank              :: Int64
-    step_obj          :: StepObj
-    restart           :: Bool
-    max_gain          :: Float64
-    max_gain_var      :: Int64
-    max_gain_disc_var :: Int64
-    need_to_resolve   :: Bool
-    left_node         :: Union{Nothing, BnBNode}
-    right_node        :: Union{Nothing, BnBNode}
-    gains             :: GainObj
-    set_to_last_var   :: Bool
+    rank                    :: Int64
+    step_obj                :: StepObj
+    restart                 :: Bool
+    max_gain                :: Float64
+    max_gain_var            :: Int64
+    max_gain_disc_var       :: Int64
+    need_to_resolve         :: Bool
+    left_node               :: Union{Nothing, BnBNode}
+    right_node              :: Union{Nothing, BnBNode}
+    gains                   :: GainObj
+    set_to_last_var         :: Bool
+    infeasible_disc_vars    :: Vector{Int64}
 
     StrongObj() = new()
 end
