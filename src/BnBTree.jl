@@ -74,7 +74,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
 
     objval = NaN
     cnode.solution = fill(NaN, m.num_var)
-    if state_is_optimal(status)
+    if state_is_optimal(status; allow_almost=true)
         objval = JuMP.objective_value(m.model)
         cnode.solution = JuMP.value.(m.x)
     end
@@ -198,7 +198,8 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
     if !isdefined(tree,:incumbent) || factor*node.best_bound > factor*tree.incumbent.objval
         objval = node.best_bound
         solution = copy(node.solution)
-        status = MOI.LOCALLY_SOLVED
+        @assert(node.relaxation_state == MOI.LOCALLY_SOLVED || (node.relaxation_state == MOI.ALMOST_LOCALLY_SOLVED && tree.options.allow_almost_solved_integral))
+        status = node.relaxation_state
         tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
         if !tree.options.all_solutions
             bound!(tree)
@@ -566,7 +567,7 @@ function solvemip(tree::BnBTreeObj)
         catch
             JuMP.objective_value(tree.m.model)
         end
-        tree.incumbent = Incumbent(objval,sol,MOI.LOCALLY_SOLVED,bbound)
+        tree.incumbent = Incumbent(objval,sol,tree.m.status,bbound)
         return tree.incumbent
     end
 

@@ -283,7 +283,11 @@ function fpump(optimizer, m)
     Random.seed!(1)
 
     if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
-        return m.solution, m.objval
+        only_almost_solved = false
+        if m.status == MOI.ALMOST_LOCALLY_SOLVED
+            only_almost_solved = true
+        end
+        return m.solution, m.objval, only_almost_solved
     end
 
     start_fpump = time()
@@ -313,6 +317,7 @@ function fpump(optimizer, m)
     fix = false
     nlp_status = :Error
     iscorrect = false
+    only_almost_solved = false
     tl = m.options.feasibility_pump_time_limit
     # the tolerance can be changed => current atol
     catol = m.options.atol
@@ -388,6 +393,7 @@ function fpump(optimizer, m)
             if state_is_optimal(real_status) || (real_status == MOI.ALMOST_LOCALLY_SOLVED && m.options.allow_almost_solved_integral)
                 if real_status == MOI.ALMOST_LOCALLY_SOLVED
                     @warn "Integral feasible point only almost locally solved. Disable with `allow_almost_solved_integral=false`"
+                    only_almost_solved = true
                 end 
                 nlp_obj = real_obj
                 nlp_sol = real_sol
@@ -424,11 +430,11 @@ function fpump(optimizer, m)
         check_print(ps,[:Info]) && println("FP: Obj: ", nlp_obj)
         m.fpump_info[:obj] = nlp_obj
         m.fpump_info[:gap] = abs(m.objval-nlp_obj)/abs(nlp_obj)
-        return nlp_sol, nlp_obj
+        return nlp_sol, nlp_obj, only_almost_solved
     end
 
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
     check_print(ps,[:Info]) && println("FP: No integral solution found")
-    return nothing, nothing
+    return nothing, nothing, only_almost_solved
 end

@@ -1,7 +1,11 @@
 # Juniper.jl Changelog
 
+### v0.4.2
+- Bugfix: Don't call objective value if sub problem not solved [#130](https://github.com/lanl-ansi/Juniper.jl/issues/130)
+- Return ALMOST_LOCALLY_SOLVED if corresponding relaxation is only almost solved
+
 ### v0.4.1
-- Support for user defined functions see issue #118
+- Support for user defined functions see issue [#118](https://github.com/lanl-ansi/Juniper.jl/issues/118)
 
 ### v0.4.0
 - MPB -> MOI

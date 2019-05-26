@@ -13,7 +13,7 @@ function isbreak_mip_gap(tree)
             if tree.options.mip_gap > default_opts.mip_gap
                 tree.incumbent = Incumbent(incu.objval, incu.solution, MOI.OBJECTIVE_LIMIT, tree.best_bound)
             else
-                tree.incumbent = Incumbent(incu.objval, incu.solution, MOI.LOCALLY_SOLVED, tree.best_bound)
+                tree.incumbent = Incumbent(incu.objval, incu.solution, incu.status, tree.best_bound)
             end
             return true
         end

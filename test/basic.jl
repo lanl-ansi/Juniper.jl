@@ -1104,4 +1104,24 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
+# this test has a lot "Only almost locally solved" warnings
+@testset "Sum 1/x = 2" begin
+    println("==================================")
+    println("Sum 1/x = 2")
+    println("==================================")
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_pseudo)
+    )
+
+    @variable(m, 1 <= x[1:11], Int)
+    @constraint(m, [i=2:11], x[i-1] <= x[i] - 1)
+    @NLconstraint(m, sum(1 / x[i] for i in 1:11) == 2)
+
+    status = solve(m)
+
+    @test status == MOI.ALMOST_LOCALLY_SOLVED
+    @test isapprox(2, sum(1/v for v in JuMP.value.(x)), atol=opt_atol)
+end
+
 end

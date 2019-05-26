@@ -285,11 +285,12 @@ function MOI.optimize!(model::Optimizer)
 
     # set incumbent to nothing might be updated using the feasibility_pump
     inc_sol, inc_obj = nothing, nothing
+    only_almost_solved = false
     if jp.num_disc_var > 0
         if jp.options.feasibility_pump
-            inc_sol, inc_obj = fpump(model,jp)
+            inc_sol, inc_obj, only_almost_solved = fpump(model,jp)
         end
-        bnbtree = init(jp.start_time, jp; inc_sol = inc_sol, inc_obj = inc_obj)
+        bnbtree = init(jp.start_time, jp; inc_sol = inc_sol, inc_obj = inc_obj, only_almost_solved = only_almost_solved)
         best_known = solvemip(bnbtree)
 
         replace_solution!(jp, best_known)
