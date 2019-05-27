@@ -85,12 +85,12 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
     elseif state_is_optimal(status; allow_almost=true)
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
-        if status == MOI.ALMOST_LOCALLY_SOLVED && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
-            @warn "Only almost locally solved"
+        if only_almost_solved(status) && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
+            @warn "Only almost solved"
         end
 
         # if almost_solved_integral is not allowed but it is integral => restart and hope for the best
-        if cnode.state == :Integral && status == MOI.ALMOST_LOCALLY_SOLVED && !m.options.allow_almost_solved_integral
+        if cnode.state == :Integral && only_almost_solved(status) && !m.options.allow_almost_solved_integral
             if restarts >= 1
                 cnode.state = :Almost_Solved
                 Base.finalize(backend)
@@ -198,8 +198,8 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
     if !isdefined(tree,:incumbent) || factor*node.best_bound > factor*tree.incumbent.objval
         objval = node.best_bound
         solution = copy(node.solution)
-        @assert(node.relaxation_state == MOI.LOCALLY_SOLVED || (node.relaxation_state == MOI.ALMOST_LOCALLY_SOLVED && tree.options.allow_almost_solved_integral))
         status = node.relaxation_state
+        @assert(state_is_optimal(status; allow_almost=false) || (only_almost_solved(status) && tree.options.allow_almost_solved_integral))
         tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
         if !tree.options.all_solutions
             bound!(tree)

@@ -78,8 +78,8 @@ function solve_root_model!(jp::JuniperProblem)
         jp.status = MOI.get(backend, MOI.TerminationStatus()) 
         restarts += 1
     end
-    if jp.status == MOI.ALMOST_LOCALLY_SOLVED
-        @warn "The relaxation is only almost locally solved."
+    if only_almost_solved(jp.status)
+        @warn "The relaxation is only almost solved."
     end
     return restarts
 end

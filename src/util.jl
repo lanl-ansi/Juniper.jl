@@ -84,6 +84,15 @@ function get_type_dict(obj)
 end
 
 """
+    only_almost_solved(state::MOI.TerminationStatusCode)
+
+Returns true if either ALMOST_OPTIMAL or ALMOST_LOCALLY_SOLVED
+"""
+function only_almost_solved(state::MOI.TerminationStatusCode)
+    return state == MOI.ALMOST_OPTIMAL || state == MOI.ALMOST_LOCALLY_SOLVED
+end
+
+"""
     state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
 
 Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED` and `ALMOST_OPTIMAL`

@@ -1,4 +1,4 @@
-function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothing, only_almost_solved=false)
+function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothing, inc_status = nothing)
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
     node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, m.status, m.objval,[],hash_val)
     obj_gain_m = zeros(m.num_disc_var)
@@ -34,11 +34,7 @@ function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothin
     bnbTree.best_bound  = m.objval
 
     if inc_sol != nothing
-        incumbent_status = MOI.LOCALLY_SOLVED
-        if only_almost_solved
-            incumbent_status = MOI.ALMOST_LOCALLY_SOLVED
-        end
-        bnbTree.incumbent = Incumbent(inc_obj, inc_sol, incumbent_status, m.objval)
+        bnbTree.incumbent = Incumbent(inc_obj, inc_sol, inc_status, m.objval)
         bnbTree.nsolutions += 1
         if m.options.incumbent_constr
             add_incumbent_constr(m,bnbTree.incumbent)
