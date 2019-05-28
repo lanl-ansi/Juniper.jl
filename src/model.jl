@@ -65,7 +65,7 @@ function solve_root_model!(jp::JuniperProblem)
     restarts = 0
     max_restarts = jp.options.num_resolve_root_relaxation
     jp.options.debug && debug_init(jp.debugDict)
-    while !state_is_optimal(jp.relaxation_status; allow_almost=true) &&
+    while !state_is_optimal(jp.relaxation_status; allow_almost=jp.options.allow_almost_solved) &&
         restarts < max_restarts && time()-jp.start_time < jp.options.time_limit
 
         # TODO freemodel for Knitro

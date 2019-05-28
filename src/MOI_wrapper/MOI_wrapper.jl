@@ -291,7 +291,7 @@ function MOI.optimize!(model::Optimizer)
     jp.options.debug && debug_fill_basic(jp.debugDict,jp,restarts)
 
     # if infeasible or unbounded => return
-    if !state_is_optimal(jp.relaxation_status; allow_almost=true)
+    if !state_is_optimal(jp.relaxation_status; allow_almost=jp.options.allow_almost_solved)
         jp.status = jp.relaxation_status
         if jp.options.debug && jp.options.debug_write
             write(jp.options.debug_file_path, JSON.json(jp.debugDict))

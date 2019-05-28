@@ -74,15 +74,15 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
 
     objval = NaN
     cnode.solution = fill(NaN, m.num_var)
-    if state_is_optimal(status; allow_almost=true)
+    if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         objval = JuMP.objective_value(m.model)
         cnode.solution = JuMP.value.(m.x)
     end
 
     cnode.relaxation_state = status
-    if !state_is_optimal(status; allow_almost=true) && !state_is_infeasible(status)
+    if !state_is_optimal(status; allow_almost=m.options.allow_almost_solved) && !state_is_infeasible(status)
         cnode.state = :Error
-    elseif state_is_optimal(status; allow_almost=true)
+    elseif state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
         if only_almost_solved(status) && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 

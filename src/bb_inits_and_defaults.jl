@@ -130,7 +130,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
 
     jp.objval = NaN
     jp.best_bound = NaN
-    jp.solution = Float64[]
+    jp.solution = fill(NaN, num_variables)
     jp.nsolutions = 0
     jp.solutions = []
     jp.num_disc_var = 0

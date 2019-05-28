@@ -72,7 +72,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
     obj_val = NaN
     values = fill(NaN,m.num_var)
-    if state_is_optimal(status; allow_almost=true)
+    if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         obj_val = JuMP.objective_value(mip_model)
 
         # round mip values
@@ -129,7 +129,7 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
 
     nlp_obj = NaN
     nlp_sol = fill(NaN,m.num_var)
-    if state_is_optimal(status; allow_almost=true)
+    if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         nlp_obj = JuMP.objective_value(nlp_model)
         nlp_sol = JuMP.value.(nx)
     end 
@@ -205,7 +205,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
 
     obj_val = NaN
     real_sol = fill(NaN,m.num_var)
-    if state_is_optimal(status; allow_almost=true)
+    if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         obj_val = JuMP.objective_value(rmodel)
         real_sol = JuMP.value.(rx)
     end 
@@ -347,14 +347,14 @@ function fpump(optimizer, m)
         mip_sols[hash(mip_sol)] = true
 
         nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol)
-        if !state_is_optimal(nlp_status; allow_almost=true)
+        if !state_is_optimal(nlp_status; allow_almost=m.options.allow_almost_solved)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(nlp_status) &&
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(nlp_status; allow_almost=m.options.allow_almost_solved) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol; random_start=true)
                 cnlpinf += 1
             end
-            if !state_is_optimal(nlp_status; allow_almost=true)
+            if !state_is_optimal(nlp_status; allow_almost=m.options.allow_almost_solved)
                 @warn "NLP couldn't be solved to optimality"
                 if check_print(ps,[:Table])
                     print_fp_table(mip_obj, NaN, time()-start_fpump, fields, field_chars, catol)
@@ -380,7 +380,7 @@ function fpump(optimizer, m)
         if are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol*1000) || isapprox(nlp_obj, 0.0; atol=catol)
             real_status,real_sol, real_obj = generate_real_nlp(optimizer, m, mip_sol)
             cnlpinf = 0
-            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(real_status; allow_almost=true) &&
+            while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(real_status; allow_almost=m.options.allow_almost_solved) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
                 real_status,real_sol, real_obj = generate_real_nlp(optimizer, m, mip_sol; random_start=true)
                 cnlpinf += 1

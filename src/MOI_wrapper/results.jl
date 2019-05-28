@@ -5,7 +5,7 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
 end
 
 function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
-    if state_is_optimal(model.inner.status; allow_almost=true) 
+    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved) 
         return MOI.FEASIBLE_POINT
     else
         return MOI.INFEASIBLE_POINT
@@ -13,7 +13,7 @@ function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
 end
 
 function MOI.get(model::Optimizer, ::MOI.DualStatus)
-    if state_is_optimal(model.inner.status; allow_almost=true) 
+    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved) 
         return MOI.FEASIBLE_POINT
     else
         return MOI.INFEASIBLE_POINT

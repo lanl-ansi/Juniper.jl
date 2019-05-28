@@ -1,6 +1,7 @@
 # Juniper.jl Changelog
 
 ### v0.4.2
+- Ability to not allowing almost solved status codes in tree search
 - Better handling of status codes internally
 - Bugfix: Don't call objective value if sub problem not solved [#130](https://github.com/lanl-ansi/Juniper.jl/issues/130)
 - Return ALMOST_LOCALLY_SOLVED if corresponding relaxation is only almost solved
