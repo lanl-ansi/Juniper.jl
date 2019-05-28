@@ -333,6 +333,7 @@ end
     @test JuMP.termination_status(m) == MOI.LOCALLY_INFEASIBLE
     @test JuMP.primal_status(m) == MOI.INFEASIBLE_POINT
     @test JuMP.dual_status(m) == MOI.INFEASIBLE_POINT
+    println("getobjgap(m): ", getobjgap(m))
     @test isnan(getobjgap(m))
 end
 
@@ -1097,8 +1098,8 @@ end
 
     status = solve(m)
 
-    # reachable and should break => UserLimit
-    @test status == MOI.OTHER_LIMIT
+    # reachable and should break
+    @test status == MOI.OBJECTIVE_LIMIT
     # maybe 2 found at the same time
     @test Juniper.getnsolutions(internalmodel(m)) <= 2
     @test Juniper.getnsolutions(internalmodel(m)) >= 1

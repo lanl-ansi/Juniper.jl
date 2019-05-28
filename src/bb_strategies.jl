@@ -168,7 +168,7 @@ function branch_strong_on!(m,opts,step_obj,
 
             if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state) && counter == 1
                 # TODO: Might be Error/UserLimit instead of infeasible
-                status = :GlobalInfeasible
+                status = :Infeasible
                 left_node = l_nd
                 right_node = r_nd
                 opts.debug && add_strong_step(strong_step,l_nd,r_nd)
@@ -179,7 +179,7 @@ function branch_strong_on!(m,opts,step_obj,
             if !state_is_optimal(l_nd.relaxation_state) || !state_is_optimal(r_nd.relaxation_state)
                 if !state_is_optimal(l_nd.relaxation_state) && !state_is_optimal(r_nd.relaxation_state)
                     # TODO: Might be Error/UserLimit instead of infeasible
-                    status = :LocalInfeasible
+                    status = :PartlyInfeasible
                     left_node = l_nd
                     right_node = r_nd
                     opts.debug && add_strong_step(strong_step,l_nd,r_nd)
@@ -287,7 +287,7 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
         node.var_idx = max_gain_var
     end
 
-    @assert max_gain_var != 0 || status == :LocalInfeasible || status == :GlobalInfeasible || node.state == :Infeasible
+    @assert max_gain_var != 0 || status == :PartlyInfeasible || status == :Infeasible || node.state == :Infeasible
     return status, max_gain_var, strong_restarts
 end
 
@@ -344,8 +344,8 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
         step_obj.upd_gains = :GainsToTree
         new_gains = copy(step_obj.obj_gain)
         
-        if status == :GlobalInfeasible
-            return :GlobalInfeasible, 0, strong_restarts
+        if status == :Infeasible
+            return :Infeasible, 0, strong_restarts
         end
     else 
         step_obj.upd_gains = :GuessAndUpdate

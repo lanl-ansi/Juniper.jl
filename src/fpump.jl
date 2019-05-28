@@ -282,12 +282,12 @@ Run the feasibility pump
 function fpump(optimizer, m)
     Random.seed!(1)
 
-    if are_type_correct(m.solution, m.var_type, m.disc2var_idx, m.options.atol)
-        return m.solution, m.objval, m.status
+    if are_type_correct(m.relaxation_solution, m.var_type, m.disc2var_idx, m.options.atol)
+        return Incumbent(m.relaxation_objval, m.relaxation_solution, only_almost_solved(m.status))
     end
 
     start_fpump = time()
-    nlp_sol = m.solution
+    nlp_sol = m.relaxation_solution
     nlp_obj = 1 # should be not 0 for while
     c = 1
     tabu_list = TabuList()
@@ -394,8 +394,7 @@ function fpump(optimizer, m)
                 iscorrect = true
                 break
             elseif are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol)
-                # TODO: maybe there is a different better status code
-                real_status = MOI.ALMOST_LOCALLY_SOLVED
+                real_status = MOI.LOCALLY_SOLVED
                 nlp_obj = evaluate_objective(optimizer, m, nlp_sol)
                 iscorrect = true
                 @warn "Real objective wasn't solved to optimality"
@@ -425,12 +424,12 @@ function fpump(optimizer, m)
     if iscorrect
         check_print(ps,[:Info]) && println("FP: Obj: ", nlp_obj)
         m.fpump_info[:obj] = nlp_obj
-        m.fpump_info[:gap] = abs(m.objval-nlp_obj)/abs(nlp_obj)
-        return nlp_sol, nlp_obj, real_status
+        m.fpump_info[:gap] = abs(m.relaxation_objval-nlp_obj)/abs(nlp_obj)
+        return Incumbent(nlp_obj, nlp_sol, only_almost_solved(real_status))
     end
 
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
     check_print(ps,[:Info]) && println("FP: No integral solution found")
-    return nothing, nothing, nothing
+    return nothing
 end

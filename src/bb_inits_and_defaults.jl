@@ -1,6 +1,6 @@
-function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothing, inc_status = nothing)
+function init(start_time, m::JuniperProblem; incumbent = nothing)
     hash_val = string(hash(hcat(m.l_var,m.u_var)))
-    node = BnBNode(1, 1, m.l_var, m.u_var, m.solution, 0, :Branch, m.status, m.objval,[],hash_val)
+    node = BnBNode(1, 1, m.l_var, m.u_var, m.relaxation_solution, 0, :Branch, m.relaxation_status, m.relaxation_objval,[],hash_val)
     obj_gain_m = zeros(m.num_disc_var)
     obj_gain_p = zeros(m.num_disc_var)
     obj_gain_mc = zeros(Int64, m.num_disc_var)
@@ -31,10 +31,12 @@ function init(start_time, m::JuniperProblem; inc_sol = nothing, inc_obj = nothin
     bnbTree.start_time  = start_time
     bnbTree.nsolutions  = 0
     bnbTree.branch_nodes = [node]
-    bnbTree.best_bound  = m.objval
+    bnbTree.best_bound  = m.relaxation_objval
+    bnbTree.limit = :None
+    bnbTree.global_solver = is_global_status(m.status)
 
-    if inc_sol != nothing
-        bnbTree.incumbent = Incumbent(inc_obj, inc_sol, inc_status, m.objval)
+    if incumbent != nothing
+        bnbTree.incumbent = incumbent
         bnbTree.nsolutions += 1
         if m.options.incumbent_constr
             add_incumbent_constr(m,bnbTree.incumbent)
@@ -121,6 +123,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
 
     jp.status = MOI.OPTIMIZE_NOT_CALLED
+    jp.relaxation_status = MOI.OPTIMIZE_NOT_CALLED
     jp.has_nl_objective = model.nlp_data.has_objective
     jp.nlp_evaluator = model.nlp_data.evaluator
     jp.objective = model.objective

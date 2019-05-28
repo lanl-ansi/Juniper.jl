@@ -84,6 +84,15 @@ function get_type_dict(obj)
 end
 
 """
+    is_global_status(state::MOI.TerminationStatusCode)
+
+Returns true if either ALMOST_OPTIMAL, OPTIMAL or INFEASIBLE and false otherwise
+"""
+function is_global_status(state::MOI.TerminationStatusCode)
+    return state == MOI.ALMOST_OPTIMAL || state == MOI.OPTIMAL || state == MOI.INFEASIBLE
+end
+
+"""
     only_almost_solved(state::MOI.TerminationStatusCode)
 
 Returns true if either ALMOST_OPTIMAL or ALMOST_LOCALLY_SOLVED

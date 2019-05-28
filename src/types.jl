@@ -63,6 +63,10 @@ mutable struct JuniperProblem
    
     model               :: JuMP.Model
 
+    relaxation_status   :: MOI.TerminationStatusCode
+    relaxation_objval   :: Float64
+    relaxation_solution :: Vector{Float64}
+
     status              :: MOI.TerminationStatusCode
     objval              :: Float64
     best_bound          :: Float64
@@ -149,8 +153,7 @@ end
 mutable struct Incumbent
     objval      :: Float64
     solution    :: Vector{Float64}
-    status      :: MOI.TerminationStatusCode
-    best_bound  :: Float64
+    only_almost :: Bool
 end
 
 mutable struct GainObj
@@ -166,6 +169,7 @@ end
 mutable struct BnBTreeObj
     m               :: Juniper.JuniperProblem
     incumbent       :: Incumbent
+    limit           :: Symbol
     obj_gain        :: GainObj
     disc2var_idx    :: Vector{Int64}
     var2disc_idx    :: Vector{Int64}
@@ -175,6 +179,7 @@ mutable struct BnBTreeObj
     nsolutions      :: Int64
     branch_nodes    :: Vector{BnBNode}
     best_bound      :: Float64
+    global_solver   :: Bool
 
     BnBTreeObj() = new()
 end
