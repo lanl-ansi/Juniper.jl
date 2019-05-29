@@ -610,7 +610,7 @@ function solvemip(tree::BnBTreeObj)
             time_obj)
     end
 
-    if !isdefined(tree,:incumbent)
+    if !isdefined(tree,:incumbent) && tree.limit == :None
         # infeasible
         tree.limit = :Infeasible
     end
@@ -619,7 +619,7 @@ function solvemip(tree::BnBTreeObj)
         @warn "Maybe only infeasible because of obj_epsilon."
     end
 
-    if !isnan(tree.options.best_obj_stop)
+    if !isnan(tree.options.best_obj_stop) && isdefined(tree, :incumbent)
         inc_val = tree.incumbent.objval
         bos = tree.options.best_obj_stop
         sense = tree.m.obj_sense

@@ -45,12 +45,8 @@ Check if time limit is reached and  set or update the Incumbent
 """
 function isbreak_time_limit!(tree)
     if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
-        if !isdefined(tree,:incumbent)
-            return true
-        else
-            tree.limit = :Time
-            return true
-        end
+        tree.limit = :Time
+        return true
     end
     return false
 end
