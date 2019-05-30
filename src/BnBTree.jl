@@ -72,20 +72,25 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
     # reset mu_init
     reset_subsolver_option!(m, "nl", "Ipopt", :mu_init, old_mu_init)
 
-    objval = JuMP.objective_value(m.model)
-    cnode.solution = JuMP.value.(m.x)
+    objval = NaN
+    cnode.solution = fill(NaN, m.num_var)
+    if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
+        objval = JuMP.objective_value(m.model)
+        cnode.solution = JuMP.value.(m.x)
+    end
+
     cnode.relaxation_state = status
-    if !state_is_optimal(status; allow_almost=true) && !state_is_infeasible(status)
+    if !state_is_optimal(status; allow_almost=m.options.allow_almost_solved) && !state_is_infeasible(status)
         cnode.state = :Error
-    elseif state_is_optimal(status; allow_almost=true)
+    elseif state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
-        if status == MOI.ALMOST_LOCALLY_SOLVED && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
-            @warn "Only almost locally solved"
+        if only_almost_solved(status) && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
+            @warn "Only almost solved"
         end
 
         # if almost_solved_integral is not allowed but it is integral => restart and hope for the best
-        if cnode.state == :Integral && status == MOI.ALMOST_LOCALLY_SOLVED && !m.options.allow_almost_solved_integral
+        if cnode.state == :Integral && only_almost_solved(status) && !m.options.allow_almost_solved_integral
             if restarts >= 1
                 cnode.state = :Almost_Solved
                 Base.finalize(backend)
@@ -182,7 +187,7 @@ end
 """
     update_incumbent!(tree::BnBTreeObj, node::BnBNode)
 
-Get's called if new integral solution was found.
+Gets called if new integral solution was found.
 Check whether it's a new incumbent and update if necessary
 """
 function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
@@ -193,8 +198,9 @@ function update_incumbent!(tree::BnBTreeObj, node::BnBNode)
     if !isdefined(tree,:incumbent) || factor*node.best_bound > factor*tree.incumbent.objval
         objval = node.best_bound
         solution = copy(node.solution)
-        status = MOI.LOCALLY_SOLVED
-        tree.incumbent = Incumbent(objval, solution, status, tree.best_bound)
+        status = node.relaxation_state
+        @assert(state_is_optimal(status; allow_almost=false) || (only_almost_solved(status) && tree.options.allow_almost_solved_integral))
+        tree.incumbent = Incumbent(objval, solution, only_almost_solved(status))
         if !tree.options.all_solutions
             bound!(tree)
         end
@@ -236,9 +242,9 @@ function add_obj_epsilon_constr(tree)
     if tree.options.obj_epsilon > 0
         ϵ = tree.options.obj_epsilon
         if tree.m.obj_sense == :Min
-            rhs = (1+ϵ)*tree.m.objval
+            rhs = (1+ϵ)*tree.m.relaxation_objval
         else
-            rhs = (1-ϵ)*tree.m.objval
+            rhs = (1-ϵ)*tree.m.relaxation_objval
         end
         add_obj_constraint(tree.m, rhs)
         tree.m.ncuts += 1
@@ -311,7 +317,7 @@ function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, co
     if step_obj.var_idx == 0 && are_type_correct(step_obj.node.solution, m.var_type, disc2var_idx, opts.atol)
         push!(step_obj.integral, node)
     else
-        if step_obj.state != :GlobalInfeasible && step_obj.state != :LocalInfeasible
+        if step_obj.state != :Infeasible && step_obj.state != :PartlyInfeasible
             @assert step_obj.var_idx != 0
             branch!(m, opts, step_obj, counter, disc2var_idx)
         end
@@ -346,10 +352,11 @@ function upd_tree_obj!(tree, step_obj, time_obj)
         tree.m.nlevels = step_obj.node.level+1
     end
 
-    if step_obj.state == :GlobalInfeasible
+    if step_obj.state == :Infeasible
         # if there is no incumbent yet
         if !isdefined(tree,:incumbent)
-            tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.LOCALLY_INFEASIBLE, NaN)
+            # this can be locally infeasible or globally infeasible depending on the solver
+            tree.limit = :Infeasible
         end # it will terminate and use the current solution as optimal (might want to rerun as an option)
         still_running = false
     end
@@ -574,7 +581,7 @@ function solvemip(tree::BnBTreeObj)
     ps = tree.options.log_levels
 
     # check if already integral
-    if are_type_correct(tree.m.solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
+    if are_type_correct(tree.m.relaxation_solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
         objval = JuMP.objective_value(tree.m.model)
         sol = JuMP.value.(tree.m.x)
@@ -583,7 +590,7 @@ function solvemip(tree::BnBTreeObj)
         catch
             JuMP.objective_value(tree.m.model)
         end
-        tree.incumbent = Incumbent(objval,sol,MOI.LOCALLY_SOLVED,bbound)
+        tree.incumbent = Incumbent(objval,sol,only_almost_solved(tree.m.status))
         return tree.incumbent
     end
 
@@ -625,19 +632,16 @@ function solvemip(tree::BnBTreeObj)
             time_obj)
     end
 
-    if !isdefined(tree,:incumbent)
+    if !isdefined(tree,:incumbent) && tree.limit == :None
         # infeasible
-        tree.incumbent = Incumbent(NaN, zeros(tree.m.num_var), MOI.LOCALLY_INFEASIBLE, tree.best_bound)
+        tree.limit = :Infeasible
     end
 
-    # update best bound in incumbent
-    tree.incumbent.best_bound = tree.best_bound
-
-    if tree.options.obj_epsilon != 0 && state_is_infeasible(tree.incumbent.status)
+    if tree.options.obj_epsilon != 0 && tree.limit == :Infeasible
         @warn "Maybe only infeasible because of obj_epsilon."
     end
 
-    if !isnan(tree.options.best_obj_stop)
+    if !isnan(tree.options.best_obj_stop) && isdefined(tree, :incumbent)
         inc_val = tree.incumbent.objval
         bos = tree.options.best_obj_stop
         sense = tree.m.obj_sense
@@ -648,10 +652,10 @@ function solvemip(tree::BnBTreeObj)
 
     if length(tree.branch_nodes) > 0
         bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
-        tree.incumbent.best_bound = tree.obj_fac*bvalue
+        tree.best_bound = tree.obj_fac*bvalue
     else
-        if !isnan(tree.incumbent.objval)
-            tree.incumbent.best_bound = tree.incumbent.objval
+        if isdefined(tree, :incumbent) && !isnan(tree.incumbent.objval)
+            tree.best_bound = tree.incumbent.objval
         end
     end
 
@@ -663,6 +667,4 @@ function solvemip(tree::BnBTreeObj)
 
     tree.options.debug && debug_set_tree_obj_gain!(tree)
     check_print(ps,[:All,:Timing]) && print_final_timing(time_bnb_solve, time_obj)
-
-    return tree.incumbent
 end

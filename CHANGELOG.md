@@ -1,12 +1,21 @@
 # Juniper.jl Changelog
 
+### v0.4.2
+- Ability to not accept `almost` MOI solver status codes in tree search
+- Better handling of MOI solver status codes internally
+- Bugfix: Don't call objective value if sub problem not solved [#130](https://github.com/lanl-ansi/Juniper.jl/issues/130)
+- Return ALMOST_LOCALLY_SOLVED if corresponding relaxation is only almost solved
+
 ### v0.4.1
-- Support for user defined functions see issue #118
+- Support for user defined functions see issue [#118](https://github.com/lanl-ansi/Juniper.jl/issues/118)
 
 ### v0.4.0
 - MPB -> MOI
 - JuMP 0.19
 - Dropped support for Julia versions < 1.0
+
+### v0.3.0
+- removes support for Julia < v1
 
 ### v0.2.6
 - bugfix in init_strong_restart
