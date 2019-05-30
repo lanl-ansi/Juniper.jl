@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.4.3
+- Running strong branching in parallel
+
 ### v0.4.2
 - Ability to not accept `almost` MOI solver status codes in tree search
 - Better handling of MOI solver status codes internally
