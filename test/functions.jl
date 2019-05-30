@@ -125,7 +125,8 @@ end
         @test fc >= length(f)
     end
     # Test with incumbent
-    tree.incumbent = Juniper.Incumbent(42,[0,0,0,0,1],MOI.TIME_LIMIT,65)
+    tree.incumbent = Juniper.Incumbent(42,[0,0,0,0,1],false)
+    tree.limit = :Time
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     @test length(fields) == length(field_chars)
     for i in 1:length(fields)

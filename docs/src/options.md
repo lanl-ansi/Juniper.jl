@@ -250,7 +250,11 @@ solution in the root relaxation you can use this option to resolve a couple of t
 The non linear solver might return the status `ALMOST_LOCALLY_SOLVED` which means: 
 "The algorithm converged to a stationary point, local
   optimal solution, or could not find directions for improvement within relaxed tolerances."
-Inside Juniper this is mostly considered as `LOCALLY_SOLVED` but you can use this option to restart the search once if solution is integral but only `ALMOST_LOCALLY_SOLVED` to maybe find a `LOCALLY_SOLVED` solution. 
+Inside Juniper this is mostly considered as `LOCALLY_SOLVED` (see next option) but you can use this option to restart the search once if solution is integral but only `ALMOST_LOCALLY_SOLVED` to maybe find a `LOCALLY_SOLVED` solution. 
+
+### allow\_almost\_solved::Bool [true]
+See above option for an explanation of `ALMOST` solved status codes. You can completely disable allowing such status codes with this option.
+Setting it to true means that all `ALMOST` solved status codes are considered as Infeasible/Numerical error throughout the tree search.
 
 ## Logging
 

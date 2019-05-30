@@ -98,8 +98,8 @@ end
 
 
 function debug_objective(d,m)
-    d[:relaxation][:objval] = m.objval
-    d[:relaxation][:solution] = m.solution
+    d[:relaxation][:objval] = m.relaxation_objval
+    d[:relaxation][:solution] = m.relaxation_solution
 end 
     
 function debug_restart_values(d,restart_vals)
