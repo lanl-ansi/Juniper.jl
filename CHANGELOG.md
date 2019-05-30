@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.4.3
+- Changed option `strong_branching_approx_time_limit` to `strong_branching_time_limit`
+
 ### v0.4.2
 - Ability to not accept `almost` MOI solver status codes in tree search
 - Better handling of MOI solver status codes internally
