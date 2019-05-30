@@ -59,6 +59,8 @@ end
     juniper_val = JuMP.objective_value(m)
     best_bound_val = JuMP.objective_bound(m)
     gap_val = getobjgap(m)
+    println("Best bound: ", best_bound_val)
+    println("Objective: ", juniper_val)
 
     # maximization problem
     @test best_bound_val >= juniper_val || isnan(juniper_val)

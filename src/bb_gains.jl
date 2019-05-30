@@ -26,8 +26,8 @@ end
 Update the objective gains for the branch variable used for node
 """
 function update_gains!(tree::BnBTreeObj, parent::BnBNode, l_nd, r_nd)
-    gain_l = sigma_minus(parent, l_nd, parent.solution[parent.var_idx])
-    gain_r = sigma_plus( parent, r_nd, parent.solution[parent.var_idx])
+    gain_l = sigma_minus(tree.options, parent, l_nd, parent.solution[parent.var_idx])
+    gain_r = sigma_plus( tree.options, parent, r_nd, parent.solution[parent.var_idx])
     idx = tree.var2disc_idx[parent.var_idx]
 
     gain = 0.0

@@ -213,11 +213,37 @@ function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symb
     return result
 end
 
-function replace_solution!(m::JuniperProblem, best_known)
-    m.solution = best_known.solution
-    m.objval = best_known.objval
-    m.status = best_known.status
-    m.best_bound = best_known.best_bound # is reasonable for gap or time limit
+function replace_solution!(m::JuniperProblem, tree::BnBTreeObj)
+    status_dict = Dict{Symbol,MOI.TerminationStatusCode}()
+    status_dict[:Time] = MOI.TIME_LIMIT
+    status_dict[:Infeasible] = !tree.global_solver ? MOI.LOCALLY_INFEASIBLE : MOI.INFEASIBLE
+    status_dict[:MipGap] = MOI.OBJECTIVE_LIMIT
+    status_dict[:BestObjStop] = MOI.OBJECTIVE_LIMIT
+    status_dict[:EnoughSolutions] = MOI.SOLUTION_LIMIT
+
+    if isdefined(tree, :incumbent)
+        incumbent = tree.incumbent
+        m.objval = incumbent.objval
+        m.solution = incumbent.solution
+    end
+    if tree.limit == :None
+        if tree.incumbent.only_almost
+            if !tree.global_solver 
+                m.status = MOI.ALMOST_LOCALLY_SOLVED
+            else
+                m.status = MOI.ALMOST_OPTIMAL
+            end
+        else  
+            if !tree.global_solver 
+                m.status = MOI.LOCALLY_SOLVED
+            else
+                m.status = MOI.OPTIMAL
+            end
+        end
+    else
+        m.status = status_dict[tree.limit]
+    end
+    m.best_bound = tree.best_bound
 end
 
 """
@@ -259,40 +285,42 @@ function MOI.optimize!(model::Optimizer)
     restarts = solve_root_model!(jp)
     jp.relaxation_time = time()-relax_start_time
 
-    (:All in ps || :Info in ps) && println("Status of relaxation: ", jp.status)
+    (:All in ps || :Info in ps) && println("Status of relaxation: ", jp.relaxation_status)
     jp.soltime = time()-jp.start_time
 
     jp.options.debug && debug_fill_basic(jp.debugDict,jp,restarts)
 
     # if infeasible or unbounded => return
-    if !state_is_optimal(jp.status; allow_almost=true)
+    if !state_is_optimal(jp.relaxation_status; allow_almost=jp.options.allow_almost_solved)
+        jp.status = jp.relaxation_status
         if jp.options.debug && jp.options.debug_write
             write(jp.options.debug_file_path, JSON.json(jp.debugDict))
         end
-        return jp.status
+        return
     end
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
     
     backend     = JuMP.backend(jp.model)
-    jp.objval   = JuMP.objective_value(jp.model)
-    jp.solution = JuMP.value.(jp.x)
+    jp.relaxation_objval   = JuMP.objective_value(jp.model)
+    jp.relaxation_solution = JuMP.value.(jp.x)
 
     jp.options.debug && debug_objective(jp.debugDict,jp)
     # TODO free model for Knitro
 
-    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.objval)
+    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.relaxation_objval)
 
     # set incumbent to nothing might be updated using the feasibility_pump
-    inc_sol, inc_obj = nothing, nothing
+    incumbent = nothing
+    only_almost_solved = false
     if jp.num_disc_var > 0
         if jp.options.feasibility_pump
-            inc_sol, inc_obj = fpump(model,jp)
+            incumbent = fpump(model,jp)
         end
-        bnbtree = init(jp.start_time, jp; inc_sol = inc_sol, inc_obj = inc_obj)
-        best_known = solvemip(bnbtree)
+        bnbtree = init(jp.start_time, jp; incumbent = incumbent)
+        solvemip(bnbtree)
 
-        replace_solution!(jp, best_known)
+        replace_solution!(jp, bnbtree)
         jp.nsolutions = bnbtree.nsolutions
     else
         jp.nsolutions = 1
@@ -301,6 +329,9 @@ function MOI.optimize!(model::Optimizer)
         catch
             JuMP.objective_value(jp.model)
         end
+        jp.status = jp.relaxation_status
+        jp.objval = jp.relaxation_objval
+        jp.solution = jp.relaxation_solution
     end
     jp.soltime = time()-jp.start_time
 

@@ -1097,11 +1097,55 @@ end
 
     status = solve(m)
 
-    # reachable and should break => UserLimit
-    @test status == MOI.OTHER_LIMIT
+    # reachable and should break
+    @test status == MOI.OBJECTIVE_LIMIT
     # maybe 2 found at the same time
     @test Juniper.getnsolutions(internalmodel(m)) <= 2
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
+end
+
+# this test has a lot "Only almost locally solved" warnings
+@testset "Sum 1/x = 2" begin
+    println("==================================")
+    println("Sum 1/x = 2")
+    println("==================================")
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper_pseudo)
+    )
+
+    @variable(m, 1 <= x[1:11], Int)
+    @constraint(m, [i=2:11], x[i-1] <= x[i] - 1)
+    @NLconstraint(m, sum(1 / x[i] for i in 1:11) == 2)
+
+    status = solve(m)
+
+    @test status == MOI.ALMOST_LOCALLY_SOLVED
+    @test isapprox(2, sum(1/v for v in JuMP.value.(x)), atol=opt_atol)
+end
+
+# this test has a lot "Only almost locally solved" warnings
+@testset "Sum 1/x = 2 don't allow almost" begin
+    println("==================================")
+    println("Sum 1/x = 2 don't allow almost")
+    println("==================================")
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+                branch_strategy=:PseudoCost,
+                allow_almost_solved = false
+            ))
+    )
+
+    @variable(m, 1 <= x[1:11], Int)
+    @constraint(m, [i=2:11], x[i-1] <= x[i] - 1)
+    @NLconstraint(m, sum(1 / x[i] for i in 1:11) == 2)
+
+    status = solve(m)
+
+    # even without almost this should still be solveable
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(2, sum(1/v for v in JuMP.value.(x)), atol=opt_atol)
 end
 
 end

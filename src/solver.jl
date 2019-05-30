@@ -40,6 +40,7 @@ function get_default_options()
     tabu_list_length                    = 30
     num_resolve_nlp_feasibility_pump    = 1
     mip_solver                          = nothing
+    allow_almost_solved                 = true
     allow_almost_solved_integral        = true
     registered_functions                = nothing
 
@@ -58,7 +59,8 @@ function get_default_options()
         list_of_solutions,processors,traverse_strategy,
         feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
         tabu_list_length,num_resolve_nlp_feasibility_pump,
-        mip_solver, allow_almost_solved_integral, registered_functions, force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
+        mip_solver, allow_almost_solved, allow_almost_solved_integral, registered_functions, 
+        force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
 end
 
 function combine_options(options)
@@ -136,5 +138,10 @@ function combine_options(options)
             setfield!(defaults, fname, options_dict[fname])
         end
     end
+
+    if defaults.allow_almost_solved_integral && !defaults.allow_almost_solved
+        defaults.allow_almost_solved_integral = false
+    end 
+
     return defaults
 end

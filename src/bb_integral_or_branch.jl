@@ -20,8 +20,8 @@ Set the state of the current node to :Integral or :Branch
 function set_cnode_state!(cnode, m, step_obj, disc2var_idx)
     # check if all int vars are int
     if are_type_correct(cnode.solution, m.var_type, disc2var_idx, m.options.atol)
-        if cnode.relaxation_state == MOI.ALMOST_LOCALLY_SOLVED && m.options.allow_almost_solved_integral
-            @warn "Integral leaf node only almost locally solved. Disallowable with `allow_almost_solved_integral=false`"
+        if only_almost_solved(cnode.relaxation_state) && m.options.allow_almost_solved_integral
+            @warn "Integral leaf node only almost locally solved. Disable with `allow_almost_solved_integral=false`"
         end
         cnode.state = :Integral
     else
