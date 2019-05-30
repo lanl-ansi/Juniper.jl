@@ -14,6 +14,9 @@
 - JuMP 0.19
 - Dropped support for Julia versions < 1.0
 
+### v0.3.0
+- removes support for Julia < v1
+
 ### v0.2.6
 - bugfix in init_strong_restart
 - bugfix in mip_gap if objval=0
