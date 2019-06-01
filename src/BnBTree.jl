@@ -453,7 +453,7 @@ function solve_sequential(tree,
         tree.options.debug && (dictTree = push_step2treeDict!(dictTree,step_obj))
 
         if check_print(ps,[:Table])
-            last_table_arr = print_table(1,tree,node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
+            last_table_arr = print_table([1],tree,node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
         end
 
         if bbreak
@@ -573,11 +573,17 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
                     bbreak && (still_running = false)
 
                     if check_print(ps,[:Table])
+                        if tree.options.two_processors_per_node && p % 2 == 0 && p+1 <= np
+                            procs_available=[p,p+1]
+                        else
+                            procs_available=[p]
+                        end
+
                         if length(tree.branch_nodes) > 0
                             bvalue, nidx = findmax([tree.obj_fac*n.best_bound for n in tree.branch_nodes])
                             tree.best_bound = tree.obj_fac*bvalue
                         end
-                        last_table_arr = print_table(p,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
+                        last_table_arr = print_table(procs_available,tree,step_obj.node,step_obj,time_bnb_solve_start,fields,field_chars;last_arr=last_table_arr)
                     end
 
                     !still_running && break
