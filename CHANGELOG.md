@@ -1,5 +1,9 @@
 # Juniper.jl Changelog
 
+### Unreleased
+- Solving the two children of a node in parallel
+  - Corresponding options `processors` and `two_processors_per_node` 
+
 ### v0.4.2
 - Ability to not accept `almost` MOI solver status codes in tree search
 - Better handling of MOI solver status codes internally
