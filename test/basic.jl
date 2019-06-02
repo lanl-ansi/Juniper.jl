@@ -1104,7 +1104,7 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
-# this test has a lot "Only almost locally solved" warnings
+# this test has a lot "Only almost locally solved" warnings (in mumps at least)
 @testset "Sum 1/x = 2" begin
     println("==================================")
     println("Sum 1/x = 2")
@@ -1120,7 +1120,8 @@ end
 
     status = solve(m)
 
-    @test status == MOI.ALMOST_LOCALLY_SOLVED
+    # in mumps/on travis this returns ALMOST_LOCALLY_SOLVED but with ma27/locally it is LOCALLY_SOLVED
+    @test Juniper.state_is_optimal(status; allow_almost=true)
     @test isapprox(2, sum(1/v for v in JuMP.value.(x)), atol=opt_atol)
 end
 
