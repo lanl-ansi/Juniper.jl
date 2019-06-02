@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### v0.4.3
+### Unreleased
 - Running strong branching in parallel
 
 ### v0.4.2
