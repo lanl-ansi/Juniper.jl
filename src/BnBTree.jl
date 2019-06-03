@@ -57,7 +57,7 @@ function optimize_node(m1, node, parent; restart=false)
         m = m1
     end
 
-     # set bounds
+    # set bounds
     for i=1:m.num_var
         JuMP.set_lower_bound(m.x[i], node.l_var[i])
         JuMP.set_upper_bound(m.x[i], node.u_var[i])
@@ -502,7 +502,7 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
         sendto(p, m=tree.m)
         sendto(p, is_newincumbent=false)
         if tree.options.two_processors_per_node && p % 2 == 0 && p+1 <= np
-            sendto(p, procs_available=[p,p+1])
+            sendto(p, procs_available=[p+1,p])
         else
             sendto(p, procs_available=[p])
         end
