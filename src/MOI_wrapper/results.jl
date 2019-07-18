@@ -4,6 +4,10 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
 	return model.inner.status
 end
 
+function MOI.get(model::Optimizer, ::MOI.RawStatusString)
+    return model.inner.status
+end
+
 function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
     if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved) 
         return MOI.FEASIBLE_POINT

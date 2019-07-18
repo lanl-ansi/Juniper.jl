@@ -1,4 +1,3 @@
-
 @testset "Function testing" begin
 
 @testset ":Options" begin
@@ -68,6 +67,12 @@ function option_no_mip_solver()
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     return bm.optimizer.model.options
+end
+
+@testset "Silent" begin
+    optimizer = Juniper.Optimizer(;nl_solver=with_optimizer(Ipopt.Optimizer))
+    MOI.set(optimizer, MOI.Silent(), true)
+    @test MOI.get(optimizer, MOI.Silent()) === true 
 end
 
 @testset ":Option not available" begin
