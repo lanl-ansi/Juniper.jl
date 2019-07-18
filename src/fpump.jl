@@ -7,11 +7,25 @@ Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     mip_model = Model(with_optimizer(m.mip_solver))
-    @variable(mip_model, 
-        m.l_var[i] <= mx[i = 1:m.num_var] <= m.u_var[i], 
+    @variable(mip_model, mx[i = 1:m.num_var], 
         binary = m.var_type[i] == :Bin, 
         integer = m.var_type[i] == :Int
     )
+
+    # only add bounds for non binary variables
+    for i=1:m.num_var
+        if m.var_type[i] != :Bin
+           @constraint(mip_model, m.l_var[i] <= mx[i] <= m.u_var[i])
+        end
+        if m.var_type[i] == :Bin && (m.l_var[i] > 0 || m.u_var[i] < 1)
+            # must be 1
+            if m.l_var[i] > 0
+                @constraint(mip_model, mx[i] == 1)
+            else # or 0
+                @constraint(mip_model, mx[i] == 0)
+            end
+        end
+    end
 
     backend = JuMP.backend(mip_model);
 
