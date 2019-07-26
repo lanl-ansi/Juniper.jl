@@ -17,6 +17,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
         if m.var_type[i] != :Bin
            @constraint(mip_model, m.l_var[i] <= mx[i] <= m.u_var[i])
         end
+        
         if m.var_type[i] == :Bin && (m.l_var[i] > 0 || m.u_var[i] < 1)
             # must be 1
             if m.l_var[i] > 0

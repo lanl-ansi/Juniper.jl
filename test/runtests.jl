@@ -29,6 +29,7 @@ using JuMP
 
 using Ipopt
 using Cbc
+using GLPK
 # using PowerModels
 
 using MathOptInterface 
