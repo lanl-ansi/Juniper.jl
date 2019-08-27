@@ -164,7 +164,7 @@ function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     if optimizer.nlp_data.has_objective
         return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
     else
-        return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
+        return MOIU.eval_variables(vi -> xs[vi.value], optimizer.objective)
     end
 end
 
