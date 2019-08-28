@@ -262,7 +262,7 @@ end
 Run optimize! and get the status and the backend
 """
 function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
-    if solver == nothing
+    if solver === nothing
         JuMP.optimize!(model)
     else
         JuMP.optimize!(model, solver)
