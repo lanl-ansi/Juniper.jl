@@ -64,6 +64,15 @@ end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 
+MOI.supports(::Optimizer, ::MOI.Silent) = true
+
+function MOI.set(model::Optimizer, ::MOI.Silent, value)
+    model.options.log_levels = []
+    return
+end
+
+MOI.get(model::Optimizer, ::MOI.Silent) = isempty(model.options.log_levels)
+
 """
 EmptyNLPEvaluator struct and associated functions 
 """
