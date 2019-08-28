@@ -171,7 +171,7 @@ Determines whether or not the feasibility pump should be used to get a feasible 
 The default is `true` if a mip solver is specified and `false` otherwise.
 **Attention**: If set to `true` you need to also set the `mip_solver` option.
 
-### mip_solver::MathProgBase.AbstractMathProgSolver [nothing]
+### mip_solver::JuMP.OptimizerFactory [nothing]
 
 This has to be set to a mip solver if the feasibility pump should be used.
 A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers).

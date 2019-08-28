@@ -5,7 +5,7 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
 end
 
 function MOI.get(model::Optimizer, ::MOI.RawStatusString)
-    return model.inner.status
+    return string(model.inner.status)
 end
 
 function MOI.get(model::Optimizer, ::MOI.PrimalStatus)

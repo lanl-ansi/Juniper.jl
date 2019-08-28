@@ -65,13 +65,29 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 
 MOI.supports(::Optimizer, ::MOI.Silent) = true
+MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
+MOI.supports(::Optimizer, ::MOI.SolveTime) = true
 
 function MOI.set(model::Optimizer, ::MOI.Silent, value)
-    model.options.log_levels = []
+    if value === true
+        model.options.log_levels = []
+    end
+    model.options.silent = value
     return
 end
 
-MOI.get(model::Optimizer, ::MOI.Silent) = isempty(model.options.log_levels)
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value)
+    if value == nothing
+        model.options.time_limit = Inf
+    else
+        model.options.time_limit = value
+    end
+    return
+end
+
+MOI.get(model::Optimizer, ::MOI.TimeLimitSec) = model.options.time_limit
+
+MOI.get(model::Optimizer, ::MOI.Silent) = model.options.silent
 
 """
 EmptyNLPEvaluator struct and associated functions 

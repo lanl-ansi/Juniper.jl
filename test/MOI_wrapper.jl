@@ -41,13 +41,9 @@ const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_
                 "solve_objbound_edge_cases", # ObjectiveBound not supported.
                 "solve_affine_deletion_edge_cases", # Deleting not supported.
                 "solve_unbounded_model", # `NORM_LIMIT`
-                "silent", # silent
                 "solve_duplicate_terms_obj", # duplicate terms objective
                 "solve_duplicate_terms_vector_affine", 
                 "solve_duplicate_terms_scalar_affine", 
-                "time_limit_sec", # not supporting time sec, 
-                "raw_status_string", 
-                "solve_time"
                ]
     MOIT.unittest(bridged, config, exclude)
 end
