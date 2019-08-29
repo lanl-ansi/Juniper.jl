@@ -775,6 +775,7 @@ end
     @test isapprox(JuMP.value.(x), [0,0,0,1,1], atol=sol_atol)
 end
 
+
 @testset "Knapsack Max Reliable" begin
     println("==================================")
     println("KNAPSACK Reliable no restart")

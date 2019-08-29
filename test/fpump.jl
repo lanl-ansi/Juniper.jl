@@ -36,6 +36,24 @@ include("basic/gamsworld.jl")
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
+@testset "GLPK Binary bounds #143" begin
+    juniper_solver = with_optimizer(Juniper.Optimizer, 
+        log_levels=[],
+        nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0), 
+        mip_solver=with_optimizer(GLPK.Optimizer, msg_lev=0)
+    )
+
+    m = Model(juniper_solver)
+    @variable(m, z[1:2], Bin)
+    @variable(m, x >= 0.5, Bin)
+    @constraint(m, sum(z)+x <= 2)
+    @objective(m, Max, sum(z)+x)
+    status = solve(m)
+
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.objective_value(m),2.0,atol=opt_atol)
+end
+
 @testset "FP: Integer test" begin
     println("==================================")
     println("FP: Integer Test")
