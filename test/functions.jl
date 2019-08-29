@@ -69,10 +69,16 @@ function option_no_mip_solver()
     return bm.optimizer.model.options
 end
 
-@testset "Silent" begin
+@testset "Silent/TimeLimitSec" begin
     optimizer = Juniper.Optimizer(;nl_solver=with_optimizer(Ipopt.Optimizer))
+    @test MOI.supports(optimizer, MOI.Silent()) === true
+    @test MOI.supports(optimizer, MOI.TimeLimitSec()) === true
     MOI.set(optimizer, MOI.Silent(), true)
+    MOI.set(optimizer, MOI.TimeLimitSec(), nothing)
     @test MOI.get(optimizer, MOI.Silent()) === true 
+    @test isinf(MOI.get(optimizer, MOI.TimeLimitSec()))
+    MOI.set(optimizer, MOI.TimeLimitSec(), 12.0)
+    @test MOI.get(optimizer, MOI.TimeLimitSec()) == 12.0
 end
 
 @testset ":Option not available" begin

@@ -66,9 +66,8 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 
 MOI.supports(::Optimizer, ::MOI.Silent) = true
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
-MOI.supports(::Optimizer, ::MOI.SolveTime) = true
 
-function MOI.set(model::Optimizer, ::MOI.Silent, value)
+function MOI.set(model::Optimizer, ::MOI.Silent, value::Bool)
     if value === true
         model.options.log_levels = []
     end
@@ -76,8 +75,8 @@ function MOI.set(model::Optimizer, ::MOI.Silent, value)
     return
 end
 
-function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value)
-    if value == nothing
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Float64})
+    if value === nothing
         model.options.time_limit = Inf
     else
         model.options.time_limit = value
