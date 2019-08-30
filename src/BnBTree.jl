@@ -294,10 +294,10 @@ Get a branch variable using the specified strategy and branch on the node in ste
 using that variable. Return the new updated step_obj
 """
 function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, counter)
-    if m1 == nothing
+    if m1 === nothing
         global m
         global is_newincumbent
-        if opts.incumbent_constr && incumbent != nothing && is_newincumbent
+        if opts.incumbent_constr && incumbent !== nothing && is_newincumbent
             is_newincumbent = false
             add_incumbent_constr(m, incumbent)
         end
@@ -436,7 +436,7 @@ end
 
 function dummysolve()
     global m
-    solve(m.model)
+    optimize!(m.model)
 end
 
 """

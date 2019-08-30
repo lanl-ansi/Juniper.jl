@@ -25,7 +25,7 @@ function Base.show(io::IO, opts::SolverOptions)
     for name in fieldnames(SolverOptions)
         sname = string(name)
         pname = sname*repeat(" ", longest_field_name-length(sname))
-        if getfield(opts,name) == nothing
+        if getfield(opts,name) === nothing
             println(io, pname, ": NA")
         else
             println(io, pname, ": ", getfield(opts,name))
