@@ -430,7 +430,7 @@ end
 
 function sendto(p::Int; args...)
     for (nm, val) in args
-        @spawnat(p, Core.eval(Juniper, Expr(:(=), nm, val)))
+        remotecall_fetch(Core.eval, p, Juniper, Expr(:(=), nm, val))
     end
 end
 
@@ -462,8 +462,14 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     for p=2:np
         seed = Random.seed!
         remotecall_fetch(seed, p, 1)
-        sendto(p, m=tree.m)
-        sendto(p, is_newincumbent=false)
+    end
+    @sync begin
+        for p=2:np
+            @async begin
+                sendto(p, m=tree.m)
+                sendto(p, is_newincumbent=false)
+            end
+        end
     end
 
     for p=3:np
