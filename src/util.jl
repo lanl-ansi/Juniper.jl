@@ -259,6 +259,15 @@ function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
     end
 end
 
+function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
+    old_time_limit = Inf
+    if MOI.supports(optimizer, MOI.TimeLimitSec())
+        old_time_limit = MOI.get(optimizer, MOI.TimeLimitSec())
+        MOI.set(optimizer, MOI.TimeLimitSec(), time_limit)
+    end
+    return old_time_limit
+end
+
 """
     optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
 
