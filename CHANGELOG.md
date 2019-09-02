@@ -2,7 +2,10 @@
 
 ### Unreleased
 - Running strong branching in parallel
-- Bugfix: No bounds on binary variables in Feasibility pump [#143](https://github.com/lanl-ansi/Juniper.jl/issues/130)
+
+### v0.4.3
+- Bugfix: No bounds on binary variables in Feasibility pump [#143](https://github.com/lanl-ansi/Juniper.jl/issues/143)
+- Bugfix: Feasibility pump if no objective in problem [#145](https://github.com/lanl-ansi/Juniper.jl/issues/145)
 
 ### v0.4.2
 - Ability to not accept `almost` MOI solver status codes in tree search

@@ -158,13 +158,16 @@ end
 """
     evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
 
+If no objective exists => return 0
 Evaluate the objective whether it is non linear, linear or quadratic
 """
 function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
     if optimizer.nlp_data.has_objective
         return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
-    else
+    elseif optimizer.objective !== nothing
         return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
+    else 
+        return 0.0
     end
 end
 
@@ -262,7 +265,7 @@ end
 Run optimize! and get the status and the backend
 """
 function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
-    if solver == nothing
+    if solver === nothing
         JuMP.optimize!(model)
     else
         JuMP.optimize!(model, solver)

@@ -2,7 +2,7 @@ name = "Juniper"
 uuid = "2ddba703-00a4-53a7-87a5-e8b9971dde84"
 authors = ["Ole Kröger <o.kroeger@opensourc.es>", "Kaarthik Sundar kaarthik@lanl.gov"]
 repo = "https://github.com/lanl-ansi/Juniper.jl.git"
-version = "0.4.2"
+version = "0.4.3"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -17,6 +17,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 JSON = ">= 0.18.0"
 JuMP = "^0.19.0"
 MathOptInterface = "^0.8.4"
+julia = "1"
 
 [extras]
 Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"

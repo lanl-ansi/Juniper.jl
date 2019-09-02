@@ -35,7 +35,7 @@ function init(start_time, m::JuniperProblem; incumbent = nothing)
     bnbTree.limit = :None
     bnbTree.global_solver = is_global_status(m.status)
 
-    if incumbent != nothing
+    if incumbent !== nothing
         bnbTree.incumbent = incumbent
         bnbTree.nsolutions += 1
         if m.options.incumbent_constr
@@ -154,7 +154,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
 
     jp.nl_solver_options = nl_vec_opts
 
-    if model.options.mip_solver != nothing
+    if model.options.mip_solver !== nothing
         jp.mip_solver = model.options.mip_solver
         mip_vec_opts = Vector{Tuple}()
         for arg in model.options.mip_solver.kwargs
