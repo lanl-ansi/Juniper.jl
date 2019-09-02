@@ -61,7 +61,7 @@ Juniper is specialized for **non** convex problems which get solved **locally** 
 It will solve convex problems as well but specialized solvers for convex problems should be preferred then.    
 
 # Performance
-You can find our paper with detailed performance measurements in our [paper](https://link.springer.com/chapter/10.1007/978-3-319-93031-2_27) or [technical report](https://arxiv.org/abs/1804.07332).
+You can find detailed performance measurements in our [paper](https://link.springer.com/chapter/10.1007/978-3-319-93031-2_27) or [technical report](https://arxiv.org/abs/1804.07332).
 
 The most recent stats can be found on the website [BnBVisual](https://wikunia.github.io/BnBVisual/).
 
