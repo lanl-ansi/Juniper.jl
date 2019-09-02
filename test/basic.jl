@@ -51,7 +51,6 @@ end
 
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
-        all_solutions = true,
         list_of_solutions = true,
         strong_restart = true,
         debug = true,
@@ -73,6 +72,7 @@ end
     @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
+    JuMP.set_parameter(m, :all_solutions, true)
     JuMP.optimize!(m)
     bm = JuMP.backend(m)
     status = MOI.get(bm, MOI.TerminationStatus()) 
