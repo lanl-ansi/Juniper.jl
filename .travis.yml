@@ -6,21 +6,10 @@ julia:
   - 1.0
   - 1.2
   - nightly
-  
 matrix:
   allow_failures:
     - julia: nightly
-
-cache:
- directories:
-   - /home/travis/.julia
-addons:
-  apt_packages:
-    - gfortran
-
-after_success:
-  - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
-
+codecov: true
 jobs:
   include:
     - stage: "Documentation"
