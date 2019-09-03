@@ -64,6 +64,52 @@ end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 
+MOI.supports(::Optimizer, ::MOI.Silent) = true
+MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
+MOI.supports(::Optimizer, ::MOI.RawParameter) = true
+
+function MOI.set(model::Optimizer, ::MOI.Silent, value::Bool)
+    if value === true
+        model.options.log_levels = []
+    end
+    model.options.silent = value
+    return
+end
+
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Float64})
+    if value === nothing
+        model.options.time_limit = Inf
+    else
+        model.options.time_limit = value
+    end
+    return
+end
+
+function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+    if in(p.name, fieldnames(SolverOptions))
+        type_of_param = fieldtype(SolverOptions, p.name)
+        if isa(value, type_of_param)
+            setfield!(model.options, p.name, value)
+        else
+            @error "The option $(p.name) has a different type ($(type_of_param))"
+        end
+    else 
+        @error "The option $(p.name) doesn't exist."
+    end 
+    return
+end
+
+MOI.get(model::Optimizer, ::MOI.TimeLimitSec) = model.options.time_limit
+
+MOI.get(model::Optimizer, ::MOI.Silent) = model.options.silent
+
+function MOI.get(model::Optimizer, p::MOI.RawParameter)
+    if in(p.name, fieldnames(SolverOptions))
+        return getfield(model.options, p.name)
+    end
+    @error "The option $(p.name) doesn't exist."
+end
+
 """
 EmptyNLPEvaluator struct and associated functions 
 """

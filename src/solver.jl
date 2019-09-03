@@ -5,6 +5,7 @@ A solver for MINLP problems using a NLP solver and Branch and Bound
 function get_default_options()
     nl_solver                           = nothing
     log_levels                          = [:Options,:Table,:Info]
+    silent                              = false
     atol                                = 1e-6
     num_resolve_root_relaxation         = 3
     branch_strategy                     = :StrongPseudoCost
@@ -42,6 +43,7 @@ function get_default_options()
     allow_almost_solved_integral        = true
     registered_functions                = nothing
 
+
     # Only for testing
     force_parallel                      = false
     debug                               = false
@@ -50,7 +52,7 @@ function get_default_options()
 
     fixed_gain_mu                       = false
 
-    return SolverOptions(nl_solver,log_levels,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
+    return SolverOptions(nl_solver,log_levels,silent,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
         strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
