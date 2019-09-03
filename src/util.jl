@@ -165,7 +165,7 @@ function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     if optimizer.nlp_data.has_objective
         return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
     elseif optimizer.objective !== nothing
-        return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
+        return MOIU.eval_variables(vi -> xs[vi.value], optimizer.objective)
     else 
         return 0.0
     end
@@ -257,6 +257,15 @@ function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
         setfield!(jp, :mip_solver, sub_solver)
         setfield!(jp, :mip_solver_options, sub_solver_options)
     end
+end
+
+function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
+    old_time_limit = Inf
+    if MOI.supports(optimizer, MOI.TimeLimitSec())
+        old_time_limit = MOI.get(optimizer, MOI.TimeLimitSec())
+        MOI.set(optimizer, MOI.TimeLimitSec(), time_limit)
+    end
+    return old_time_limit
 end
 
 """
