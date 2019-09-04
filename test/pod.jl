@@ -62,8 +62,8 @@ end
     println("Best bound: ", best_bound_val)
     println("Objective: ", juniper_val)
 
-    # maximization problem
-    @test best_bound_val >= juniper_val || isnan(juniper_val)
+    # minimization problem
+    @test best_bound_val <= juniper_val || isnan(juniper_val)
 end
 
 @testset "nous1 restart" begin
