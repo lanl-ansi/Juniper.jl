@@ -5,6 +5,34 @@ include("basic/gamsworld.jl")
 
 @testset "fp tests" begin
 
+@testset "fp no objective and start value" begin
+    println("==================================")
+    println("fp No objective and start value")
+    println("==================================")
+    juniper = DefaultTestSolver(mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        juniper)
+    )
+
+    @variable(m, x, Int, start=3)
+
+    @constraint(m, x >= 0)
+    @constraint(m, x <= 5)
+    @NLconstraint(m, x^2 >= 17)
+   
+    status = solve(m)
+    inner = internalmodel(m)
+    @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
+    @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
+    @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
+    @test status == MOI.LOCALLY_SOLVED
+    @test isapprox(JuMP.value(x), 5, atol=sol_atol)
+    @test Juniper.getnsolutions(inner) == 1
+    @test inner.primal_start[1] == 3
+end
+
 @testset "FP: no linear" begin
     println("==================================")
     println("FP: no linear")

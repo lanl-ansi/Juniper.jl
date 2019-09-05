@@ -95,7 +95,6 @@ end
 
     @test status == MOI.LOCALLY_SOLVED
     @test isapprox(JuMP.objective_value(m), 65, atol=opt_atol)
-    @test isapprox(JuMP.objective_bound(m), 65, atol=opt_atol)
     @test isapprox(JuMP.value.(x), [0,0,0,1,1], atol=sol_atol)
 end
 

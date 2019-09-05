@@ -1,4 +1,3 @@
-
 @testset "Function testing" begin
 
 @testset ":Options" begin
@@ -68,6 +67,25 @@ function option_no_mip_solver()
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     return bm.optimizer.model.options
+end
+
+@testset "Silent/TimeLimitSec" begin
+    optimizer = Juniper.Optimizer(;nl_solver=with_optimizer(Ipopt.Optimizer))
+    @test MOI.supports(optimizer, MOI.Silent()) === true
+    @test MOI.supports(optimizer, MOI.TimeLimitSec()) === true
+    MOI.set(optimizer, MOI.RawParameter(:mip_gap), 1.0)
+    # parameter doesn't exist
+    @test_logs (:error, r"doesn't exist") MOI.set(optimizer, MOI.RawParameter(:mip_gap_1), 1.0) 
+    # wrong parameter format 
+    @test_logs (:error, r"different type") MOI.set(optimizer, MOI.RawParameter(:mip_gap), "abc")
+    MOI.set(optimizer, MOI.Silent(), true)
+    MOI.set(optimizer, MOI.TimeLimitSec(), nothing)
+    @test MOI.get(optimizer, MOI.Silent()) === true 
+    @test MOI.get(optimizer, MOI.RawParameter(:mip_gap)) == 1.0 
+    @test_logs (:error, r"doesn't exist") MOI.get(optimizer, MOI.RawParameter(:mip_gap_1))
+    @test isinf(MOI.get(optimizer, MOI.TimeLimitSec()))
+    MOI.set(optimizer, MOI.TimeLimitSec(), 12.0)
+    @test MOI.get(optimizer, MOI.TimeLimitSec()) == 12.0
 end
 
 @testset ":Option not available" begin
