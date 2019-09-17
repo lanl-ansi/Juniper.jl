@@ -13,7 +13,7 @@ function get_default_options()
     # Strong branching  
     strong_branching_perc               = 100
     strong_branching_nsteps             = 1
-    strong_branching_approx_time_limit  = 100
+    strong_branching_time_limit         = 100
     strong_restart                      = true
     # Reliability branching     
     reliability_branching_threshold     = 5 # reliability param
@@ -56,7 +56,7 @@ function get_default_options()
     fixed_gain_mu                       = false
 
     return SolverOptions(nl_solver,log_levels,silent,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
-        strong_branching_perc,strong_branching_nsteps,strong_branching_approx_time_limit,strong_restart,
+        strong_branching_perc,strong_branching_nsteps,strong_branching_time_limit,strong_restart,
         reliability_branching_threshold,reliability_branching_perc,
         incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
         list_of_solutions,processors,two_processors_per_node,traverse_strategy,
@@ -80,9 +80,16 @@ function combine_options(options)
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))
-            @warn "Option "*string(kv[1])*" is not available"
+            if kv[1] == :strong_branching_approx_time_limit
+                @warn "The option `strong_branching_approx_time_limit` got replaced by `strong_branching_time_limit`"
+                @info "Setting strong_branching_time_limit = $(kv[2])"
+                options_dict[:strong_branching_time_limit] = kv[2]
+            else
+                @warn "Option "*string(kv[1])*" is not available"
+            end
+        else
+            options_dict[kv[1]] = kv[2]
         end
-        options_dict[kv[1]] = kv[2]
     end
     if haskey(options_dict, :log_levels)
         if length(options_dict[:log_levels]) == 0

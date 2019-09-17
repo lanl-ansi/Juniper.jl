@@ -3,7 +3,9 @@
 ### Unreleased
 - Solving the two children of a node in parallel
   - Corresponding options `processors` and `two_processors_per_node` 
-  
+- Changed option `strong_branching_approx_time_limit` to `strong_branching_time_limit`
+  - Default is still 100s
+
 ### 0.5.0
 - Upgraded to MOI 0.9.1 and JuMP v0.20.0
   - Implementation of `TimeLimitSec`, `Silent` & `RawParameter`

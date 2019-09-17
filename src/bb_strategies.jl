@@ -207,7 +207,7 @@ function branch_strong_on!(m,opts,step_obj,
                     break
                 end
 
-                if restart && time()-strong_time > opts.strong_branching_approx_time_limit
+                if restart && time()-strong_time > opts.strong_branching_time_limit
                     restart = false
                 end
             end
@@ -230,6 +230,11 @@ function branch_strong_on!(m,opts,step_obj,
             end
 
             if time()-m.start_time >= opts.time_limit
+                break
+            end
+
+            if time()-strong_time >= opts.strong_branching_time_limit && !isinf(max_gain)
+                @info "Breaking out of strong branching as the time limit of $(opts.strong_branching_time_limit) seconds got reached."
                 break
             end
         end
@@ -262,17 +267,6 @@ function branch_strong!(m,opts,disc2var_idx,step_obj,counter)
     num_strong_var = Int(round((opts.strong_branching_perc/100)*m.num_disc_var))
     # if smaller than 2 it doesn't make sense
     num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
-    # use strong_branching_approx_time_limit to change num_strong_var
-    if !isinf(opts.strong_branching_approx_time_limit)
-        approx_time_per_node = 2*m.relaxation_time
-        approx_time_per_node /= length(procs_available)
-        new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
-        new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
-        if new_num_strong_var < num_strong_var
-            @warn "Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit"
-            num_strong_var = new_num_strong_var
-        end
-    end
 
     # get reasonable candidates (not type correct and not already perfectly bounded)
     disc_vars = m.num_disc_var
@@ -317,19 +311,6 @@ function branch_reliable!(m,opts,step_obj,disc2var_idx,gains,counter)
     num_strong_var = Int(round((reliability_perc/100)*m.num_disc_var))
     # if smaller than 2 it doesn't make sense
     num_strong_var = num_strong_var < 2 ? 2 : num_strong_var
-
-    # use strong_branching_approx_time_limit to change num_strong_var
-    if !isinf(opts.strong_branching_approx_time_limit)
-        approx_time_per_node = 2*m.relaxation_time
-        approx_time_per_node /= length(procs_available)
-        new_num_strong_var = Int(floor(opts.strong_branching_approx_time_limit/approx_time_per_node))
-        new_num_strong_var = new_num_strong_var == 0 ? 1 : new_num_strong_var
-        if new_num_strong_var < num_strong_var
-            @warn "Changed num_strong_var to $new_num_strong_var because of strong_branching_approx_time_limit"
-            num_strong_var = new_num_strong_var
-        end
-    end
-
 
     gmc_r = gains.minus_counter .< reliability_param
     gpc_r = gains.plus_counter  .< reliability_param

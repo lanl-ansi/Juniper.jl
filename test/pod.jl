@@ -47,7 +47,7 @@ end
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
-            strong_branching_approx_time_limit=0.01,
+            strong_branching_time_limit=0.01,
             time_limit = 4,
             strong_restart = false)
     ))
@@ -62,8 +62,8 @@ end
     println("Best bound: ", best_bound_val)
     println("Objective: ", juniper_val)
 
-    # maximization problem
-    @test best_bound_val >= juniper_val || isnan(juniper_val)
+    # minimization problem
+    @test best_bound_val <= juniper_val || isnan(juniper_val)
 end
 
 @testset "nous1 restart" begin
