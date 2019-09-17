@@ -29,6 +29,7 @@ using JuMP
 
 using Ipopt
 using Cbc
+using GLPK
 # using PowerModels
 
 using MathOptInterface 
@@ -120,6 +121,7 @@ start = time()
     include("fpump.jl")
     include("pod.jl")
     include("minlp_tests.jl")
+    include("MOI_wrapper.jl")
     # include("power_models_acp.jl")
     # include("power_models_socwr.jl")
 end

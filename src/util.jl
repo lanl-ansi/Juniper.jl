@@ -158,13 +158,16 @@ end
 """
     evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
 
+If no objective exists => return 0
 Evaluate the objective whether it is non linear, linear or quadratic
 """
 function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
     if optimizer.nlp_data.has_objective
         return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
-    else
-        return MOIU.evalvariables(vi -> xs[vi.value], optimizer.objective)
+    elseif optimizer.objective !== nothing
+        return MOIU.eval_variables(vi -> xs[vi.value], optimizer.objective)
+    else 
+        return 0.0
     end
 end
 
@@ -256,13 +259,22 @@ function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
     end
 end
 
+function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
+    old_time_limit = Inf
+    if MOI.supports(optimizer, MOI.TimeLimitSec())
+        old_time_limit = MOI.get(optimizer, MOI.TimeLimitSec())
+        MOI.set(optimizer, MOI.TimeLimitSec(), time_limit)
+    end
+    return old_time_limit
+end
+
 """
     optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
 
 Run optimize! and get the status and the backend
 """
 function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
-    if solver == nothing
+    if solver === nothing
         JuMP.optimize!(model)
     else
         JuMP.optimize!(model, solver)

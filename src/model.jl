@@ -14,11 +14,11 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         JuMP.set_start_value(x[i], jp.primal_start[i])
     end
 
-    if jp.options.registered_functions != nothing
+    if jp.options.registered_functions !== nothing
         for reg_f in jp.options.registered_functions
-            if reg_f.gradf == nothing
+            if reg_f.gradf === nothing
                 JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f; autodiff=reg_f.autodiff)
-            elseif reg_f.grad2f == nothing
+            elseif reg_f.grad2f === nothing
                 JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf)
             else
                 JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf, reg_f.grad2f)
@@ -31,7 +31,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
         expr_dereferencing!(obj_expr, jp.model)
         JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
-    elseif optimizer.objective != nothing
+    elseif optimizer.objective !== nothing
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
         MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
     end
