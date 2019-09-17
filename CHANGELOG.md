@@ -3,7 +3,7 @@
 ### Unreleased 
 - Changed option `strong_branching_approx_time_limit` to `strong_branching_time_limit`
   - Default is still 100s
-  
+
 ### 0.5.0
 - Upgraded to MOI 0.9.1 and JuMP v0.20.0
   - Implementation of `TimeLimitSec`, `Silent` & `RawParameter`
