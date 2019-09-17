@@ -92,24 +92,16 @@ Defines the percentage of variables to consider for strong branching.
 If set to 25 it means that strong branching is performed on 25% of all discrete variables.
 Variables which are discrete in the relaxation aren't considered again but count to the number of 
 all discrete variables.
-If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. **Attention:** `strong_branching_approx_time_limit` might change this value.
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. **Attention:** `strong_branching_time_limit` might terminate strong branching earlier.
 
 ### strong\_branching\_nsteps::Int64 [1]
 
 Defines the number of steps in which strong branching is used. `:PseudoCost` will be used for later steps.
 
-### strong\_branching\_approx\_time\_limit::Float64 [100]s
+### strong\_branching\_time\_limit::Float64 [100]s
 
 For big problems with either a lot of variables or a long relaxation time it turned out to be reasonable
-to reduce the number of strong branching variables.
-
-A small example:
-- `strong_branching_perc` is set to 100%.
-- The root relaxation takes 5 seconds and there are 100 discrete variables.
-- Now the approximated time for strong branching (without considering restarts) is
-    2\*5s\*100 = 1000s because each discrete variable has two children.
-
-By using `strong_branching_approx_time_limit = 100` the number of strong branching variables is reduced to 10 because 2\*5s\*10 = 100. 
+to reduce the number of strong branching variables. Strong branching will terminate if a variable index was chosen and strong branching took longer than the time limit allowed.
 
 If you don't want to use this time limit you can set it to `Inf`.
 

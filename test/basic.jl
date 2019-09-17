@@ -170,14 +170,14 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
-@testset "bruteforce approx time limit reliable" begin
+@testset "bruteforce time limit reliable" begin
     println("==================================")
-    println("Bruteforce  approx time reliable")
+    println("Bruteforce  time reliable")
     println("==================================")
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:Reliability,
-        strong_branching_approx_time_limit=0.02,
-        reliablility_branching_perc=100,
+        strong_branching_time_limit=0.02,
+        reliability_branching_perc=100,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
@@ -755,7 +755,7 @@ end
         Juniper.Optimizer,
         DefaultTestSolver(;traverse_strategy=:DBFS,
             incumbent_constr=true,mip_solver=with_optimizer(Cbc.Optimizer),
-            strong_branching_approx_time_limit=1))
+            strong_branching_time_limit=1))
     )
 
     v = [10,20,12,23,42]
@@ -784,7 +784,7 @@ end
     m = Model(with_optimizer(
         Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:Reliability,
-              strong_restart=false,strong_branching_approx_time_limit=1,gain_mu=0.5))
+              strong_restart=false,strong_branching_time_limit=1,gain_mu=0.5))
     )
 
 
