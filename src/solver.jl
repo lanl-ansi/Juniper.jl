@@ -77,9 +77,16 @@ function combine_options(options)
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))
-            @warn "Option "*string(kv[1])*" is not available"
+            if kv[1] == :strong_branching_approx_time_limit
+                @warn "The option `strong_branching_approx_time_limit` got replaced by `strong_branching_time_limit`"
+                @info "Setting strong_branching_time_limit = $(kv[2])"
+                options_dict[:strong_branching_time_limit] = kv[2]
+            else
+                @warn "Option "*string(kv[1])*" is not available"
+            end
+        else
+            options_dict[kv[1]] = kv[2]
         end
-        options_dict[kv[1]] = kv[2]
     end
     if haskey(options_dict, :log_levels)
         if length(options_dict[:log_levels]) == 0
