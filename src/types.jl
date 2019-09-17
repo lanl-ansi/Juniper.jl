@@ -12,6 +12,7 @@ end
 mutable struct SolverOptions
     nl_solver                           :: Union{Nothing, JuMP.OptimizerFactory} # needs to be set
     log_levels                          :: Vector{Symbol}
+    silent                              :: Bool
     atol                                :: Float64
     num_resolve_root_relaxation         :: Int64
     branch_strategy                     :: Symbol

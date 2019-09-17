@@ -331,10 +331,10 @@ Get a branch variable using the specified strategy and branch on the node in ste
 using that variable. Return the new updated step_obj
 """
 function one_branch_step!(m1, incumbent, opts, step_obj, disc2var_idx, gains, counter)
-    if m1 == nothing
+    if m1 === nothing
         global m
         global is_newincumbent
-        if opts.incumbent_constr && incumbent != nothing && is_newincumbent
+        if opts.incumbent_constr && incumbent !== nothing && is_newincumbent
             is_newincumbent = false
             add_incumbent_constr(m, incumbent)
         end
@@ -467,13 +467,13 @@ end
 
 function sendto(p::Int; args...)
     for (nm, val) in args
-        @spawnat(p, Core.eval(Juniper, Expr(:(=), nm, val)))
+        remotecall_fetch(Core.eval, p, Juniper, Expr(:(=), nm, val))
     end
 end
 
 function dummysolve()
     global m
-    solve(m.model)
+    optimize!(m.model)
 end
 
 """
@@ -499,12 +499,18 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     for p=2:np
         seed = Random.seed!
         remotecall_fetch(seed, p, 1)
-        sendto(p, m=tree.m)
-        sendto(p, is_newincumbent=false)
-        if tree.options.two_processors_per_node && p % 2 == 0 && p+1 <= np
-            sendto(p, procs_available=[p+1,p])
-        else
-            sendto(p, procs_available=[p])
+    end
+    @sync begin
+        for p=2:np
+            @async begin
+                sendto(p, m=tree.m)
+                sendto(p, is_newincumbent=false)
+                if tree.options.two_processors_per_node && p % 2 == 0 && p+1 <= np
+                    sendto(p, procs_available=[p+1,p])
+                elseif !tree.options.two_processors_per_node || p+1 > np
+                    sendto(p, procs_available=[p])
+                end
+            end
         end
     end
 

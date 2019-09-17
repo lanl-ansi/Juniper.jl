@@ -6,12 +6,28 @@ TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
-    mip_model = Model(with_optimizer(m.mip_solver))
-    @variable(mip_model, 
-        m.l_var[i] <= mx[i = 1:m.num_var] <= m.u_var[i], 
+    mip_optimizer = m.mip_solver.constructor()
+    mip_model = Model(m.mip_solver)
+    @variable(mip_model, mx[i = 1:m.num_var], 
         binary = m.var_type[i] == :Bin, 
         integer = m.var_type[i] == :Int
     )
+
+    # only add bounds for non binary variables
+    for i=1:m.num_var
+        if m.var_type[i] != :Bin
+           @constraint(mip_model, m.l_var[i] <= mx[i] <= m.u_var[i])
+        end
+        
+        if m.var_type[i] == :Bin && (m.l_var[i] > 0 || m.u_var[i] < 1)
+            # must be 1
+            if m.l_var[i] > 0
+                @constraint(mip_model, mx[i] == 1)
+            else # or 0
+                @constraint(mip_model, mx[i] == 0)
+            end
+        end
+    end
 
     backend = JuMP.backend(mip_model);
 
@@ -65,11 +81,15 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     current_time = time()-start_fpump  
     time_left = m.options.feasibility_pump_time_limit-current_time
     time_left < 0 && (time_left = 1.0)
-    old_time_limit = set_subsolver_option!(m, mip_model, "mip", "Cbc", :seconds, Inf => time_left)                                   
+
+    # set time limit if supported
+    old_time_limit = set_time_limit!(mip_optimizer, time_left)
     
     status, backend = optimize_get_status_backend(mip_model)
 
-    reset_subsolver_option!(m, "mip", "Cbc", :seconds, old_time_limit)
+    # reset time limit
+    set_time_limit!(mip_optimizer, old_time_limit)
+
     obj_val = NaN
     values = fill(NaN,m.num_var)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
@@ -88,12 +108,13 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
 end
 
 """
-    generate_nlp(optimizer, m, mip_sol; random_start=false)
+    generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
 
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
-function generate_nlp(optimizer, m, mip_sol; random_start=false)
-    nlp_model = Model(with_optimizer(m.nl_solver))
+function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
+    nlp_optimizer = m.nl_solver.constructor()
+    nlp_model = Model(m.nl_solver)
     @variable(nlp_model, m.l_var[i] <= nx[i=1:m.num_var] <= m.u_var[i])
     if random_start
         restart_values = generate_random_restart(m)
@@ -125,7 +146,17 @@ function generate_nlp(optimizer, m, mip_sol; random_start=false)
     
 
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
+
+    current_time = time()-start_fpump  
+    time_left = m.options.feasibility_pump_time_limit-current_time
+    time_left < 0 && (time_left = 1.0)
+
+    # set time limit if supported
+    old_time_limit = set_time_limit!(nlp_optimizer, time_left)
+
     status, backend = optimize_get_status_backend(nlp_model)
+
+    set_time_limit!(nlp_optimizer, old_time_limit)
 
     nlp_obj = NaN
     nlp_sol = fill(NaN,m.num_var)
@@ -155,7 +186,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         return status, sol, nlp_obj
     end
 
-    rmodel = Model(with_optimizer(m.nl_solver))
+    rmodel = Model(m.nl_solver)
 
     @variable(rmodel, m.l_var[i] <= rx[i=1:m.num_var] <= m.u_var[i])
     if random_start
@@ -346,12 +377,12 @@ function fpump(optimizer, m)
         add!(tabu_list, m, mip_sol)
         mip_sols[hash(mip_sol)] = true
 
-        nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol)
+        nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol, start_fpump)
         if !state_is_optimal(nlp_status; allow_almost=m.options.allow_almost_solved)
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump && !state_is_optimal(nlp_status; allow_almost=m.options.allow_almost_solved) &&
                 time()-start_fpump < tl && time()-m.start_time < m.options.time_limit
-                nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol; random_start=true)
+                nlp_status, nlp_sol, nlp_obj = generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=true)
                 cnlpinf += 1
             end
             if !state_is_optimal(nlp_status; allow_almost=m.options.allow_almost_solved)

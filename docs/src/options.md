@@ -17,7 +17,7 @@ The argument `nl_solver` defines the solver for the relaxation here `IpoptSolver
 
 JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
 
-You can add options by adding another key, value per to the `params` dictionary:
+You can add options by adding another key, value pair to the `params` dictionary:
 
 ```
 params[:branch_strategy] = :StrongPseudoCost
@@ -175,7 +175,7 @@ Determines whether or not the feasibility pump should be used to get a feasible 
 The default is `true` if a mip solver is specified and `false` otherwise.
 **Attention**: If set to `true` you need to also set the `mip_solver` option.
 
-### mip_solver::MathProgBase.AbstractMathProgSolver [nothing]
+### mip_solver::JuMP.OptimizerFactory [nothing]
 
 This has to be set to a mip solver if the feasibility pump should be used.
 A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers).
@@ -198,11 +198,12 @@ The time limit of the feasibility pump in seconds. After that time limit the bra
 ### feasibility\_pump\_tolerance\_counter::Int64 [5]
 
 In the feasibility pump the objective is to reduce the difference between the mip and the nlp solution.
-If the default tolerance (`atol`) can't be reached for `feasibility_pump_tolerance_counter` consecutive times
-but the `tolerance*10` can be reached. The tolerance will be switched after `feasibility_pump_tolerance_counter` and a warning will be thrown.
+If the default tolerance [`atol`](#atol::Float64-[1e-6]-1) can't be reached for `feasibility_pump_tolerance_counter` consecutive times
+but the `tolerance*10` can be reached, a warning will be thrown and the tolerance is increased.
+
 If there is no warning like `Real objective wasn't solved to optimality` afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the 
-objective value. If this is possible the warning before can be ignored as it is given that the solution has no rounding issues. 
-If this can't be done a warning like `Real objective wasn't solved to optimality` is thrown.
+objective value. In the case that the nlp was solved (maybe only locally like ipopt in non-convex cases) the warning before can be ignored as it is given that the solution has no rounding issues. 
+In the other case a warning like `Real objective wasn't solved to optimality` is thrown.
 This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues. 
 You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option.
 
@@ -217,13 +218,15 @@ If the NLP is infeasible during the feasibility pump it can be restarted with a 
 
 ## User Limits
 
-You can stop the solver before the optimal solution is found.
-This is reasonable if the problem is to big to solve to optimality fast.
-If the solver stops because of one of the following options the status `:UserLimit` is returned.
+You can stop the solver before the optimal solution is found using various options explained in this section.
+This is reasonable if the problem is to big to solve to (local) optimality fast.
+If the solver stops because of one of the following options an appropriate status like `MOI.TIME_LIMIT` is returned.
 
 ### time_limit::Float64 [Inf]
 
 The maximum time in seconds the solver should run. 
+
+If this limit is reached the status will be `MOI.TIME_LIMIT`.
 
 **Note:** The solver will check after each branching step therefore it isn't a strict limit and depends on the duration of a relaxation.
 
@@ -231,14 +234,20 @@ The maximum time in seconds the solver should run.
 
 Stops the solver if the gap is smaller than `mip_gap`. The default is `0.01%`.
 
+If this limit is reached the status will be `MOI.OBJECTIVE_LIMIT`.
+
 ### best\_obj\_stop::Float [NaN]
 
 If an incumbent is found which is better than `best_obj_stop` the incumbent is returned. A warning gets thrown if `best_obj_stop` can't be reached.
+
+If this limit is reached the status will be `MOI.OBJECTIVE_LIMIT`.
 
 ### solution_limit::Int [0]
 
 The solver stops if the requested amount of feasible solutions is found.
 If `0` the option gets ignored.
+
+If this limit is reached the status will be `MOI.SOLUTION_LIMIT`.
 
 ## Resolve
 
