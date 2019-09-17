@@ -136,7 +136,7 @@ end
     println("==================================")
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:StrongPseudoCost,
-        strong_branching_time_limit=2,
+        strong_branching_approx_time_limit=2,
         all_solutions = true,
         list_of_solutions = true,
         strong_restart = true
@@ -170,9 +170,9 @@ end
     @test Juniper.getnsolutions(internalmodel(m)) == 24
 end
 
-@testset "bruteforce approx time limit reliable" begin
+@testset "bruteforce time limit reliable" begin
     println("==================================")
-    println("Bruteforce  approx time reliable")
+    println("Bruteforce  time reliable")
     println("==================================")
     juniper_all_solutions = DefaultTestSolver(
         branch_strategy=:Reliability,
