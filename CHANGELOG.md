@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### Unreleased 
+### 0.5.1 
 - Changed option `strong_branching_approx_time_limit` to `strong_branching_time_limit`
   - Default is still 100s
 
