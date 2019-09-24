@@ -44,6 +44,8 @@ const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_
                 "solve_duplicate_terms_obj", # duplicate terms objective
                 "solve_duplicate_terms_vector_affine", 
                 "solve_duplicate_terms_scalar_affine", 
+                "solve_single_variable_dual_max", # no support for dual atm
+                "solve_single_variable_dual_min" # no support for dual atm
                ]
     MOIT.unittest(bridged, config, exclude)
 end
