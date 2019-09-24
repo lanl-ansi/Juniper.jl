@@ -3,7 +3,7 @@
 =# 
 function expr_dereferencing!(expr, m)
     for i in 2:length(expr.args)
-        if isa(expr.args[i], Union{Float64,Int64})
+        if isa(expr.args[i], Union{Float64,Int64,JuMP.VariableRef})
             k = 0
         elseif expr.args[i].head == :ref
             @assert isa(expr.args[i].args[2], MOI.VariableIndex)

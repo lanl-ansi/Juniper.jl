@@ -1150,4 +1150,24 @@ end
     @test isapprox(2, sum(1/v for v in JuMP.value.(x)), atol=opt_atol)
 end
 
+#this test has an expression where a variable will be dereferenced twice
+@testset "Nested variable reference" begin
+    println("==================================")
+    println("Nested variable reference")
+    println("==================================")
+
+    m = Model(with_optimizer(
+        Juniper.Optimizer,
+        DefaultTestSolver())
+    )
+
+    x = @variable(m, x[i=1:5,j=1:5], Bin)
+    xrowsum = @NLexpression(m, xrowsum[i=1:5], sum(x[i,j] for j in 1:5))
+    @NLobjective(m, Max, sum(sum(x[i,j] + xrowsum[i] for i=1:5) for j = 1:5))
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
+end
+
 end
