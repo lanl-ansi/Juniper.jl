@@ -65,6 +65,7 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 
 MOI.supports(::Optimizer, ::MOI.Silent) = true
+MOI.supports(::Optimizer, ::MOI.NumberOfThreads) = true
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 MOI.supports(::Optimizer, ::MOI.RawParameter) = true
 
@@ -73,6 +74,15 @@ function MOI.set(model::Optimizer, ::MOI.Silent, value::Bool)
         model.options.log_levels = []
     end
     model.options.silent = value
+    return
+end
+
+function MOI.set(model::Optimizer, ::MOI.NumberOfThreads, value::Union{Nothing,Int})
+    if value === nothing
+        model.options.processors = 1
+    else
+        model.options.processors = value
+    end
     return
 end
 
@@ -98,6 +108,11 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
     end 
     return
 end
+
+# Returns the number of solutions that can be retrieved
+MOI.get(model::Optimizer, ::MOI.ResultCount) = length(model.inner.solutions)
+
+MOI.get(model::Optimizer, ::MOI.NumberOfThreads) = model.options.processors
 
 MOI.get(model::Optimizer, ::MOI.TimeLimitSec) = model.options.time_limit
 
