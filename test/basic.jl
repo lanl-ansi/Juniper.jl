@@ -183,10 +183,14 @@ end
         strong_restart = true
     )
 
-    m = Model(with_optimizer(
-        Juniper.Optimizer,
-        juniper_all_solutions)
-    )
+    optimizer = with_optimizer(Juniper.Optimizer, juniper_all_solutions)
+    
+    m = Model(optimizer)
+    moi_optimizer = JuMP.backend(m).optimizer.model
+    
+    # default => 1
+    @test MOI.supports(moi_optimizer, MOI.NumberOfThreads()) == true
+    MOI.set(moi_optimizer, MOI.NumberOfThreads(), nothing)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -205,6 +209,9 @@ end
 
     list_of_solutions = Juniper.getsolutions(internalmodel(m))
     @test length(unique(list_of_solutions)) == Juniper.getnsolutions(internalmodel(m))
+    @test MOI.get(moi_optimizer, MOI.NumberOfThreads()) == 1
+    # all solutions are saved => nsolutions should equal length(solutions)
+    @test MOI.get(moi_optimizer, MOI.ResultCount()) == Juniper.getnsolutions(internalmodel(m))
 
     @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(internalmodel(m)) == 24

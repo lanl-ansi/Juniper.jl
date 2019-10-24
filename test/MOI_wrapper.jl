@@ -19,6 +19,8 @@ const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_
     # A number of test cases are excluded because loadfromstring! works only
     # if the solver supports variable and constraint names.
     exclude = [
+                "delete_nonnegative_variables", # delete and ConstraintFunction not supported
+                "delete_soc_variables", # Soc and delete not supported
                 "delete_variable", # Deleting not supported.
                 "delete_variables", # Deleting not supported.
                 "getvariable", # Variable names not supported.
@@ -45,7 +47,9 @@ const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_
                 "solve_duplicate_terms_vector_affine", 
                 "solve_duplicate_terms_scalar_affine", 
                 "solve_single_variable_dual_max", # no support for dual atm
-                "solve_single_variable_dual_min" # no support for dual atm
+                "solve_single_variable_dual_min", # no support for dual atm
+                "solve_result_index", # no support for dual atm
+                "update_dimension_nonnegative_variables", # currently no support for ConstraintFunction 
                ]
     MOIT.unittest(bridged, config, exclude)
 end
