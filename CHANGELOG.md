@@ -1,5 +1,9 @@
 # Juniper.jl Changelog
 
+### Unreleased 
+- Support for NumberOfTreads & ResultCount
+- Support for Interval constraints [#168](https://github.com/lanl-ansi/Juniper.jl/issues/168)
+
 ### 0.5.2
 - bugfix: dereferencing when dereferencing twice (i.e. `@NLexpression`)
 
