@@ -16,7 +16,6 @@ const BOUNDS = Union{
     MOI.EqualTo{Float64}, 
     MOI.GreaterThan{Float64},
     MOI.LessThan{Float64}, 
-    MOI.Interval{Float64}
 }
 
 const VAR_TYPES = Union{

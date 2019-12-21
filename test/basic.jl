@@ -382,8 +382,10 @@ end
         ))
     )
 
-    @variable(m, x <= 5, Int)
+    @variable(m, x, Int)
     @variable(m, y >= 2, Int)
+
+    @constraint(m, 0 <= x <= 5)
 
     @objective(m, Min, -x-y)
 
