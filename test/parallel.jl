@@ -178,7 +178,8 @@ end
             
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    # don't allow start to be an incumbent
+    @variable(m, x[1:5], Bin, start=0.5)
 
     @objective(m, Max, dot(v,x))
 
