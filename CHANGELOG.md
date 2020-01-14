@@ -1,6 +1,7 @@
 # Juniper.jl Changelog
 
 ### Unreleased 
+- Ability to set incumbent as `start_value`
 - Support for NumberOfTreads & ResultCount
 - Support for Interval constraints [#168](https://github.com/lanl-ansi/Juniper.jl/issues/168)
 
