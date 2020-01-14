@@ -382,7 +382,7 @@ end
         ))
     )
 
-    @variable(m, x, Int)
+    @variable(m, x, Int, start=3)
     @variable(m, y >= 2, Int)
 
     @constraint(m, 0 <= x <= 5)
@@ -873,7 +873,8 @@ end
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    # set all to 1 which is infeasible otherwise incumbent solution would be found
+    @variable(m, x[1:5], Bin, start=1)
 
     @objective(m, Max, dot(v,x))
 

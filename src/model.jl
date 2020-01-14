@@ -1,7 +1,7 @@
 include("debug.jl")
 include("fpump.jl")
 
-function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem)
+function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem; fix_start=false)
     ps = jp.options.log_levels
 
     jp.model = Model()
@@ -13,7 +13,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     for i=1:jp.num_var
         JuMP.set_start_value(x[i], jp.primal_start[i])
     end
-
+    
     if jp.options.registered_functions !== nothing
         for reg_f in jp.options.registered_functions
             if reg_f.gradf === nothing
@@ -53,10 +53,55 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         expr_dereferencing!(constr_expr, jp.model)
         JuMP.add_NL_constraint(jp.model, constr_expr)
     end
-
-    (:All in ps || :Info in ps) && print_info(jp)
     
     jp.x = x
+end
+
+function fix_primal_start!(jp::JuniperProblem)
+    lb = jp.l_var
+    ub = jp.u_var
+    x = jp.x
+    for i=1:jp.num_var
+        if jp.var_type[i] != :Cont && lb[i] <= jp.primal_start[i] <= ub[i]
+            JuMP.set_lower_bound(jp.x[i], jp.primal_start[i])
+            JuMP.set_upper_bound(jp.x[i], jp.primal_start[i])
+        else
+            JuMP.set_start_value(x[i], jp.primal_start[i])
+        end
+    end
+end
+
+function unfix_primal_start!(jp::JuniperProblem)
+    lb = jp.l_var
+    ub = jp.u_var
+    x = jp.x
+    for i=1:jp.num_var
+        JuMP.set_lower_bound(jp.x[i], lb[i])
+        JuMP.set_upper_bound(jp.x[i], ub[i])
+        JuMP.set_start_value(x[i], jp.primal_start[i])
+    end
+end
+
+function solve_root_incumbent_model(jp::JuniperProblem)
+    status, backend = optimize_get_status_backend(jp.model; solver=jp.nl_solver)
+    incumbent = nothing
+    ps = jp.options.log_levels
+    if state_is_optimal(status; allow_almost=jp.options.allow_almost_solved)
+        # set incumbent
+        objval = MOI.get(backend, MOI.ObjectiveValue())
+        solution = JuMP.value.(jp.x)
+        if are_type_correct(solution, jp.var_type, jp.disc2var_idx, jp.options.atol)
+            if only_almost_solved(status) && jp.options.allow_almost_solved_integral
+                @warn "Start value incumbent only almost locally solved. Disable with `allow_almost_solved_integral=false`"
+            end
+        
+            incumbent = Incumbent(objval, solution, only_almost_solved(status))
+            (:All in ps || :Info in ps) && println("Incumbent using start values: $objval")
+        end
+    else
+        (:All in ps || :Info in ps) && println("Start values are not feasible.")
+    end
+    return incumbent
 end
 
 function solve_root_model!(jp::JuniperProblem)

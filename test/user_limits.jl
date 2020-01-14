@@ -14,7 +14,7 @@ include("POD_experiment/FLay02H.jl")
 
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
-    @variable(m, x[1:5], Bin)
+    @variable(m, x[1:5], Bin, start=0.5)
 
     @objective(m, Max, dot(v,x))
 
