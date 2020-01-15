@@ -339,8 +339,17 @@ function MOI.optimize!(model::Optimizer)
         jp.options.processors = nw
         @warn "Julia was started with less processors than you defined in your options. Start julia with: `julia -p "*string(jp.options.processors)*"`"
     end
+    # set incumbent to nothing might be updated using start values or the feasibility_pump
+    incumbent = nothing
 
     create_root_model!(model, jp)
+    (:All in ps || :Info in ps) && print_info(jp)
+    # fix primal start to check if we have an incumbent
+    fix_primal_start!(jp)
+
+    incumbent = solve_root_incumbent_model(jp)
+
+    unfix_primal_start!(jp)
     relax_start_time = time()
     restarts = solve_root_model!(jp)
     jp.relaxation_time = time()-relax_start_time
@@ -361,7 +370,7 @@ function MOI.optimize!(model::Optimizer)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
     
-    backend     = JuMP.backend(jp.model)
+    backend                = JuMP.backend(jp.model)
     jp.relaxation_objval   = JuMP.objective_value(jp.model)
     jp.relaxation_solution = JuMP.value.(jp.x)
 
@@ -370,12 +379,22 @@ function MOI.optimize!(model::Optimizer)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.relaxation_objval)
 
-    # set incumbent to nothing might be updated using the feasibility_pump
-    incumbent = nothing
+   
     only_almost_solved = false
     if jp.num_disc_var > 0
         if jp.options.feasibility_pump
-            incumbent = fpump(model,jp)
+            fpump_incumbent = fpump(model,jp)
+            if fpump_incumbent !== nothing 
+                if incumbent === nothing
+                    incumbent = fpump_incumbent
+                else
+                    factor = jp.obj_sense == :Min ? -1 : 1
+                    # if found better incumbent
+                    if factor*fpump_incumbent.objval > factor*incumbent.objval
+                        incumbent = fpump_incumbent
+                    end
+                end
+            end
         end
         bnbtree = init(jp.start_time, jp; incumbent = incumbent)
         solvemip(bnbtree)

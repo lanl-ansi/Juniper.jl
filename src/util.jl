@@ -277,7 +277,8 @@ function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,Ju
     if solver === nothing
         JuMP.optimize!(model)
     else
-        JuMP.optimize!(model, solver)
+        JuMP.set_optimizer(model, solver)
+        JuMP.optimize!(model)
     end
     backend = JuMP.backend(model)
     status = MOI.get(backend, MOI.TerminationStatus()) 
