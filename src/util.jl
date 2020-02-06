@@ -269,11 +269,11 @@ function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
 end
 
 """
-    optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
+    optimize_get_status_backend(model::JuMP.Model; solver=nothing) 
 
 Run optimize! and get the status and the backend
 """
-function optimize_get_status_backend(model::JuMP.Model; solver::Union{Nothing,JuMP.OptimizerFactory}=nothing) 
+function optimize_get_status_backend(model::JuMP.Model; solver=nothing) 
     if solver === nothing
         JuMP.optimize!(model)
     else

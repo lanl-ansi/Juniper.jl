@@ -146,22 +146,24 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
 
     jp.nl_solver = model.options.nl_solver
     nl_vec_opts = Vector{Tuple}()
-    for arg in model.options.nl_solver.kwargs
-        if isa(arg, Pair)
-            push!(nl_vec_opts, (arg.first, arg.second))
-        end
-    end
+    # TODO update to OptimizerWithAttributes logic
+    # for arg in model.options.nl_solver.kwargs
+    #     if isa(arg, Pair)
+    #         push!(nl_vec_opts, (arg.first, arg.second))
+    #     end
+    # end
 
     jp.nl_solver_options = nl_vec_opts
 
     if model.options.mip_solver !== nothing
         jp.mip_solver = model.options.mip_solver
         mip_vec_opts = Vector{Tuple}()
-        for arg in model.options.mip_solver.kwargs
-            if isa(arg, Pair)
-                push!(mip_vec_opts, (arg.first, arg.second))
-            end
-        end
+        # TODO update to OptimizerWithAttributes logic
+        # for arg in model.options.mip_solver.kwargs
+        #     if isa(arg, Pair)
+        #         push!(mip_vec_opts, (arg.first, arg.second))
+        #     end
+        # end
     
         jp.mip_solver_options = mip_vec_opts
     end
