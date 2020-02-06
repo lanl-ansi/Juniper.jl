@@ -56,7 +56,7 @@ end
             time_limit = 1,
             mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0),
             registered_functions=[Juniper.register(register_args...; autodiff=true)]
-            )
+        )
     ))
 
     status = solve(m)

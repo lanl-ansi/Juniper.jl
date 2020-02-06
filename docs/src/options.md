@@ -257,6 +257,42 @@ Inside Juniper this is mostly considered as `LOCALLY_SOLVED` (see next option) b
 See above option for an explanation of `ALMOST` solved status codes. You can completely disable allowing such status codes with this option.
 Setting it to true means that all `ALMOST` solved status codes are considered as Infeasible/Numerical error throughout the tree search.
 
+### registered_functions::Union{Nothing,Vector{RegisteredFunction}} [nothing]
+If you can't define your objective function in the standard way JuMP supports to register your own function. See: [JuMP User-defined functions](http://www.juliaopt.org/JuMP.jl/v0.19.0/nlp/#User-defined-Functions-1). 
+These registered functions are not directly visible to Juniper therefore they need to be defined another time using this option.
+
+This option takes a `RegisteredFunction` vector. A `RegisterFunction` can be created by using 
+
+```
+Juniper.register(function_name::Symbol, dimension::Integer, func::Function; autodiff=false)
+```
+
+In general the syntax is the same as for the JuMP equivalent. 
+
+A complete example looks like this:
+
+```
+using JuMP, Ipopt, Juniper
+
+function myfunction(x1, x2, x3, x4)
+    xx = [x1, x2, x3, x4]
+    return sum(xx[i] for i = 1:4)
+end
+
+model = Model(
+    with_optimizer(
+        Juniper.Optimizer;
+            nl_solver = with_optimizer(Ipopt.Optimizer, print_level = 0),
+            registered_functions = [
+                Juniper.register(:myfunction,  4, myfunction; autodiff = true)
+            ]
+    )
+)
+@variable(model, 0 <= x[1:4] <= 6, Int)
+register(model, :myfunction, 4, myfunction; autodiff = true)
+@NLobjective(model, Max, myfunction(x[1], x[2], x[3], x[4]))
+```
+
 ## Logging
 
 ### log_levels::Vector{Symbol} [[:Table,:Info,:Options]]

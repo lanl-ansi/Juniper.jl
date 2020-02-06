@@ -30,7 +30,11 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
         expr_dereferencing!(obj_expr, jp.model)
-        JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
+        try
+            JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
+        catch 
+            error("Have you registered a function? Then please register the function also for Juniper see: https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions::Union{Nothing,Vector{RegisteredFunction}}-[nothing]-1")
+        end
     elseif optimizer.objective !== nothing
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
         MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
@@ -51,7 +55,11 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     for i in 1:jp.num_nl_constr
         constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
         expr_dereferencing!(constr_expr, jp.model)
-        JuMP.add_NL_constraint(jp.model, constr_expr)
+        try
+            JuMP.add_NL_constraint(jp.model, constr_expr)
+        catch 
+            error("Have you registered a function? Then please register the function also for Juniper see: https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions::Union{Nothing,Vector{RegisteredFunction}}-[nothing]-1")
+        end
     end
     
     jp.x = x
