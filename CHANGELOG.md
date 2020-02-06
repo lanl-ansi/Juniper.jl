@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### Unreleased 
+### 0.5.3 
 - Documentation and useful error message for user defined functions
 - Ability to set incumbent as `start_value`
 - Support for NumberOfTreads & ResultCount
