@@ -95,10 +95,11 @@ function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Floa
 end
 
 function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
-    if in(p.name, fieldnames(SolverOptions))
-        type_of_param = fieldtype(SolverOptions, p.name)
+    p_symbol = Symbol(p.name)
+    if in(p_symbol, fieldnames(SolverOptions))
+        type_of_param = fieldtype(SolverOptions, p_symbol)
         if isa(value, type_of_param)
-            setfield!(model.options, p.name, value)
+            setfield!(model.options, p_symbol, value)
         else
             @error "The option $(p.name) has a different type ($(type_of_param))"
         end

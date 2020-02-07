@@ -61,7 +61,7 @@ end
 
 mutable struct JuniperProblem 
     nl_solver           :: Any
-    nl_solver_options   :: Vector{Tuple}
+    nl_solver_options   :: Vector{Pair}
    
     model               :: JuMP.Model
 
@@ -103,7 +103,7 @@ mutable struct JuniperProblem
     nsolutions          :: Int64
 
     mip_solver          :: Any
-    mip_solver_options  :: Vector{Tuple}
+    mip_solver_options  :: Vector{Pair}
 
     relaxation_time     :: Float64
     start_time          :: Float64
