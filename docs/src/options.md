@@ -4,23 +4,22 @@ The most basic configuration of Juniper is:
 
 ```
 optimizer = Juniper.Optimizer
-params = Dict{Symbol,Any}()
-params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
+nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
 ```
 
 and then creating the model with:
 ```
-m = Model(with_optimizer(optimizer, params))
+m = Model(optimizer_with_attributes(optimizer, "nl_solver" => nl_solver))
 ```
 
 The argument `nl_solver` defines the solver for the relaxation here `IpoptSolver`. [Ipopt](https://projects.coin-or.org/Ipopt) is used for all our test cases. The Ipopt julia package is described [here](https://github.com/JuliaOpt/Ipopt.jl). The solver itself can have parameters i.e `print_level=0`.
 
 JuMP supports a lot of different NLP solvers (open source as well as commercial). A list of some NLP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers)
 
-You can add options by adding another key, value pair to the `params` dictionary:
+You can add options by adding another value pair to the list like
 
 ```
-params[:branch_strategy] = :StrongPseudoCost
+m = Model(optimizer_with_attributes(optimizer, "nl_solver" => nl_solver, "branch_strategy" => :StrongPseudoCost))
 ```
 
 In this example the strategy used for branching is defined.
@@ -176,7 +175,11 @@ using Cbc
 ```
 and set the option with 
 ```
-params[:mip_solver] = with_optimizer(Cbc.Optimizer, logLevel=0)
+mip_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+m = Model(optimizer_with_attributes(optimizer, 
+                        "nl_solver" => nl_solver,
+                        "mip_solver" => mip_solver
+         ))
 ```
 
 ### feasibility\_pump\_time\_limit::Int64 [60]s
@@ -280,10 +283,10 @@ function myfunction(x1, x2, x3, x4)
 end
 
 model = Model(
-    with_optimizer(
-        Juniper.Optimizer;
-            nl_solver = with_optimizer(Ipopt.Optimizer, print_level = 0),
-            registered_functions = [
+    optimizer_with_attributes(
+        Juniper.Optimizer,
+            "nl_solver" => optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0),
+            "registered_functions" = [
                 Juniper.register(:myfunction,  4, myfunction; autodiff = true)
             ]
     )

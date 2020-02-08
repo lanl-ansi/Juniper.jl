@@ -1,7 +1,7 @@
 module Juniper
 
 import JuMP
-using JuMP: @variable, @constraint, @objective, Model, with_optimizer
+using JuMP: @variable, @constraint, @objective, Model, optimizer_with_attributes
 using JSON
 using LinearAlgebra
 using Random

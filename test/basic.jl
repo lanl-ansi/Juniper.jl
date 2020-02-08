@@ -8,9 +8,9 @@ include("basic/gamsworld.jl")
     println("==================================")
     juniper = DefaultTestSolver(log_levels=[:Table])
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper)
+        juniper...)
     )
 
     @variable(m, x, Int, start=3)
@@ -57,9 +57,9 @@ end
         registered_functions=[Juniper.register(register_args...)]
     )
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions
+        juniper_all_solutions...
         )
     )
 
@@ -72,7 +72,7 @@ end
     @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    JuMP.set_parameter(m, "all_solutions", true)
+    JuMP.set_optimizer_attribute(m, "all_solutions", true)
     JuMP.optimize!(m)
     bm = JuMP.backend(m)
     status = MOI.get(bm, MOI.TerminationStatus()) 
@@ -103,9 +103,9 @@ end
         strong_restart = false
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -142,9 +142,9 @@ end
         strong_restart = true
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -183,7 +183,7 @@ end
         strong_restart = true
     )
 
-    optimizer = with_optimizer(Juniper.Optimizer, juniper_all_solutions)
+    optimizer = optimizer_with_attributes(Juniper.Optimizer, juniper_all_solutions...)
     
     m = Model(optimizer)
     moi_optimizer = JuMP.backend(m).optimizer.model
@@ -228,9 +228,9 @@ end
         strong_restart = true
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -265,9 +265,9 @@ end
         list_of_solutions = true,
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -297,9 +297,9 @@ end
     println("no integer")
     println("==================================")
     
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_restart)
+        juniper_strong_restart...)
     )
 
     println("Create variables/constr/obj")
@@ -320,9 +320,9 @@ end
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_restart)
+        juniper_strong_restart...)
     )
 
     @variable(m, 1 <= x <= 5, Int)
@@ -348,9 +348,9 @@ end
     println("==================================")
     println("Infeasible int reliable")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_reliable_restart)
+        juniper_reliable_restart...)
     )
 
     @variable(m, 1 <= x <= 5, Int)
@@ -372,14 +372,14 @@ end
     println("==================================")
     println("Infeasible  sin with different bounds")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=with_optimizer(Cbc.Optimizer)
-        ))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer)
+        )...)
     )
 
     @variable(m, x, Int, start=3)
@@ -401,9 +401,9 @@ end
     println("Infeasible relaxation")
     println("==================================")
     
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;debug=true))
+        DefaultTestSolver(;debug=true)...)
     )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -417,9 +417,9 @@ end
 
     debug1 = internalmodel(m).debugDict
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;debug=true))
+        DefaultTestSolver(;debug=true)...)
     )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -450,9 +450,9 @@ end
     println("Infeasible relaxation 2")
     println("==================================")
     
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_no_restart)
+        juniper_strong_no_restart...)
     )
 
     @variable(m, x[1:3], Int)
@@ -474,9 +474,9 @@ end
     println("==================================")
     println("Infeasible integer")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_no_restart)
+        juniper_strong_no_restart...)
     )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -497,9 +497,9 @@ end
     println("==================================")
     println("Infeasible in strong")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_no_restart)
+        juniper_strong_no_restart...)
     )
 
     @variable(m, 0 <= x[1:5] <= 2, Int)
@@ -545,9 +545,9 @@ end
         registered_functions=[Juniper.register(register_args...)]
     )
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_reliable_restart_registered
+        juniper_reliable_restart_registered...
         )
     )
 
@@ -570,9 +570,9 @@ end
     println("One Integer small Strong")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_no_restart)
+        juniper_strong_no_restart...)
     )
 
     @variable(m, x >= 0, Int)
@@ -617,12 +617,12 @@ end
     @constraint(m, 3x + 10 <= 20)
     @NLconstraint(m, y^2 <= u*w)
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             registered_functions=[Juniper.register(register_args...; autodiff=true)]
-        ))
+        )...)
     )
 
     status = solve(m)
@@ -641,9 +641,9 @@ end
     println("One Integer small PseudoCost")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_pseudo)
+        juniper_pseudo...)
     )
 
     @variable(m, x >= 0, Int)
@@ -672,9 +672,9 @@ end
     println("Three Integers Small Strong")
     println("==================================")
     
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_no_restart)
+        juniper_strong_no_restart...)
     )
 
     @variable(m, x >= 0, Int)
@@ -701,9 +701,9 @@ end
     println("Three Integers Small MostInfeasible")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_mosti)
+        juniper_mosti...)
     )
 
     @variable(m, x >= 0, Int)
@@ -730,9 +730,9 @@ end
     println("Three Integers Small PseudoCost")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_pseudo)
+        juniper_pseudo...)
     )
 
 
@@ -760,11 +760,11 @@ end
     println("KNAPSACK")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(;traverse_strategy=:DBFS,
-            incumbent_constr=true,mip_solver=with_optimizer(Cbc.Optimizer),
-            strong_branching_time_limit=1))
+            incumbent_constr=true,mip_solver=optimizer_with_attributes(Cbc.Optimizer),
+            strong_branching_time_limit=1)...)
     )
 
     v = [10,20,12,23,42]
@@ -790,10 +790,10 @@ end
     println("KNAPSACK Reliable no restart")
     println("==================================")
  
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:Reliability,
-              strong_restart=false,strong_branching_time_limit=1,gain_mu=0.5))
+              strong_restart=false,strong_branching_time_limit=1,gain_mu=0.5)...)
     )
 
 
@@ -819,9 +819,9 @@ end
     println("==================================")
     println("INTEGER AT ROOT")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver())
+        DefaultTestSolver()...)
     )
 
     @variable(m, x[1:6] <= 1, Int)
@@ -840,9 +840,9 @@ end
     println("KNAPSACK with epsilon")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5))
+        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5)...)
     )
 
     v = [10,20,12,23,42]
@@ -866,9 +866,9 @@ end
     println("KNAPSACK with epsilon too strong")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.1))
+        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.1)...)
     )
 
     v = [10,20,12,23,42]
@@ -892,9 +892,9 @@ end
 
     m = batch_problem()
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_restart)
+        juniper_strong_restart...)
     )
     
     status = solve(m)
@@ -915,9 +915,9 @@ end
 
     m = batch_problem()
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_restart_2)
+        juniper_strong_restart_2...)
     )
 
     status = solve(m)
@@ -939,9 +939,9 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_restart)
+        juniper_strong_restart...)
     )
 
     status = solve(m)
@@ -962,9 +962,9 @@ end
 
     m = cvxnonsep_nsig20r_problem()
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_strong_no_restart)
+        juniper_strong_no_restart...)
     )
 
     status = solve(m)
@@ -998,9 +998,9 @@ end
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_one_solution)
+        juniper_one_solution...)
     )
 
     status = solve(m)
@@ -1021,9 +1021,9 @@ end
     )
 
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_obj_eps)
+        juniper_obj_eps...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -1053,9 +1053,9 @@ end
         branch_strategy=:StrongPseudoCost,
         best_obj_stop=0.8
     )
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_best_obj_stop)
+        juniper_best_obj_stop...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -1087,9 +1087,9 @@ end
         best_obj_stop=1
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_one_solution)
+        juniper_one_solution...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -1120,9 +1120,9 @@ end
     println("==================================")
     println("Sum 1/x = 2")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_pseudo)
+        juniper_pseudo...)
     )
 
     @variable(m, 1 <= x[1:11], Int)
@@ -1141,12 +1141,12 @@ end
     println("==================================")
     println("Sum 1/x = 2 don't allow almost")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
                 branch_strategy=:PseudoCost,
                 allow_almost_solved = false
-            ))
+            )...)
     )
 
     @variable(m, 1 <= x[1:11], Int)
@@ -1166,9 +1166,9 @@ end
     println("Nested variable reference")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver())
+        DefaultTestSolver()...)
     )
 
     x = @variable(m, x[i=1:5,j=1:5], Bin)

@@ -10,14 +10,14 @@ include("basic/gamsworld.jl")
 
     m = batch_problem()
 
-    JuMP.set_optimizer(m, with_optimizer(
+    JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_nsteps= 100,
             strong_branching_perc = 100,
             strong_restart = false, 
-            debug = true)
+            debug = true)...
     ))
     
     status = solve(m)
@@ -43,13 +43,13 @@ end
 
     m = batch_problem()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_branching_time_limit=0.01,
             time_limit = 4,
-            strong_restart = false)
+            strong_restart = false)...
     ))
 
     status = solve(m)
@@ -73,12 +73,12 @@ end
 
     m = get_nous1()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart = true,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -93,12 +93,12 @@ end
 
     m = get_nous1()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart=false,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -115,14 +115,14 @@ end
 
     m = batch_problem()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:Reliability,
             reliability_branching_perc = 50,
             reliability_branching_threshold = 5,
             strong_restart = true,
-            debug = true)
+            debug = true)...
     ))
 
     status = solve(m)

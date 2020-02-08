@@ -39,7 +39,7 @@ end
         incumbent_constr = true,
         traverse_strategy = :DFS
     )
-    setsolver(m, solver)
+    setsolver(m, solver...)
     status = solve(m)
 
     @test status == :Optimal || status == :LocalOptimal
@@ -71,7 +71,7 @@ end
         obj_epsilon = 0.5,
         traverse_strategy = :DFS
     )
-    setsolver(m, solver)
+    setsolver(m, solver...)
     status = solve(m)
 
     @test status == :Optimal || status == :LocalOptimal

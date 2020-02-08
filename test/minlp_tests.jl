@@ -1,7 +1,7 @@
 using MINLPTests
 
-const OPTIMIZER = MINLPTests.JuMP.with_optimizer(
-    Juniper.Optimizer, DefaultTestSolver()
+const OPTIMIZER = MINLPTests.JuMP.optimizer_with_attributes(
+    Juniper.Optimizer, DefaultTestSolver()...
 )
 
 @testset "MINLPTests" begin

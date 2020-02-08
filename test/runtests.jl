@@ -46,14 +46,14 @@ sol_rtol = 1e-3
 sol_atol = 1e-3
 
 
-function DefaultTestSolver(;nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0, sb="yes"), solver_args...)
-    solver_args_dict = Dict{Symbol,Any}()
-    solver_args_dict[:log_levels] = []
-    solver_args_dict[:nl_solver] = nl_solver
+function DefaultTestSolver(;nl_solver=optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0, "sb" =>"yes"), solver_args...)
+    solver_args_result = Vector{Pair{String, Any}}()
+    push!(solver_args_result, "log_levels" => Symbol[])
+    push!(solver_args_result, "nl_solver" => nl_solver)
     for v in solver_args
-        solver_args_dict[v[1]] = v[2]
+        push!(solver_args_result, string(v[1]) => v[2])
     end
-    return solver_args_dict
+    return solver_args_result
 end
 
 function solve(m::Model)
