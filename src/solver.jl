@@ -82,7 +82,7 @@ function combine_options(options)
                 @info "Setting strong_branching_time_limit = $(kv[2])"
                 options_dict[:strong_branching_time_limit] = kv[2]
             else
-                @warn "Option "*string(kv[1])*" is not available"
+                @warn "Option $(string(kv[1])) is not available"
             end
         else
             options_dict[kv[1]] = kv[2]

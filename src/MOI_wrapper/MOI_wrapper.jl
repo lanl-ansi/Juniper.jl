@@ -195,6 +195,14 @@ function Optimizer(;options...)
     solver_options)
 end 
 
+function Optimizer(options::Vector{Pair{String,Any}}) 
+    symbol_options = Dict{Symbol, Any}()
+    for option in options
+        symbol_options[Symbol(option.first)] = option.second
+    end
+    return Optimizer(symbol_options)
+end 
+
 function Optimizer(options::Dict{Symbol,Any}) 
     
     solver_options = combine_options(options)

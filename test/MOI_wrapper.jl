@@ -6,7 +6,7 @@ const MOIB = MOI.Bridges
 
 juniper = DefaultTestSolver(log_levels=[:Table])
 
-const optimizer = Juniper.Optimizer(juniper...)
+const optimizer = Juniper.Optimizer(juniper)
 
 @testset "SolverName" begin
     @test MOI.get(optimizer, MOI.SolverName()) == "Juniper"
