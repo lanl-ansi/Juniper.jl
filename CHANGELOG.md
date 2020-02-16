@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### 0.5.4
+### 0.6.0
 - Support for JuMP v0.21.0
 
 ### 0.5.3 
