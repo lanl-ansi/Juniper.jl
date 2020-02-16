@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### 0.5.4
+- Support for JuMP v0.21.0
+
 ### 0.5.3 
 - Documentation and useful error message for user defined functions
 - Ability to set incumbent as `start_value`

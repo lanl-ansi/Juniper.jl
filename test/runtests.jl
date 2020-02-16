@@ -38,6 +38,7 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
 using Juniper
+include("util.jl")
 
 opt_rtol = 1e-6
 opt_atol = 1e-6
@@ -46,15 +47,6 @@ sol_rtol = 1e-3
 sol_atol = 1e-3
 
 
-function DefaultTestSolver(;nl_solver=optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0, "sb" =>"yes"), solver_args...)
-    solver_args_result = Vector{Pair{String, Any}}()
-    push!(solver_args_result, "log_levels" => Symbol[])
-    push!(solver_args_result, "nl_solver" => nl_solver)
-    for v in solver_args
-        push!(solver_args_result, string(v[1]) => v[2])
-    end
-    return solver_args_result
-end
 
 function solve(m::Model)
     JuMP.optimize!(m)
@@ -120,7 +112,6 @@ start = time()
     include("parallel.jl")
     include("fpump.jl")
     include("pod.jl")
-    include("minlp_tests.jl")
     include("MOI_wrapper.jl")
     # include("power_models_acp.jl")
     # include("power_models_socwr.jl")
