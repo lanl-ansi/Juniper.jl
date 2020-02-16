@@ -29,15 +29,14 @@ Define `Juniper` as the optimizer:
 
 ```
 optimizer = Juniper.Optimizer
-params = Dict{Symbol,Any}()
-params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
+nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
 ```
 
 And give it a go:
 
 ```
 using LinearAlgebra # for the dot product
-m = Model(with_optimizer(optimizer, params))
+m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver))
 
 v = [10,20,12,23,42]
 w = [12,45,12,22,21]

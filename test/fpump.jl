@@ -9,11 +9,11 @@ include("basic/gamsworld.jl")
     println("==================================")
     println("fp No objective and start value")
     println("==================================")
-    juniper = DefaultTestSolver(mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+    juniper = DefaultTestSolver(mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper)
+        juniper...)
     )
 
     @variable(m, x, Int, start=3)
@@ -48,15 +48,15 @@ end
     @NLconstraint(m, special_constr_fct(x[1],x[2]) == 0)
     @objective(m, Max, sum(x))
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0),
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
             registered_functions=[Juniper.register(register_args...; autodiff=true)]
-        )
+        )...
     ))
 
     status = solve(m)
@@ -65,10 +65,10 @@ end
 end
 
 @testset "GLPK Binary bounds #143" begin
-    juniper_solver = with_optimizer(Juniper.Optimizer, 
-        log_levels=[],
-        nl_solver=with_optimizer(Ipopt.Optimizer, print_level=0), 
-        mip_solver=with_optimizer(GLPK.Optimizer, msg_lev=0)
+    juniper_solver = optimizer_with_attributes(Juniper.Optimizer, 
+        "log_levels" => [],
+        "nl_solver"  => optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0), 
+        "mip_solver" => optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => 0)
     )
 
     m = Model(juniper_solver)
@@ -101,13 +101,13 @@ end
     @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
     @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -131,13 +131,13 @@ end
     @NLconstraint(m, y^2 <= u*w)
     @NLconstraint(m, x^2 >= u*w)
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -157,13 +157,13 @@ end
 
     @NLconstraint(m, y==2*cos(2*x))
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -180,12 +180,12 @@ end
 
     m = get_tspn05()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -202,14 +202,14 @@ end
     # This probably needs a restart in real nlp
     m = get_FLay02H()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
             feasibility_pump_time_limit = 10,
             time_limit = 10,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)
@@ -226,14 +226,14 @@ end
     # This probably needs a restart in real nlp
     m = get_FLay02H()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
             feasibility_pump_time_limit = 1,
             time_limit = 2,
-            mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0))
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
     status = solve(m)

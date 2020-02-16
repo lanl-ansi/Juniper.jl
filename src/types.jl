@@ -10,7 +10,7 @@ end
 
 # Options for the solver (more details like defaults in solver.jl)
 mutable struct SolverOptions
-    nl_solver                           :: Union{Nothing, JuMP.OptimizerFactory} # needs to be set
+    nl_solver                           :: Any# needs to be set
     log_levels                          :: Vector{Symbol}
     silent                              :: Bool
     atol                                :: Float64
@@ -38,9 +38,9 @@ mutable struct SolverOptions
     feasibility_pump_tolerance_counter  :: Int64
     tabu_list_length                    :: Int64
     num_resolve_nlp_feasibility_pump    :: Int64
-    mip_solver                          :: Union{Nothing, JuMP.OptimizerFactory}
-    allow_almost_solved                 :: Bool  
-    allow_almost_solved_integral        :: Bool  
+    mip_solver                          :: Any
+    allow_almost_solved                 :: Bool
+    allow_almost_solved_integral        :: Bool
     registered_functions                :: Union{Nothing, Vector{RegisteredFunction}}
     
     # only for testing
@@ -60,8 +60,8 @@ end
 # Juniper MOI struct 
 
 mutable struct JuniperProblem 
-    nl_solver           :: JuMP.OptimizerFactory
-    nl_solver_options   :: Vector{Tuple}
+    nl_solver           :: Any
+    nl_solver_options   :: Vector{Pair}
    
     model               :: JuMP.Model
 
@@ -102,8 +102,8 @@ mutable struct JuniperProblem
     solutions           :: Vector{SolutionObj}
     nsolutions          :: Int64
 
-    mip_solver          :: JuMP.OptimizerFactory
-    mip_solver_options  :: Vector{Tuple}
+    mip_solver          :: Any
+    mip_solver_options  :: Vector{Pair}
 
     relaxation_time     :: Float64
     start_time          :: Float64

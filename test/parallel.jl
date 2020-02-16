@@ -13,13 +13,13 @@ include("basic/gamsworld.jl")
         branch_strategy=:Reliability,
         strong_restart = false,
         processors = 4,
-        mip_solver = with_optimizer(Cbc.Optimizer, logLevel=0),
+        mip_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
         incumbent_constr = true
     ) 
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper
+        juniper...
     ))
 
     status = solve(m)
@@ -45,7 +45,7 @@ end
         log_levels=[:Table],
         branch_strategy=:MostInfeasible,
         solution_limit=1,
-        mip_solver=with_optimizer(Cbc.Optimizer, logLevel=0),
+        mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
         processors = 3
     )
     
@@ -59,9 +59,9 @@ end
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_one_solution
+        juniper_one_solution...
     ))
     
     status = solve(m)
@@ -77,9 +77,9 @@ end
     println("KNAPSACK Reliable incumbent_constr")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;branch_strategy=:MostInfeasible, incumbent_constr=true,processors=2))
+        DefaultTestSolver(;branch_strategy=:MostInfeasible, incumbent_constr=true,processors=2)...)
     )
 
     v = [10,20,12,23,42]
@@ -112,9 +112,9 @@ end
         processors = 10
     ) 
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper
+        juniper...
     ))
 
     status = solve(m)
@@ -146,9 +146,9 @@ end
         processors = 4
     ) 
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper
+        juniper...
     ))
 
     status = solve(m)
@@ -170,10 +170,11 @@ end
     println("KNAPSACK 100%")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(;processors=2, traverse_strategy=:DBFS, mip_gap=100, 
-                           branch_strategy=:MostInfeasible))
+                           branch_strategy=:MostInfeasible)...
+        )
     )
             
     v = [10,20,12,23,42]
@@ -211,9 +212,9 @@ end
         debug = true
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions...)
     )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -264,9 +265,9 @@ end
         force_parallel = true # just for testing this goes into the parallel branch (using driver + 1)
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions)
+        juniper_all_solutions...)
     )    
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -285,9 +286,9 @@ end
     status = solve(m)
     nbranches = Juniper.getnbranches(internalmodel(m))
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions_p
+        juniper_all_solutions_p...
     ))
     JuMP.set_start_value.(x, zeros(4))
 
@@ -308,9 +309,9 @@ end
         processors = 3
     )
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_all_solutions
+        juniper_all_solutions...
     ))  
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
@@ -339,9 +340,9 @@ end
     println("==================================")
     println("Infeasible cos")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2))
+        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
     )  
     
     @variable(m, 1 <= x <= 5, Int)
@@ -362,9 +363,9 @@ end
     println("Infeasible relaxation")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2))
+        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
     )  
     
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -385,9 +386,9 @@ end
     println("Infeasible integer")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2))
+        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
     )  
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
@@ -408,9 +409,9 @@ end
     println("==================================")
     println("Infeasible in strong")
     println("==================================")
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2))
+        DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
     )  
 
     @variable(m, 0 <= x[1:5] <= 2, Int)

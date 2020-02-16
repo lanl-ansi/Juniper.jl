@@ -1,9 +1,9 @@
 @testset "Function testing" begin
 
 @testset ":Options" begin
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5)
+        DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5)...
         )
     )
 
@@ -26,33 +26,33 @@
 end
 
 function option_not_available_t()
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5)
+        DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5)...
         )
     )
 end
 
 function option_not_available_b()
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5)
+        DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5)...
         )
     )
 end
 
 function option_not_available()
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5)
+        DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5)...
         )
     )
 end
 
 function option_no_mip_solver()
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true)
+        DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true)...
         )
     )
 
@@ -63,14 +63,15 @@ function option_no_mip_solver()
     @objective(m, Max, dot(v,x))
 
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    # there it is detected that no mip solver is present
+    optimize!(m)
 
-    MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     return bm.optimizer.model.options
 end
 
 @testset "Silent/TimeLimitSec" begin
-    optimizer = Juniper.Optimizer(;nl_solver=with_optimizer(Ipopt.Optimizer))
+    optimizer = Juniper.Optimizer(;nl_solver=optimizer_with_attributes(Ipopt.Optimizer))
     @test MOI.supports(optimizer, MOI.Silent()) === true
     @test MOI.supports(optimizer, MOI.TimeLimitSec()) === true
     MOI.set(optimizer, MOI.RawParameter(:mip_gap), 1.0)
@@ -89,8 +90,8 @@ end
 end
 
 @testset ":Option not available" begin
-    @test_throws ErrorException option_not_available_t()
-    @test_throws ErrorException option_not_available_b()
+    @test_logs (:error, r"not supported") option_not_available_t()
+    @test_logs (:error, r"not supported") option_not_available_b()
     opts = option_no_mip_solver()
     @test opts.feasibility_pump == false
     @test !isa(try option_not_available() catch ex ex end, Exception) 
@@ -104,9 +105,9 @@ end
 
     register_args = [:special_minimizer_fct, 1, special_minimizer_fct, grad, grad2]
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver()
+        DefaultTestSolver()...
     ))
 
     JuMP.register(m, register_args...)
@@ -123,9 +124,9 @@ end
 
     register_args = [:special_minimizer_fct, 1, special_minimizer_fct, grad, grad2]
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver()
+        DefaultTestSolver()...
     ))
 
     JuMP.register(m, register_args...)
@@ -137,9 +138,9 @@ end
 end
 
 @testset "Info/Table" begin
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)
+        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)...
         )
     )
 
@@ -263,9 +264,9 @@ end
 end
 
 @testset "Random restarts" begin
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 
-        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)
+        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)...
         )
     )
 

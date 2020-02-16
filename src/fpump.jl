@@ -6,7 +6,7 @@ TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
-    mip_optimizer = m.mip_solver.constructor()
+    mip_optimizer = m.mip_solver.optimizer_constructor()
     mip_model = Model(m.mip_solver)
     @variable(mip_model, mx[i = 1:m.num_var], 
         binary = m.var_type[i] == :Bin, 
@@ -113,7 +113,7 @@ end
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
 function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
-    nlp_optimizer = m.nl_solver.constructor()
+    nlp_optimizer = m.nl_solver.optimizer_constructor()
     nlp_model = Model(m.nl_solver)
     @variable(nlp_model, m.l_var[i] <= nx[i=1:m.num_var] <= m.u_var[i])
     if random_start

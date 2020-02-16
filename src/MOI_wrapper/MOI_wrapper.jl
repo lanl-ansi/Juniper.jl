@@ -95,10 +95,24 @@ function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Floa
 end
 
 function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
-    if in(p.name, fieldnames(SolverOptions))
-        type_of_param = fieldtype(SolverOptions, p.name)
-        if isa(value, type_of_param)
-            setfield!(model.options, p.name, value)
+    p_symbol = Symbol(p.name)
+    if in(p_symbol, fieldnames(SolverOptions))
+        type_of_param = fieldtype(SolverOptions, p_symbol)
+        if hasmethod(convert, (Type{type_of_param}, typeof(value)))
+            passed_checks = true
+            if p_symbol == :traverse_strategy
+                if !(value in [:BFS, :DFS, :DBFS])
+                    passed_checks = false
+                    @error "Traverse strategy $(value) is not supported. Use one of `[:BFS, :DFS, :DBFS]`."
+                end
+            end
+            if p_symbol == :branch_strategy
+                if !(value in [:StrongPseudoCost, :PseudoCost, :Reliability, :MostInfeasible])
+                    passed_checks = false
+                    @error "Branch strategy $(value) is not supported. Use one of `[:StrongPseudoCost, :PseudoCost, :Reliability, :MostInfeasible]`."
+                end
+            end
+            passed_checks && setfield!(model.options, p_symbol, convert(type_of_param, value))
         else
             @error "The option $(p.name) has a different type ($(type_of_param))"
         end
@@ -179,6 +193,14 @@ function Optimizer(;options...)
     [], [], [], # linear constraints 
     [], [], [], # quadratic constraints
     solver_options)
+end 
+
+function Optimizer(options::Vector{Pair{String,Any}}) 
+    symbol_options = Dict{Symbol, Any}()
+    for option in options
+        symbol_options[Symbol(option.first)] = option.second
+    end
+    return Optimizer(symbol_options)
 end 
 
 function Optimizer(options::Dict{Symbol,Any}) 
@@ -310,6 +332,11 @@ end
 ``MOI.optimize!()`` for Juniper
 """ 
 function MOI.optimize!(model::Optimizer)
+    # feasibility_pump only if mip solver exists
+    if model.options.feasibility_pump && model.options.mip_solver === nothing
+        model.options.feasibility_pump = false
+    end
+
     Random.seed!(1)
     MOI.initialize(model.nlp_data.evaluator, [:ExprGraph])
     

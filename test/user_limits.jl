@@ -7,9 +7,9 @@ include("POD_experiment/FLay02H.jl")
     println("KNAPSACK 50%")
     println("==================================")
 
-    m = Model(with_optimizer(
+    m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;traverse_strategy=:DBFS,branch_strategy=:MostInfeasible,mip_gap=0.5))
+        DefaultTestSolver(;traverse_strategy=:DBFS,branch_strategy=:MostInfeasible,mip_gap=0.5)...)
     )
 
     v = [10,20,12,23,42]
@@ -39,12 +39,12 @@ end
 
     m = get_FLay02H()
 
-    set_optimizer(m, with_optimizer(
+    set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             time_limit = 5,
-            incumbent_constr = true)
+            incumbent_constr = true)...
     ))
 
     status = solve(m)

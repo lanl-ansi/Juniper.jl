@@ -33,15 +33,14 @@ Define `Juniper` as the optimizer:
 
 ```
 optimizer = Juniper.Optimizer
-params = Dict{Symbol,Any}()
-params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
+nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
 ```
 
 And give it a go:
 
 ```
 using LinearAlgebra # for the dot product
-m = Model(with_optimizer(optimizer, params))
+m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver))
 
 v = [10,20,12,23,42]
 w = [12,45,12,22,21]
@@ -66,9 +65,9 @@ It is recommended to specify a mip solver as well i.e.
 ```
 using Cbc
 optimizer = Juniper.Optimizer
-params = Dict{Symbol,Any}()
-params[:nl_solver] = with_optimizer(Ipopt.Optimizer, print_level=0)
-params[:mip_solver] = with_optimizer(Cbc.Optimizer, logLevel=0)
+nl_solver= optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
+mip_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver))
 ```
 
 Then the feasibility pump is used to find a feasible solution before the branch and bound part starts. This turned out to be highly effective.
