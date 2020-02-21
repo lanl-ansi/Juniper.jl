@@ -48,19 +48,21 @@ end
     @NLconstraint(m, special_constr_fct(x[1],x[2]) == 0)
     @objective(m, Max, sum(x))
 
-    set_optimizer(m, optimizer_with_attributes(
+    optimizer = optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
-            feasibility_pump = true,
             time_limit = 1,
             mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
             registered_functions=[Juniper.register(register_args...; autodiff=true)]
         )...
-    ))
+    )
+    set_optimizer(m, optimizer)
 
     status = solve(m)
 
+    # should have feasibility_pump be set to true
+    @test MOI.get(m, MOI.RawParameter(:feasibility_pump))
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 

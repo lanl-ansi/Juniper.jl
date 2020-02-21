@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### 0.6.1
+- Bugfix: Use feasibility pump by default if MIP solver is used [#183](https://github.com/lanl-ansi/Juniper.jl/pull/183)
+
 ### 0.6.0
 - Support for JuMP v0.21.0
 
