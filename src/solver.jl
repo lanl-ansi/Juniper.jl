@@ -94,16 +94,7 @@ function combine_options(options)
         end
     end
 
-    #= will be set with RawParameter now
-    if !haskey(options_dict, :nl_solver)
-        @error "The option nl_solver has to be set i.e with nl_solver = Ipopt.Optimizer"
-    end
-    =#
-
     defaults = get_default_options()
-    if defaults.feasibility_pump == true && (!haskey(options_dict, :mip_solver) || options_dict[:mip_solver] === nothing)
-        defaults.feasibility_pump = false
-    end
 
     # if gain mu is specified we shouldn't change it later
     if haskey(options_dict, :gain_mu)
