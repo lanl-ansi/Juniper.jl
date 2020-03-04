@@ -1180,4 +1180,27 @@ end
     @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
 end
 
+@testset "Expr dereferencing for @NLexpression" begin
+    # See issue 184
+    m = Model()
+    set_optimizer(m, optimizer_with_attributes(
+        Juniper.Optimizer,
+        DefaultTestSolver(
+            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+    ))
+
+    @variable(model, 0 <= a_var <= 1) 
+    @variable(model, bin_var, Int) 
+    b_expr = @NLexpression(model, bin_var/1)
+    @NLconstraint(model, 1.1 >= b_expr) 
+    an_expr = @NLexpression(model, a_var / 1) 
+
+    @NLobjective(model, Max, bin_var + an_expr)
+
+    optimize!(model)
+    @test JuMP.objective_value(model) ≈ 2.0
+    @test JuMP.value(bin_var) ≈ 1
+    @test JuMP.value(a_var) ≈ 1
+end
+
 end
