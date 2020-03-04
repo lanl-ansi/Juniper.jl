@@ -1189,16 +1189,16 @@ end
             mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
-    @variable(model, 0 <= a_var <= 1) 
-    @variable(model, bin_var, Int) 
-    b_expr = @NLexpression(model, bin_var/1)
-    @NLconstraint(model, 1.1 >= b_expr) 
-    an_expr = @NLexpression(model, a_var / 1) 
+    @variable(m, 0 <= a_var <= 1) 
+    @variable(m, bin_var, Int) 
+    b_expr = @NLexpression(m, bin_var/1)
+    @NLconstraint(m, 1.1 >= b_expr) 
+    an_expr = @NLexpression(m, a_var / 1) 
 
-    @NLobjective(model, Max, bin_var + an_expr)
+    @NLobjective(m, Max, bin_var + an_expr)
 
-    optimize!(model)
-    @test JuMP.objective_value(model) ≈ 2.0
+    optimize!(m)
+    @test JuMP.objective_value(m) ≈ 2.0
     @test JuMP.value(bin_var) ≈ 1
     @test JuMP.value(a_var) ≈ 1
 end

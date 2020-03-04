@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### Unreleased
+- Bugfix: `@NLexpression` failed in feasibility pump [Issue #184](https://github.com/lanl-ansi/Juniper.jl/pull/184)
+
 ### 0.6.1
 - Bugfix: Use feasibility pump by default if MIP solver is used [#183](https://github.com/lanl-ansi/Juniper.jl/pull/183)
 
