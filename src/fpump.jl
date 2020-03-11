@@ -140,7 +140,7 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     end
     for i in 1:m.num_nl_constr
         constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
-        expr_dereferencing!(constr_expr, nlp_model)
+        constr_expr = expr_dereferencing(constr_expr, nlp_model)
         JuMP.add_NL_constraint(nlp_model, constr_expr)
     end
     
@@ -206,7 +206,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
-        expr_dereferencing!(obj_expr, rmodel)
+        obj_expr = expr_dereferencing(obj_expr, rmodel)
         JuMP.set_NL_objective(rmodel, optimizer.sense, obj_expr)
     else
         MOI.set(rmodel, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
@@ -228,7 +228,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     end
     for i in 1:m.num_nl_constr
         constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
-        expr_dereferencing!(constr_expr, rmodel)
+        constr_expr = expr_dereferencing(constr_expr, rmodel)
         JuMP.add_NL_constraint(rmodel, constr_expr)
     end
 

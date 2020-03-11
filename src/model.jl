@@ -29,7 +29,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
-        expr_dereferencing!(obj_expr, jp.model)
+        obj_expr = expr_dereferencing(obj_expr, jp.model)
         try
             JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
         catch 
@@ -54,7 +54,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     end
     for i in 1:jp.num_nl_constr
         constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
-        expr_dereferencing!(constr_expr, jp.model)
+        constr_expr = expr_dereferencing(constr_expr, jp.model)
         try
             JuMP.add_NL_constraint(jp.model, constr_expr)
         catch 

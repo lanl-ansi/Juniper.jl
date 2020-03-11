@@ -16,6 +16,12 @@ function expr_dereferencing!(expr, m)
     end
 end
 
+function expr_dereferencing(expr, m)
+    c_expr = copy(expr)
+    expr_dereferencing!(c_expr, m) 
+    return c_expr   
+end
+
 function generate_random_restart(m; cont=true)
     values = []
     for i=1:m.num_var

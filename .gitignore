@@ -1,5 +1,6 @@
 test/load_mod.jl
 test/current*.jl
+test/current/
 test/data/extra
 test/JuniperLib.jl
 test/CSV/
