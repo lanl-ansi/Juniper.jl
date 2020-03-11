@@ -1,6 +1,6 @@
 # Juniper.jl Changelog
 
-### Unreleased
+### 0.6.2
 - Bugfix: `@NLexpression` failed in feasibility pump [Issue #184](https://github.com/lanl-ansi/Juniper.jl/pull/184)
 
 ### 0.6.1
