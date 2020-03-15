@@ -286,7 +286,7 @@ model = Model(
     optimizer_with_attributes(
         Juniper.Optimizer,
             "nl_solver" => optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0),
-            "registered_functions" = [
+            "registered_functions" => [
                 Juniper.register(:myfunction,  4, myfunction; autodiff = true)
             ]
     )
