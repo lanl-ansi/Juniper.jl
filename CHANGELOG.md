@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### 0.6.3
+- Bugfix: `registered_functions` failed in feasibility pump [Issue #189](https://github.com/lanl-ansi/Juniper.jl/pull/189)
+
 ### 0.6.2
 - Bugfix: `@NLexpression` failed in feasibility pump [Issue #184](https://github.com/lanl-ansi/Juniper.jl/pull/184)
 

@@ -125,6 +125,8 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
         JuMP.set_start_value.(nx[1:m.num_var],mip_sol)
     end
 
+    register_functions!(nlp_model, m.options.registered_functions)
+
     # add all constraints
     backend = JuMP.backend(nlp_model);
     llc = optimizer.linear_le_constraints
@@ -201,6 +203,8 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         vi = m.disc2var_idx[i]
         JuMP.fix(rx[vi], sol[vi]; force=true)
     end
+
+    register_functions!(rmodel, m.options.registered_functions)
 
     # define the objective function
     # TODO check whether it is supported

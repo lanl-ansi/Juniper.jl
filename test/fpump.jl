@@ -45,7 +45,8 @@ end
     register_args = [:special_constr_fct, 2, special_constr_fct]
     JuMP.register(m, register_args...; autodiff=true)
 
-    @NLconstraint(m, special_constr_fct(x[1],x[2]) == 0)
+    # == 1 such that start value of 0 is not optimal (test for issue 189)
+    @NLconstraint(m, special_constr_fct(x[1],x[2]) == 1)
     @objective(m, Max, sum(x))
 
     optimizer = optimizer_with_attributes(
