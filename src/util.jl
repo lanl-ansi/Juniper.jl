@@ -290,3 +290,17 @@ function optimize_get_status_backend(model::JuMP.Model; solver=nothing)
     status = MOI.get(backend, MOI.TerminationStatus()) 
     return status, backend
 end
+
+function register_functions!(model, registered_functions)
+    if registered_functions !== nothing
+        for reg_f in registered_functions
+            if reg_f.gradf === nothing
+                JuMP.register(model, reg_f.s, reg_f.dimension, reg_f.f; autodiff=reg_f.autodiff)
+            elseif reg_f.grad2f === nothing
+                JuMP.register(model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf)
+            else
+                JuMP.register(model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf, reg_f.grad2f)
+            end
+        end
+    end
+end

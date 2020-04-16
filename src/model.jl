@@ -14,17 +14,7 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         JuMP.set_start_value(x[i], jp.primal_start[i])
     end
     
-    if jp.options.registered_functions !== nothing
-        for reg_f in jp.options.registered_functions
-            if reg_f.gradf === nothing
-                JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f; autodiff=reg_f.autodiff)
-            elseif reg_f.grad2f === nothing
-                JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf)
-            else
-                JuMP.register(jp.model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf, reg_f.grad2f)
-            end
-        end
-    end
+    register_functions!(jp.model, jp.options.registered_functions)
 
     # TODO check whether it is supported
     if optimizer.nlp_data.has_objective
@@ -33,7 +23,8 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         try
             JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
         catch 
-            error("Have you registered a function? Then please register the function also for Juniper see: https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions::Union{Nothing,Vector{RegisteredFunction}}-[nothing]-1")
+            error("Have you registered a function? Then please register the function also for Juniper see: \n
+            https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions%3A%3AUnion%7BNothing%2CVector%7BRegisteredFunction%7D%7D-%5Bnothing%5D-1")
         end
     elseif optimizer.objective !== nothing
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
@@ -58,7 +49,8 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
         try
             JuMP.add_NL_constraint(jp.model, constr_expr)
         catch 
-            error("Have you registered a function? Then please register the function also for Juniper see: https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions::Union{Nothing,Vector{RegisteredFunction}}-[nothing]-1")
+            error("Have you registered a function? Then please register the function also for Juniper see: \n
+            https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions%3A%3AUnion%7BNothing%2CVector%7BRegisteredFunction%7D%7D-%5Bnothing%5D-1")
         end
     end
     
