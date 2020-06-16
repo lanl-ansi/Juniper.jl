@@ -20,6 +20,10 @@ include("basic/gamsworld.jl")
     @NLconstraint(m, x^2 >= 17)
    
     status = solve(m)
+    rand_num = rand()
+    status = solve(m)
+    @test rand() != rand_num
+
     inner = internalmodel(m)
     @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
     @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
