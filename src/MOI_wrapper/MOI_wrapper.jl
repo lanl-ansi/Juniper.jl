@@ -336,8 +336,7 @@ function MOI.optimize!(model::Optimizer)
     if model.options.feasibility_pump && model.options.mip_solver === nothing
         model.options.feasibility_pump = false
     end
-    seed = abs(rand(Int))
-    Random.seed!(1)
+    Random.seed!(JUNIPER_RNG, 1)
     MOI.initialize(model.nlp_data.evaluator, [:ExprGraph])
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
@@ -392,7 +391,6 @@ function MOI.optimize!(model::Optimizer)
         if jp.options.debug && jp.options.debug_write
             write(jp.options.debug_file_path, JSON.json(jp.debugDict))
         end
-        Random.seed!(seed)
         return
     end
 
@@ -441,7 +439,6 @@ function MOI.optimize!(model::Optimizer)
         jp.solution = jp.relaxation_solution
     end
     jp.soltime = time()-jp.start_time
-    Random.seed!(seed)
 
     (:All in ps || :Info in ps) && println("Obj: ",jp.objval)
     

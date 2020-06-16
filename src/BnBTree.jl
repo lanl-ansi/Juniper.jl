@@ -458,12 +458,10 @@ function pmap(f, tree, last_table_arr, time_bnb_solve_start,
     still_running = true
     run_counter = 0
     counter = 0
-    o_seed = abs(rand(Int))
     for p=2:np
-        seed = Random.seed!
+        seed = i -> Random.seed!(JUNIPER_RNG, i)
         remotecall_fetch(seed, p, 1)
     end
-    Random.seed!(o_seed)
     @sync begin
         for p=2:np
             @async begin

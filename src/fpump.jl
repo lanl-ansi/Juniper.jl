@@ -316,8 +316,7 @@ Run the feasibility pump
 """
 function fpump(optimizer, m)
     
-    seed = abs(rand(Int))
-    Random.seed!(1)
+    Random.seed!(JUNIPER_RNG, 1)
 
     if are_type_correct(m.relaxation_solution, m.var_type, m.disc2var_idx, m.options.atol)
         return Incumbent(m.relaxation_objval, m.relaxation_solution, only_almost_solved(m.status))
@@ -468,8 +467,6 @@ function fpump(optimizer, m)
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
     check_print(ps,[:Info]) && println("FP: No integral solution found")
-    
-    Random.seed!(seed)
     
     return nothing
 end

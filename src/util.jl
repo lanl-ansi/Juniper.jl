@@ -51,11 +51,11 @@ function generate_random_restart(m; cont=true)
         end             
 
         if m.var_type[i] == :Cont || cont
-            push!(values,(ubi-lbi)*rand()+lbi)
+            push!(values,(ubi-lbi)*rand(JUNIPER_RNG;)+lbi)
         else
             lbi = Int(round(lbi))
             ubi = Int(round(ubi))
-            push!(values, rand(lbi:ubi))
+            push!(values, rand(JUNIPER_RNG,lbi:ubi))
         end
     end
     return values
