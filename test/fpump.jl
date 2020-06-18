@@ -95,8 +95,12 @@ end
 
     @objective(m, Min, x[1])
 
-    @constraint(m, x[1] >= 0.9)
-    @constraint(m, x[1] <= 1.1)
+    # make sure that every solution to lp is solution to nlp 
+    # FP should definitely find a solution
+    for i=1:4
+        @constraint(m, x[i] >= i-0.1)
+        @constraint(m, x[i] <= i+0.1)
+    end
     @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
     @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
     @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
