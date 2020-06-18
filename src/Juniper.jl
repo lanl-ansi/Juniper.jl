@@ -5,6 +5,8 @@ using JuMP: @variable, @constraint, @objective, Model, optimizer_with_attributes
 using JSON
 using LinearAlgebra
 using Random
+const JUNIPER_RNG = MersenneTwister(1)
+
 using Distributed
 using Statistics
 
