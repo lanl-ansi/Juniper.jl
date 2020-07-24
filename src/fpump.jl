@@ -212,11 +212,10 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
         obj_expr = expr_dereferencing(obj_expr, rmodel)
         JuMP.set_NL_objective(rmodel, optimizer.sense, obj_expr)
-    else
+    elseif optimizer.objective !== nothing
         MOI.set(rmodel, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
         MOI.set(rmodel, MOI.ObjectiveSense(), optimizer.sense)
     end
-
 
     backend = JuMP.backend(rmodel);
     llc = optimizer.linear_le_constraints
