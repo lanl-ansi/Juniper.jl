@@ -303,6 +303,69 @@ end
         @test isapprox(round(disc_restart[i])-disc_restart[i],0,atol=1e-6)
     end
 
+    # test a different seed
+
+    m = Model(optimizer_with_attributes(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true, seed=92301)...
+        )
+    )
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Int)
+    JuMP.set_lower_bound(x[1], 0)
+    JuMP.set_lower_bound(x[2], 0.5)
+    JuMP.set_upper_bound(x[3], 1)
+    JuMP.set_upper_bound(x[2], 1)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    JuMP.optimize!(m)
+    model = bm.optimizer.model.inner
+
+
+    cont_restart2 = Juniper.generate_random_restart(model)
+    # all random numbers should be different then before
+    for i=1:5
+        @test cont_restart[i] != cont_restart2[i]
+    end
+
+    # test a different seed
+
+    m = Model(optimizer_with_attributes(
+        Juniper.Optimizer, 
+        DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true, seed=92301)...
+        )
+    )
+
+    v = [10,20,12,23,42]
+    w = [12,45,12,22,21]
+    @variable(m, x[1:5], Int)
+    JuMP.set_lower_bound(x[1], 0)
+    JuMP.set_lower_bound(x[2], 0.5)
+    JuMP.set_upper_bound(x[3], 1)
+    JuMP.set_upper_bound(x[2], 1)
+
+    @objective(m, Max, dot(v,x))
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    MOIU.attach_optimizer(m)
+    bm = JuMP.backend(m)
+    JuMP.optimize!(m)
+    model = bm.optimizer.model.inner
+
+
+    cont_restart3 = Juniper.generate_random_restart(model)
+    # all random numbers should be the same as before
+    for i=1:5
+        @test cont_restart2[i] == cont_restart3[i]
+    end
 end
 
 end
