@@ -1,8 +1,9 @@
 # Juniper.jl Changelog
 
-### Unregistered
+### v0.6.4
 - Use of `JUNIPER_RNG` for random numbers. Makes sure that `rand` outside of Juniper is unaffected.
 - Option to set the random seed with the option `seed`.
+- Bugfix: Generating the real nlp in the feasibility pump failed when there was no objective. [Issue #195](https://github.com/lanl-ansi/Juniper.jl/pull/195)
 
 ### 0.6.3
 - Bugfix: `registered_functions` failed in feasibility pump [Issue #189](https://github.com/lanl-ansi/Juniper.jl/pull/189)

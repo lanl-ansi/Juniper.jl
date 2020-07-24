@@ -248,4 +248,27 @@ end
     @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
 end
 
+@testset "FP: Issue 195: FPump without objective" begin
+    println("==================================")
+    println("FP: Issue 195: FPump without objective")
+    println("==================================")
+
+    ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0, "sb" => "yes", "max_iter" => 50000)
+    cbc_solver = JuMP.optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+    juniper_solver = JuMP.optimizer_with_attributes(Juniper.Optimizer,
+        "nl_solver" => ipopt_solver,
+        "mip_solver" => cbc_solver, "log_levels" => [])
+    m = Model(juniper_solver)
+    @variable(m, x[1:3], Int)
+    @variable(m, y)
+    @NLconstraint(m, x[1]*x[2]*x[3]*y >= 5)
+    optimize!(m)
+
+    for i=1:3
+        xval = JuMP.value(x[i])
+        @test isapprox(round(xval)-xval, 0; atol=sol_atol)
+    end
+    @test JuMP.objective_value(m) ≈ 0.0
+end
+
 end
