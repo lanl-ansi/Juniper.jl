@@ -42,6 +42,7 @@ mutable struct SolverOptions
     allow_almost_solved                 :: Bool
     allow_almost_solved_integral        :: Bool
     registered_functions                :: Union{Nothing, Vector{RegisteredFunction}}
+    seed                                :: Int64
     
     # only for testing
     force_parallel                      :: Bool

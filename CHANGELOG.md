@@ -1,5 +1,9 @@
 # Juniper.jl Changelog
 
+### Unregistered
+- Use of `JUNIPER_RNG` for random numbers. Makes sure that `rand` outside of Juniper is unaffected.
+- Option to set the random seed with the option `seed`.
+
 ### 0.6.3
 - Bugfix: `registered_functions` failed in feasibility pump [Issue #189](https://github.com/lanl-ansi/Juniper.jl/pull/189)
 

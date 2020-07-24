@@ -336,7 +336,7 @@ function MOI.optimize!(model::Optimizer)
     if model.options.feasibility_pump && model.options.mip_solver === nothing
         model.options.feasibility_pump = false
     end
-    Random.seed!(JUNIPER_RNG, 1)
+    Random.seed!(JUNIPER_RNG, model.options.seed)
     MOI.initialize(model.nlp_data.evaluator, [:ExprGraph])
     
     if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)

@@ -36,6 +36,12 @@ The default values might change in the future after several tests were executed 
 This tolerance is used to check whether a value is integer or not and is used in the feasibility pump.
 More information about the feasibility pump can be found [here](#Feasibility-Pump-1).
 
+## Randomness
+
+### seed::Int [1]
+
+At some points of the search process random values are chosen i.e. for random restarts.
+
 ## Branching
 
 ### branch_strategy::Symbol [:StrongPseudoCost]

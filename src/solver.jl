@@ -42,7 +42,7 @@ function get_default_options()
     allow_almost_solved                 = true
     allow_almost_solved_integral        = true
     registered_functions                = nothing
-
+    seed                                = 1
 
     # Only for testing
     force_parallel                      = false
@@ -59,7 +59,7 @@ function get_default_options()
         list_of_solutions,processors,traverse_strategy,
         feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
         tabu_list_length,num_resolve_nlp_feasibility_pump,
-        mip_solver, allow_almost_solved, allow_almost_solved_integral, registered_functions, 
+        mip_solver, allow_almost_solved, allow_almost_solved_integral, registered_functions, seed,
         force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
 end
 
