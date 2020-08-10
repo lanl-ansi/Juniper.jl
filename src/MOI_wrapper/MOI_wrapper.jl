@@ -69,7 +69,7 @@ MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 MOI.supports(::Optimizer, ::MOI.RawParameter) = true
 
 function MOI.set(model::Optimizer, ::MOI.Silent, value::Bool)
-    if value === true
+    if value
         model.options.log_levels = []
     end
     model.options.silent = value
