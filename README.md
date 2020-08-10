@@ -21,24 +21,28 @@ Juniper can be installed via:
 
 Then adding it to your project by
 
-`using Juniper`
+```julia
+using Juniper
+```
 
 You also have to import your NLP solver i.e.
 
-`using Ipopt`
+```julia
+using Ipopt
+```
 
 as well as [JuMP](http://www.juliaopt.org/JuMP.jl)
 
 Define `Juniper` as the optimizer:
 
-```
+```julia
 optimizer = Juniper.Optimizer
 nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
 ```
 
 And give it a go:
 
-```
+```julia
 using LinearAlgebra # for the dot product
 m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver))
 
@@ -62,7 +66,7 @@ This solver is a NLP solver therefore you should have at least one `NLconstraint
 
 It is recommended to specify a mip solver as well i.e.
 
-```
+```julia
 using Cbc
 optimizer = Juniper.Optimizer
 nl_solver= optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
