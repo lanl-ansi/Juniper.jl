@@ -150,8 +150,9 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
         for arg in model.options.nl_solver.params
             push!(nl_vec_opts, arg)
         end
+    else
+        jp.nl_solver = JuMP.optimizer_with_attributes(jp.nl_solver)
     end
-
     jp.nl_solver_options = nl_vec_opts
 
     if model.options.mip_solver !== nothing
@@ -161,12 +162,13 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
             for arg in model.options.mip_solver.params
                 push!(mip_vec_opts, arg)
             end
+        else
+            jp.mip_solver = JuMP.optimizer_with_attributes(jp.mip_solver)
         end
-    
         jp.mip_solver_options = mip_vec_opts
     end
-    jp.options = model.options    
-    if model.sense == MOI.MIN_SENSE 
+    jp.options = model.options
+    if model.sense == MOI.MIN_SENSE
         jp.obj_sense = :Min
     else
         jp.obj_sense = :Max

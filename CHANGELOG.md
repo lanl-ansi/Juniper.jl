@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.6.5
+Bugfix: FPump failed for an optimizer without attributes [Issue #201](https://github.com/lanl-ansi/Juniper.jl/pull/201)
+
 ### v0.6.4
 - Use of `JUNIPER_RNG` for random numbers. Makes sure that `rand` outside of Juniper is unaffected.
 - Option to set the random seed with the option `seed`.
