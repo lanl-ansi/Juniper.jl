@@ -18,7 +18,7 @@ include("basic/gamsworld.jl")
     @constraint(m, x >= 0)
     @constraint(m, x <= 5)
     @NLconstraint(m, x^2 >= 17)
-   
+
     status = solve(m)
     rand_num = rand()
     status = solve(m)
@@ -41,7 +41,7 @@ end
     println("==================================")
 
     m = Model()
-    
+
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
     special_minimizer_fct(x) = x
@@ -79,7 +79,7 @@ end
     JuMP.set_optimizer_attribute(m, "all_solutions", true)
     JuMP.optimize!(m)
     bm = JuMP.backend(m)
-    status = MOI.get(bm, MOI.TerminationStatus()) 
+    status = MOI.get(bm, MOI.TerminationStatus())
 
     innermodel = bm.optimizer.model.inner
     debugDict = innermodel.debugDict
@@ -92,6 +92,45 @@ end
 
     @test status == MOI.LOCALLY_SOLVED
     @test Juniper.getnsolutions(innermodel) == 24
+end
+
+@testset "bruteforce optimizer without attributes" begin
+    m = Model(Juniper.Optimizer)
+    set_optimizer_attribute(m, "nl_solver", Ipopt.Optimizer)
+    set_optimizer_attribute(m, "mip_solver", Cbc.Optimizer)
+
+    @variable(m, 1 <= x[1:4] <= 5, Int)
+
+    @objective(m, Min, x[1])
+
+    @constraint(m, x[1] >= 0.9)
+    @constraint(m, x[1] <= 1.1)
+    @NLconstraint(m, (x[1]-x[2])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[3])^2 >= 0.1)
+    @NLconstraint(m, (x[1]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[2]-x[4])^2 >= 0.1)
+    @NLconstraint(m, (x[3]-x[4])^2 >= 0.1)
+
+    mktemp() do path,io
+        out = stdout
+        err = stderr
+        redirect_stdout(io)
+        redirect_stderr(io)
+
+        status = try
+            optimize!(m)
+        catch e
+            e
+        end
+
+        flush(io)
+        redirect_stdout(out)
+        redirect_stderr(err)
+    end
+    @test length(sort(unique(convert.(Int, JuMP.value.(x))))) == 4
+    @test all(1 .<= JuMP.value.(x) .<= 5)
+    @test JuMP.value(x[1]) ≈ 1.0
 end
 
 @testset "bruteforce full strong w/o restart" begin
@@ -188,10 +227,10 @@ end
     )
 
     optimizer = optimizer_with_attributes(Juniper.Optimizer, juniper_all_solutions...)
-    
+
     m = Model(optimizer)
     moi_optimizer = JuMP.backend(m).optimizer.model
-    
+
     # default => 1
     @test MOI.supports(moi_optimizer, MOI.NumberOfThreads()) == true
     MOI.set(moi_optimizer, MOI.NumberOfThreads(), nothing)
@@ -300,7 +339,7 @@ end
     println("==================================")
     println("no integer")
     println("==================================")
-    
+
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         juniper_strong_restart...)
@@ -404,7 +443,7 @@ end
     println("==================================")
     println("Infeasible relaxation")
     println("==================================")
-    
+
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(;debug=true)...)
@@ -453,7 +492,7 @@ end
     println("==================================")
     println("Infeasible relaxation 2")
     println("==================================")
-    
+
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         juniper_strong_no_restart...)
@@ -604,8 +643,8 @@ end
     println("==================================")
     println("One Integer small MostInfeasible")
     println("==================================")
-    
-    m = Model()    
+
+    m = Model()
 
     @variable(m, x >= 0, Int)
     @variable(m, y >= 0)
@@ -675,7 +714,7 @@ end
     println("==================================")
     println("Three Integers Small Strong")
     println("==================================")
-    
+
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         juniper_strong_no_restart...)
@@ -776,8 +815,8 @@ end
     @variable(m, x[1:5], Bin)
 
     @objective(m, Max, dot(v,x))
-    
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
@@ -793,7 +832,7 @@ end
     println("==================================")
     println("KNAPSACK Reliable no restart")
     println("==================================")
- 
+
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:Reliability,
@@ -807,7 +846,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
@@ -855,7 +894,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
@@ -882,7 +921,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     status = solve(m)
 
@@ -900,7 +939,7 @@ end
         Juniper.Optimizer,
         juniper_strong_restart...)
     )
-    
+
     status = solve(m)
     @test status == MOI.LOCALLY_SOLVED
 
@@ -992,7 +1031,7 @@ end
         branch_strategy=:MostInfeasible,
         solution_limit=1
     )
-    
+
     m = Model()
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
@@ -1000,7 +1039,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
@@ -1193,11 +1232,11 @@ end
             mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
     ))
 
-    @variable(m, 0 <= a_var <= 1) 
-    @variable(m, bin_var, Int) 
+    @variable(m, 0 <= a_var <= 1)
+    @variable(m, bin_var, Int)
     b_expr = @NLexpression(m, bin_var/1)
-    @NLconstraint(m, 1.1 >= b_expr) 
-    an_expr = @NLexpression(m, a_var / 1) 
+    @NLconstraint(m, 1.1 >= b_expr)
+    an_expr = @NLexpression(m, a_var / 1)
 
     @NLobjective(m, Max, bin_var + an_expr)
 
