@@ -10,6 +10,9 @@ const JUNIPER_RNG = MersenneTwister(1)
 using Distributed
 using Statistics
 
+import MutableArithmetics
+const MA = MutableArithmetics
+
 using MathOptInterface
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities

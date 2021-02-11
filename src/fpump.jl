@@ -1,3 +1,13 @@
+function add_constrained_var(model, set::MOI.AbstractScalarSet)
+    vi, con_idx = MOI.add_constrained_variable(model, set)
+    return MOI.SingleVariable(vi)
+end
+
+function add_constrained_var(model, set::MOI.AbstractVectorSet)
+    vis, con_idx = MOI.add_constrained_variables(model, set)
+    return MOI.SingleVariable.(vis)
+end
+
 """
     generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
 
@@ -6,45 +16,42 @@ TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
-    mip_optimizer = m.mip_solver.optimizer_constructor()
-    mip_model = Model(m.mip_solver)
-    @variable(mip_model, mx[i = 1:m.num_var], 
-        binary = m.var_type[i] == :Bin, 
-        integer = m.var_type[i] == :Int
-    )
-
-    # only add bounds for non binary variables
-    for i=1:m.num_var
-        if m.var_type[i] != :Bin
-           @constraint(mip_model, m.l_var[i] <= mx[i] <= m.u_var[i])
+    mip_optimizer = MOI.instantiate(m.mip_solver.optimizer_constructor, with_bridge_type=Float64)
+    mx = MOI.SingleVariable.(MOI.add_variables(mip_optimizer, m.num_var))
+    var_con(i, set) = MOI.add_constraint(mip_optimizer, mx[i], set)
+    for i in 1:m.num_var
+        if m.var_type[i] == :Int
+            var_con(i, MOI.Integer())
         end
-        
-        if m.var_type[i] == :Bin && (m.l_var[i] > 0 || m.u_var[i] < 1)
-            # must be 1
+        if m.var_type[i] == :Bin
+            var_con(i, MOI.ZeroOne())
             if m.l_var[i] > 0
-                @constraint(mip_model, mx[i] == 1)
-            else # or 0
-                @constraint(mip_model, mx[i] == 0)
+                var_con(i, MOI.EqualTo(1.0))
+            elseif m.u_var[i] < 1
+                var_con(i, MOI.EqualTo(0.0))
             end
+        else
+            # only add bounds for non binary variables
+            var_con(i, MOI.Interval(m.l_var[i], m.u_var[i]))
         end
     end
-
-    backend = JuMP.backend(mip_model);
 
     llc = optimizer.linear_le_constraints
     lgc = optimizer.linear_ge_constraints
     lec = optimizer.linear_eq_constraints
     for constr_type in [llc, lgc, lec]
         for constr in constr_type
-            MOI.add_constraint(backend, constr[1], constr[2])
+            MOI.add_constraint(mip_optimizer, constr[1], constr[2])
         end
     end
 
-    @variable(mip_model, mabsx[i=1:m.num_disc_var] >= 0)
-    for i=1:m.num_disc_var
-        vi = m.disc2var_idx[i]
-        @constraint(mip_model, mabsx[i] >= mx[vi]-nlp_sol[vi])
-        @constraint(mip_model, mabsx[i] >= -mx[vi]+nlp_sol[vi])
+    mabsx = add_constrained_var(mip_optimizer, MOI.Nonnegatives(m.num_disc_var))
+    for (mabsxi, vi) in zip(mabsx, m.disc2var_idx)
+        MOI.add_constraint(
+            mip_optimizer,
+            MOIU.operate(vcat, Float64, mabsxi, mx[vi] - nlp_sol[vi]),
+            MOI.NormOneCone(2)
+        )
     end
 
     # How long is the tabu list
@@ -59,33 +66,36 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
 
     # If there solutions in the tabu list => avoid them
     if num_sols > 0
-        @variable(mip_model, z1[j=1:m.num_disc_var,k=1:num_sols], Bin)
-        @variable(mip_model, z2[j=1:m.num_disc_var,k=1:num_sols], Bin)
+        z1 = [add_constrained_var(mip_optimizer, MOI.ZeroOne()) for _=1:m.num_disc_var, _=1:num_sols]
+        z2 = [add_constrained_var(mip_optimizer, MOI.ZeroOne()) for _=1:m.num_disc_var, _=1:num_sols]
         v = tabu_list.sols
         for k=1:num_sols, j=1:m.num_disc_var
             i = m.disc2var_idx[j]
             lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
             ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
-            @constraint(mip_model, z1[j,k]+z2[j,k] <= 1)
-            @constraint(mip_model, (lbi - v[k][j])*z1[j,k]+z2[j,k]+v[k][j] <= mx[i])
-            @constraint(mip_model, mx[i] <= v[k][j] - z1[j,k] + (ubi-v[k][j])*z2[j,k])
+            MOI.add_constraint(mip_optimizer, 1.0z1[j,k] + 1.0z2[j,k], MOI.LessThan(1.0))
+            MOI.add_constraint(mip_optimizer, MA.@rewrite((lbi - v[k][j]) * z1[j,k] + z2[j,k] - mx[i]), MOI.LessThan(-v[k][j]))
+            MOI.add_constraint(mip_optimizer, MA.@rewrite((ubi - v[k][j]) * z2[j,k] - z1[j,k] - mx[i]), MOI.GreaterThan(-v[k][j]))
         end
         for k=1:num_sols
-            @constraint(mip_model, sum(z1[j,k]+z2[j,k] for j=1:m.num_disc_var) >= 1)
+            MOI.add_constraint(mip_optimizer, sum(1.0z1) + sum(1.0z2), MOI.GreaterThan(1.0))
         end
     end
 
-    @objective(mip_model, Min, sum(mabsx[i] for i=1:m.num_disc_var))
+    MOI.set(mip_optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    obj = sum(1.0mabsx)
+    MOI.set(mip_optimizer, MOI.ObjectiveFunction{typeof(obj)}(), obj)
 
-    # Break the mip solver if it takes too long or throw a warning when this option isn't available 
-    current_time = time()-start_fpump  
+    # Break the mip solver if it takes too long or throw a warning when this option isn't available
+    current_time = time()-start_fpump
     time_left = m.options.feasibility_pump_time_limit-current_time
     time_left < 0 && (time_left = 1.0)
 
     # set time limit if supported
     old_time_limit = set_time_limit!(mip_optimizer, time_left)
-    
-    status, backend = optimize_get_status_backend(mip_model)
+
+    MOI.optimize!(mip_optimizer)
+    status = MOI.get(mip_optimizer, MOI.TerminationStatus())
 
     # reset time limit
     set_time_limit!(mip_optimizer, old_time_limit)
@@ -93,17 +103,17 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     obj_val = NaN
     values = fill(NaN,m.num_var)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
-        obj_val = JuMP.objective_value(mip_model)
+        obj_val = MOI.get(mip_optimizer, MOI.ObjectiveValue())
 
         # round mip values
-        values = JuMP.value.(mx)
+        values = [MOI.get(mip_optimizer, MOI.VariablePrimal(), v.variable) for v in mx]
         for i=1:m.num_disc_var
             vi = m.disc2var_idx[i]
             values[vi] = round(values[vi])
         end
     end
 
-  
+
     return status, values, obj_val
 end
 
@@ -145,11 +155,11 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
         constr_expr = expr_dereferencing(constr_expr, nlp_model)
         JuMP.add_NL_constraint(nlp_model, constr_expr)
     end
-    
+
 
     @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
 
-    current_time = time()-start_fpump  
+    current_time = time()-start_fpump
     time_left = m.options.feasibility_pump_time_limit-current_time
     time_left < 0 && (time_left = 1.0)
 
@@ -165,7 +175,7 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         nlp_obj = JuMP.objective_value(nlp_model)
         nlp_sol = JuMP.value.(nx)
-    end 
+    end
 
     Base.finalize(backend)
 
@@ -242,7 +252,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         obj_val = JuMP.objective_value(rmodel)
         real_sol = JuMP.value.(rx)
-    end 
+    end
 
     Base.finalize(backend)
 
@@ -314,7 +324,7 @@ end
 Run the feasibility pump
 """
 function fpump(optimizer, m)
-    
+
     Random.seed!(JUNIPER_RNG, m.options.seed)
 
     if are_type_correct(m.relaxation_solution, m.var_type, m.disc2var_idx, m.options.atol)
@@ -423,7 +433,7 @@ function fpump(optimizer, m)
             if state_is_optimal(real_status) || (only_almost_solved(real_status) && m.options.allow_almost_solved_integral)
                 if only_almost_solved(real_status)
                     @warn "Integral feasible point only almost solved. Disable with `allow_almost_solved_integral=false`"
-                end 
+                end
                 nlp_obj = real_obj
                 nlp_sol = real_sol
                 iscorrect = true
@@ -466,6 +476,6 @@ function fpump(optimizer, m)
     m.fpump_info[:obj] = NaN
     m.fpump_info[:gap] = NaN
     check_print(ps,[:Info]) && println("FP: No integral solution found")
-    
+
     return nothing
 end
