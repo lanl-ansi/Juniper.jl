@@ -18,6 +18,11 @@ Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     mip_optimizer = MOI.instantiate(m.mip_solver.optimizer_constructor, with_bridge_type=Float64)
     mx = MOI.SingleVariable.(MOI.add_variables(mip_optimizer, m.num_var))
+    # FIXME we should use `copy_to` here to actually map indices and support
+    # cases where indices of the optimizer are not as expected.
+    for i in eachindex(mx)
+        @assert mx[i].variable == MOI.VariableIndex(i)
+    end
     var_con(i, set) = MOI.add_constraint(mip_optimizer, mx[i], set)
     for i in 1:m.num_var
         if m.var_type[i] == :Int
@@ -123,22 +128,22 @@ end
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
 function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
-    nlp_optimizer = m.nl_solver.optimizer_constructor()
-    nlp_model = Model(m.nl_solver)
-    @variable(nlp_model, m.l_var[i] <= nx[i=1:m.num_var] <= m.u_var[i])
+    nlp_optimizer = MOI.instantiate(m.nl_solver.optimizer_constructor, with_bridge_type=Float64)
+    nx = [add_constrained_var(nlp_optimizer, MOI.Interval(m.l_var[i], m.u_var[i])) for i in 1:m.num_var]
+    x = [nxi.variable for nxi in nx]
+    # FIXME we should use `copy_to` here to actually map indices and support
+    # cases where indices of the optimizer are not as expected.
+    for i in eachindex(x)
+        @assert x[i] == MOI.VariableIndex(i)
+    end
     if random_start
         restart_values = generate_random_restart(m)
-        for i=1:m.num_var
-            JuMP.set_start_value(nx[i], restart_values[i])
-        end
     else
-        JuMP.set_start_value.(nx[1:m.num_var],mip_sol)
+        restart_values = mip_sol
     end
-
-    register_functions!(nlp_model, m.options.registered_functions)
+    MOI.set(nlp_optimizer, MOI.VariablePrimalStart(), x, restart_values)
 
     # add all constraints
-    backend = JuMP.backend(nlp_model);
     llc = optimizer.linear_le_constraints
     lgc = optimizer.linear_ge_constraints
     lec = optimizer.linear_eq_constraints
@@ -147,17 +152,18 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     qec = optimizer.quadratic_eq_constraints
     for constr_type in [llc, lgc, lec, qlc, qgc, qec]
         for constr in constr_type
-            MOI.add_constraint(backend, constr[1], constr[2])
+            MOI.add_constraint(nlp_optimizer, constr[1], constr[2])
         end
     end
-    for i in 1:m.num_nl_constr
-        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
-        constr_expr = expr_dereferencing(constr_expr, nlp_model)
-        JuMP.add_NL_constraint(nlp_model, constr_expr)
-    end
 
+    # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
+    # So we disable the nonlinear objective if present with `false` here.
+    nlp_data_no_objective = MOI.NLPBlockData(optimizer.nlp_data.constraint_bounds, optimizer.nlp_data.evaluator, false)
+    MOI.set(nlp_optimizer, MOI.NLPBlock(), nlp_data_no_objective)
 
-    @objective(nlp_model, Min, sum((nx[m.disc2var_idx[i]]-mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var))
+    MOI.set(nlp_optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE)
+    obj = sum((nx[m.disc2var_idx[i]] - mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var)
+    MOI.set(nlp_optimizer, MOI.ObjectiveFunction{typeof(obj)}(), obj)
 
     current_time = time()-start_fpump
     time_left = m.options.feasibility_pump_time_limit-current_time
@@ -166,18 +172,17 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     # set time limit if supported
     old_time_limit = set_time_limit!(nlp_optimizer, time_left)
 
-    status, backend = optimize_get_status_backend(nlp_model)
+    MOI.optimize!(nlp_optimizer)
+    status = MOI.get(nlp_optimizer, MOI.TerminationStatus())
 
     set_time_limit!(nlp_optimizer, old_time_limit)
 
     nlp_obj = NaN
-    nlp_sol = fill(NaN,m.num_var)
+    nlp_sol = fill(NaN, m.num_var)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
-        nlp_obj = JuMP.objective_value(nlp_model)
-        nlp_sol = JuMP.value.(nx)
+        nlp_obj = MOI.get(nlp_optimizer, MOI.ObjectiveValue())
+        nlp_sol = MOI.get(nlp_optimizer, MOI.VariablePrimal(), x)
     end
-
-    Base.finalize(backend)
 
     return status, nlp_sol, nlp_obj
 end
@@ -198,36 +203,42 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         return status, sol, nlp_obj
     end
 
-    rmodel = Model(m.nl_solver)
-
-    @variable(rmodel, m.l_var[i] <= rx[i=1:m.num_var] <= m.u_var[i])
+    nlp_optimizer = MOI.instantiate(m.nl_solver.optimizer_constructor, with_bridge_type=Float64)
+    disc2var_set = Set(m.disc2var_idx)
+    rx = map(1:m.num_var) do i
+        if i in disc2var_set
+            set = MOI.EqualTo(sol[i])
+        else
+            set = MOI.Interval(m.l_var[i], m.u_var[i])
+        end
+        add_constrained_var(nlp_optimizer, set)
+    end
+    x = [rxi.variable for rxi in rx]
+    # FIXME we should use `copy_to` here to actually map indices and support
+    # cases where indices of the optimizer are not as expected.
+    for i in eachindex(x)
+        @assert x[i] == MOI.VariableIndex(i)
+    end
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
             if m.var_type[i] == :Cont
-                JuMP.set_start_value(rx[i], restart_values[i])
+                MOI.set(nlp_optimize, MOI.VariablePrimalStart(), x[i], restart_values[i])
             end # discrete will be fixed anyway
         end
     end
-    for i=1:m.num_disc_var
-        vi = m.disc2var_idx[i]
-        JuMP.fix(rx[vi], sol[vi]; force=true)
-    end
 
-    register_functions!(rmodel, m.options.registered_functions)
+    MOI.set(nlp_optimizer, MOI.NLPBlock(), optimizer.nlp_data)
 
     # define the objective function
     # TODO check whether it is supported
-    if optimizer.nlp_data.has_objective
-        obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
-        obj_expr = expr_dereferencing(obj_expr, rmodel)
-        JuMP.set_NL_objective(rmodel, optimizer.sense, obj_expr)
-    elseif optimizer.objective !== nothing
-        MOI.set(rmodel, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
-        MOI.set(rmodel, MOI.ObjectiveSense(), optimizer.sense)
+    # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
+    # So we first check that `optimizer.nlp_data.has_objective` is `false`.
+    if !optimizer.nlp_data.has_objective && optimizer.objective !== nothing
+        MOI.set(nlp_optimizer, MOI.ObjectiveSense(), optimizer.sense)
+        MOI.set(nlp_optimizer, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
     end
 
-    backend = JuMP.backend(rmodel);
     llc = optimizer.linear_le_constraints
     lgc = optimizer.linear_ge_constraints
     lec = optimizer.linear_eq_constraints
@@ -236,25 +247,19 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     qec = optimizer.quadratic_eq_constraints
     for constr_type in [llc, lgc, lec, qlc, qgc, qec]
         for constr in constr_type
-            MOI.add_constraint(backend, constr[1], constr[2])
+            MOI.add_constraint(nlp_optimizer, constr[1], constr[2])
         end
     end
-    for i in 1:m.num_nl_constr
-        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
-        constr_expr = expr_dereferencing(constr_expr, rmodel)
-        JuMP.add_NL_constraint(rmodel, constr_expr)
-    end
 
-    status, backend = optimize_get_status_backend(rmodel)
+    MOI.optimize!(nlp_optimizer)
+    status = MOI.get(nlp_optimizer, MOI.TerminationStatus())
 
     obj_val = NaN
     real_sol = fill(NaN,m.num_var)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
-        obj_val = JuMP.objective_value(rmodel)
-        real_sol = JuMP.value.(rx)
+        obj_val = MOI.get(nlp_optimizer, MOI.ObjectiveValue())
+        real_sol = MOI.get(nlp_optimizer, MOI.VariablePrimal(), x)
     end
-
-    Base.finalize(backend)
 
     return status, real_sol, obj_val
 end
