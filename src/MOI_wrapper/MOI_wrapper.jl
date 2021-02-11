@@ -396,9 +396,8 @@ function MOI.optimize!(model::Optimizer)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
     
-    backend                = JuMP.backend(jp.model)
-    jp.relaxation_objval   = JuMP.objective_value(jp.model)
-    jp.relaxation_solution = JuMP.value.(jp.x)
+    jp.relaxation_objval   = MOI.get(jp.model, MOI.ObjectiveValue())
+    jp.relaxation_solution = MOI.get(jp.model, MOI.VariablePrimal(), jp.x)
 
     jp.options.debug && debug_objective(jp.debugDict,jp)
     # TODO free model for Knitro
@@ -429,10 +428,10 @@ function MOI.optimize!(model::Optimizer)
         jp.nsolutions = bnbtree.nsolutions
     else
         jp.nsolutions = 1
-        jp.best_bound = try 
-            JuMP.objective_bound(jp.model)
+        jp.best_bound = try
+            MOI.get(jp.model, MOI.ObjectiveBound())
         catch
-            JuMP.objective_value(jp.model)
+            MOI.get(jp.model, MOI.ObjectiveValue())
         end
         jp.status = jp.relaxation_status
         jp.objval = jp.relaxation_objval

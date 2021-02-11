@@ -4,34 +4,29 @@ include("fpump.jl")
 function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem; fix_start=false)
     ps = jp.options.log_levels
 
-    jp.model = Model()
-    lb = jp.l_var
-    ub = jp.u_var
+    jp.model = MOI.instantiate(jp.nl_solver.optimizer_constructor, with_bridge_type=Float64)
     # all continuous we solve relaxation first
-    @variable(jp.model, lb[i] <= x[i=1:jp.num_var] <= ub[i])
-
-    for i=1:jp.num_var
-        JuMP.set_start_value(x[i], jp.primal_start[i])
+    jp.x = Vector{MOI.VariableIndex}(undef, jp.num_var)
+    jp.cx = Vector{MOI.ConstraintIndex{MOI.SingleVariable, MOI.Interval{Float64}}}(undef, jp.num_var)
+    for i in 1:jp.num_var
+        jp.x[i], jp.cx[i] = MOI.add_constrained_variable(jp.model, MOI.Interval(jp.l_var[i], jp.u_var[i]))
     end
-    
-    register_functions!(jp.model, jp.options.registered_functions)
+    # FIXME we should use `copy_to` here to actually map indices and support
+    # cases where indices of the optimizer are not as expected.
+    for i in eachindex(jp.x)
+        @assert jp.x[i] == MOI.VariableIndex(i)
+    end
+    MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x, jp.primal_start)
 
-    # TODO check whether it is supported
-    if optimizer.nlp_data.has_objective
-        obj_expr = MOI.objective_expr(optimizer.nlp_data.evaluator)
-        obj_expr = expr_dereferencing(obj_expr, jp.model)
-        try
-            JuMP.set_NL_objective(jp.model, optimizer.sense, obj_expr)
-        catch 
-            error("Have you registered a function? Then please register the function also for Juniper see: \n
-            https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions%3A%3AUnion%7BNothing%2CVector%7BRegisteredFunction%7D%7D-%5Bnothing%5D-1")
-        end
-    elseif optimizer.objective !== nothing
-        MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
+    MOI.set(jp.model, MOI.NLPBlock(), optimizer.nlp_data)
+
+    # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
+    # So we first check that `optimizer.nlp_data.has_objective` is `false`.
+    if !optimizer.nlp_data.has_objective && optimizer.objective !== nothing
         MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
+        MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
     end
 
-    backend = JuMP.backend(jp.model);
     llc = optimizer.linear_le_constraints
     lgc = optimizer.linear_ge_constraints
     lec = optimizer.linear_eq_constraints
@@ -40,21 +35,9 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     qec = optimizer.quadratic_eq_constraints
     for constr_type in [llc, lgc, lec, qlc, qgc, qec]
         for constr in constr_type
-            MOI.add_constraint(backend, constr[1], constr[2])
+            MOI.add_constraint(jp.model, constr[1], constr[2])
         end
     end
-    for i in 1:jp.num_nl_constr
-        constr_expr = MOI.constraint_expr(optimizer.nlp_data.evaluator, i)
-        constr_expr = expr_dereferencing(constr_expr, jp.model)
-        try
-            JuMP.add_NL_constraint(jp.model, constr_expr)
-        catch 
-            error("Have you registered a function? Then please register the function also for Juniper see: \n
-            https://lanl-ansi.github.io/Juniper.jl/stable/options/#registered_functions%3A%3AUnion%7BNothing%2CVector%7BRegisteredFunction%7D%7D-%5Bnothing%5D-1")
-        end
-    end
-    
-    jp.x = x
 end
 
 function fix_primal_start!(jp::JuniperProblem)
@@ -63,10 +46,9 @@ function fix_primal_start!(jp::JuniperProblem)
     x = jp.x
     for i=1:jp.num_var
         if jp.var_type[i] != :Cont && lb[i] <= jp.primal_start[i] <= ub[i]
-            JuMP.set_lower_bound(jp.x[i], jp.primal_start[i])
-            JuMP.set_upper_bound(jp.x[i], jp.primal_start[i])
+            MOI.set(jp.model, MOI.ConstraintSet(), jp.cx[i], MOI.Interval(jp.primal_start[i], jp.primal_start[i]))
         else
-            JuMP.set_start_value(x[i], jp.primal_start[i])
+            MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x[i], jp.primal_start[i])
         end
     end
 end
@@ -76,25 +58,25 @@ function unfix_primal_start!(jp::JuniperProblem)
     ub = jp.u_var
     x = jp.x
     for i=1:jp.num_var
-        JuMP.set_lower_bound(jp.x[i], lb[i])
-        JuMP.set_upper_bound(jp.x[i], ub[i])
-        JuMP.set_start_value(x[i], jp.primal_start[i])
+        MOI.set(jp.model, MOI.ConstraintSet(), jp.cx[i], MOI.Interval(lb[i], ub[i]))
+        MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x[i], jp.primal_start[i])
     end
 end
 
 function solve_root_incumbent_model(jp::JuniperProblem)
-    status, backend = optimize_get_status_backend(jp.model; solver=jp.nl_solver)
+    MOI.optimize!(jp.model)
+    status = MOI.get(jp.model, MOI.TerminationStatus())
     incumbent = nothing
     ps = jp.options.log_levels
     if state_is_optimal(status; allow_almost=jp.options.allow_almost_solved)
         # set incumbent
-        objval = MOI.get(backend, MOI.ObjectiveValue())
-        solution = JuMP.value.(jp.x)
+        objval = MOI.get(jp.model, MOI.ObjectiveValue())
+        solution = MOI.get(jp.model, MOI.VariablePrimal(), jp.x)
         if are_type_correct(solution, jp.var_type, jp.disc2var_idx, jp.options.atol)
             if only_almost_solved(status) && jp.options.allow_almost_solved_integral
                 @warn "Start value incumbent only almost locally solved. Disable with `allow_almost_solved_integral=false`"
             end
-        
+
             incumbent = Incumbent(objval, solution, only_almost_solved(status))
             (:All in ps || :Info in ps) && println("Incumbent using start values: $objval")
         end
@@ -105,7 +87,8 @@ function solve_root_incumbent_model(jp::JuniperProblem)
 end
 
 function solve_root_model!(jp::JuniperProblem)
-    status, backend = optimize_get_status_backend(jp.model; solver=jp.nl_solver)
+    MOI.optimize!(jp.model)
+    status = MOI.get(jp.model, MOI.TerminationStatus())
     jp.relaxation_status = status
     restarts = 0
     max_restarts = jp.options.num_resolve_root_relaxation
@@ -116,11 +99,9 @@ function solve_root_model!(jp::JuniperProblem)
         # TODO freemodel for Knitro
         restart_values = generate_random_restart(jp)
         jp.options.debug && debug_restart_values(jp.debugDict,restart_values)
-        for i=1:jp.num_var
-            JuMP.set_start_value(jp.x[i], restart_values[i])
-        end
-        JuMP.optimize!(jp.model)
-        jp.relaxation_status = MOI.get(backend, MOI.TerminationStatus()) 
+        MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x, restart_values)
+        MOI.optimize!(jp.model)
+        jp.relaxation_status = MOI.get(jp.model, MOI.TerminationStatus())
         restarts += 1
     end
     if only_almost_solved(jp.relaxation_status)

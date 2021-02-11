@@ -151,7 +151,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
             push!(nl_vec_opts, arg)
         end
     else
-        jp.nl_solver = JuMP.optimizer_with_attributes(jp.nl_solver)
+        jp.nl_solver = MOI.OptimizerWithAttributes(jp.nl_solver)
     end
     jp.nl_solver_options = nl_vec_opts
 
@@ -163,7 +163,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
                 push!(mip_vec_opts, arg)
             end
         else
-            jp.mip_solver = JuMP.optimizer_with_attributes(jp.mip_solver)
+            jp.mip_solver = MOI.OptimizerWithAttributes(jp.mip_solver)
         end
         jp.mip_solver_options = mip_vec_opts
     end
