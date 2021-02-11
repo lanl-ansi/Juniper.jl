@@ -12,7 +12,7 @@ const optimizer = Juniper.Optimizer(juniper)
     @test MOI.get(optimizer, MOI.SolverName()) == "Juniper"
 end
 
-const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLVED)
+const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLVED, duals=false, infeas_certificates=false)
 
 @testset "Unit" begin
     bridged = MOIB.full_bridge_optimizer(optimizer, Float64)
@@ -46,9 +46,7 @@ const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_
                 "solve_duplicate_terms_obj", # duplicate terms objective
                 "solve_duplicate_terms_vector_affine", 
                 "solve_duplicate_terms_scalar_affine", 
-                "solve_single_variable_dual_max", # no support for dual atm
-                "solve_single_variable_dual_min", # no support for dual atm
-                "solve_result_index", # no support for dual atm
+                "solve_result_index", # no support for `MOI.ConstraintPrimal` atm
                 "update_dimension_nonnegative_variables", # currently no support for ConstraintFunction 
                ]
     MOIT.unittest(bridged, config, exclude)
