@@ -16,7 +16,7 @@ TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
-    mip_optimizer = MOI.instantiate(m.mip_solver.optimizer_constructor, with_bridge_type=Float64)
+    mip_optimizer = MOI.instantiate(m.mip_solver, with_bridge_type=Float64)
     mx = MOI.SingleVariable.(MOI.add_variables(mip_optimizer, m.num_var))
     # FIXME we should use `copy_to` here to actually map indices and support
     # cases where indices of the optimizer are not as expected.
@@ -128,7 +128,7 @@ end
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
 function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
-    nlp_optimizer = MOI.instantiate(m.nl_solver.optimizer_constructor, with_bridge_type=Float64)
+    nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type=Float64)
     nx = [add_constrained_var(nlp_optimizer, MOI.Interval(m.l_var[i], m.u_var[i])) for i in 1:m.num_var]
     x = [nxi.variable for nxi in nx]
     # FIXME we should use `copy_to` here to actually map indices and support
@@ -203,7 +203,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         return status, sol, nlp_obj
     end
 
-    nlp_optimizer = MOI.instantiate(m.nl_solver.optimizer_constructor, with_bridge_type=Float64)
+    nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type=Float64)
     disc2var_set = Set(m.disc2var_idx)
     rx = map(1:m.num_var) do i
         if i in disc2var_set

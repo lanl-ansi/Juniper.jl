@@ -4,7 +4,7 @@ include("fpump.jl")
 function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem; fix_start=false)
     ps = jp.options.log_levels
 
-    jp.model = MOI.instantiate(jp.nl_solver.optimizer_constructor, with_bridge_type=Float64)
+    jp.model = MOI.instantiate(jp.nl_solver, with_bridge_type=Float64)
     # all continuous we solve relaxation first
     jp.x = Vector{MOI.VariableIndex}(undef, jp.num_var)
     jp.cx = Vector{MOI.ConstraintIndex{MOI.SingleVariable, MOI.Interval{Float64}}}(undef, jp.num_var)
