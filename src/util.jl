@@ -102,6 +102,32 @@ function state_is_infeasible(state::MOI.TerminationStatusCode)
     return state == MOI.INFEASIBLE || state == MOI.LOCALLY_INFEASIBLE
 end
 
+struct ObjectiveConstraint{E<:MOI.AbstractNLPEvaluator} <: MOI.AbstractNLPEvaluator
+    evaluator::E
+    num_variables::Int
+end
+MOI.features_available(oc::ObjectiveConstraint) = MOI.features_available(oc.evaluator)
+MOI.initialize(oc::ObjectiveConstraint, features) = MOI.initialize(oc.evaluator, features)
+MOI.eval_objective(oc::ObjectiveConstraint, x) = MOI.eval_objective(oc.evaluator, x)
+MOI.eval_objective_gradient(oc::ObjectiveConstraint, g, x) = MOI.eval_objective_gradient(oc.evaluator, g, c)
+MOI.hessian_lagrangian_structure(oc::ObjectiveConstraint) = MOI.hessian_lagrangian_structure(oc.evaluator)
+MOI.eval_hessian_lagrangian(oc::ObjectiveConstraint, H, x, σ, μ) = MOI.eval_hessian_lagrangian(oc.evaluator, H, x, σ, μ)
+function MOI.eval_constraint(oc::ObjectiveConstraint, g, x)
+    g[1] = MOI.eval_objective(oc.evaluator, x)
+    MOI.eval_constraint(oc.evaluator, view(g, 2:length(g)), x)
+    return
+end
+function MOI.jacobian_structure(oc::ObjectiveConstraint)
+    sparsity = [(1, i) for i in 1:oc.num_variables]
+    append!(sparsity, MOI.jacobian_structure(oc.evaluator))
+    return sparsity
+end
+function MOI.eval_constraint_jacobian(oc::ObjectiveConstraint, J, x)
+    MOI.eval_objective_gradient(oc.evaluator, view(J, 1:oc.num_variables), x)
+    MOI.eval_constraint_jacobian(oc.evaluator, view(J, (oc.num_variables + 1):length(J)), x)
+    return
+end
+
 """
     add_obj_constraint(jp::JuniperProblem, rhs::Float64)
 
@@ -110,14 +136,17 @@ If the objective sense is :MIN than add objective <= rhs else objective >= rhs
 """
 function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
     if jp.has_nl_objective
-        obj_expr = MOI.objective_expr(jp.nlp_evaluator)
         if jp.obj_sense == :Min
-            obj_constr = Expr(:call, :<=, obj_expr, rhs)
+            lb, ub = -Inf, rhs
         else
-            obj_constr = Expr(:call, :>=, obj_expr, rhs)
+            lb, ub = rhs, Inf
         end
-        Juniper.expr_dereferencing!(obj_constr, jp.model)
-        JuMP.add_NL_constraint(jp.model, obj_constr)
+        block = MOI.get(jp.model, MOI.NLPBlock())
+        MOI.set(jp.model, MOI.NLPBlock(), MOI.NLPBlockData(
+            [block.constraint_bounds; MOI.NLPBoundsPair()],
+            ObjectiveConstraint(block.evaluator, MOI.get(jp.model, MOI.NumberOfVariables())),
+            block.has_objective,
+        ))
     else # linear or quadratic
         if isa(jp.objective, MOI.SingleVariable)
             i = findfirst(isequal(jp.objective.variable), jp.x)
@@ -156,8 +185,7 @@ function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
 end
 
 """
-    set_subsolver_option!(jp::JuniperProblem, model::JuMP.model, type_of_subsolver::String,
-                          subsolver_name::String, param::String, change::Pair)
+    set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizerAttribute, change::Pair)
 
 Set the optimizer of the model if the subsolver_name is part of the name of the optimizer.
 Change the option `param` of the sub_solver. i.e `change=0.1 => 1e-5` means the default
