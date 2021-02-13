@@ -55,7 +55,6 @@ end
             branch_strategy=:MostInfeasible,
             time_limit = 1,
             mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
-            registered_functions=[Juniper.register(register_args...; autodiff=true)]
         )...
     )
     set_optimizer(m, optimizer)

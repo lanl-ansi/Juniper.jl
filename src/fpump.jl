@@ -228,6 +228,7 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
         end
     end
 
+    MOI.set(nlp_optimizer, MOI.ObjectiveSense(), optimizer.sense)
     MOI.set(nlp_optimizer, MOI.NLPBlock(), optimizer.nlp_data)
 
     # define the objective function
@@ -235,7 +236,6 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
     # So we first check that `optimizer.nlp_data.has_objective` is `false`.
     if !optimizer.nlp_data.has_objective && optimizer.objective !== nothing
-        MOI.set(nlp_optimizer, MOI.ObjectiveSense(), optimizer.sense)
         MOI.set(nlp_optimizer, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
     end
 

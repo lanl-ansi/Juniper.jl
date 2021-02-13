@@ -18,12 +18,12 @@ function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem
     end
     MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x, jp.primal_start)
 
+    MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
     MOI.set(jp.model, MOI.NLPBlock(), optimizer.nlp_data)
 
     # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
     # So we first check that `optimizer.nlp_data.has_objective` is `false`.
     if !optimizer.nlp_data.has_objective && optimizer.objective !== nothing
-        MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
         MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
     end
 
