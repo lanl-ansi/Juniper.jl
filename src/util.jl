@@ -156,7 +156,7 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
             else
                 set = MOI.Interval(rhs, set.upper)
             end
-            set = MOI.get(jp.model, MOI.ConstraintSet(), jp.cx[i], set)
+            MOI.set(jp.model, MOI.ConstraintSet(), jp.cx[i], set)
         else
             if jp.obj_sense == :Min
                 MOI.add_constraint(jp.model, jp.objective, MOI.LessThan(rhs))
