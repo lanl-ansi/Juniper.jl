@@ -135,17 +135,16 @@ Add a constraint for the objective based on whether the objective is linear/quad
 If the objective sense is :MIN than add objective <= rhs else objective >= rhs
 """
 function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
-    if jp.has_nl_objective
+    if jp.nlp_data.has_objective
         if jp.obj_sense == :Min
             lb, ub = -Inf, rhs
         else
             lb, ub = rhs, Inf
         end
-        block = MOI.get(jp.model, MOI.NLPBlock())
         MOI.set(jp.model, MOI.NLPBlock(), MOI.NLPBlockData(
-            [block.constraint_bounds; MOI.NLPBoundsPair()],
-            ObjectiveConstraint(block.evaluator, MOI.get(jp.model, MOI.NumberOfVariables())),
-            block.has_objective,
+            [jp.nlp_data.constraint_bounds; MOI.NLPBoundsPair()],
+            ObjectiveConstraint(jp.nlp_data.evaluator, MOI.get(jp.model, MOI.NumberOfVariables())),
+            jp.nlp_data.has_objective,
         ))
     else # linear or quadratic
         if isa(jp.objective, MOI.SingleVariable)

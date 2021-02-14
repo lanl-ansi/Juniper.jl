@@ -84,8 +84,7 @@ mutable struct JuniperProblem
     l_var               :: Vector{Float64}
     u_var               :: Vector{Float64}
 
-    has_nl_objective    :: Bool
-    nlp_evaluator       :: MOI.AbstractNLPEvaluator
+    nlp_data            :: MOI.NLPBlockData
 
     objective           :: Union{SVF, SAF, SQF, Nothing}
 

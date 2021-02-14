@@ -124,8 +124,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
 
     jp.status = MOI.OPTIMIZE_NOT_CALLED
     jp.relaxation_status = MOI.OPTIMIZE_NOT_CALLED
-    jp.has_nl_objective = model.nlp_data.has_objective
-    jp.nlp_evaluator = model.nlp_data.evaluator
+    jp.nlp_data = model.nlp_data
     jp.objective = model.objective
 
     jp.objval = NaN
