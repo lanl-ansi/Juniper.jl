@@ -142,7 +142,7 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
             lb, ub = rhs, Inf
         end
         MOI.set(jp.model, MOI.NLPBlock(), MOI.NLPBlockData(
-            [jp.nlp_data.constraint_bounds; MOI.NLPBoundsPair()],
+            [jp.nlp_data.constraint_bounds; MOI.NLPBoundsPair(lb, ub)],
             ObjectiveConstraint(jp.nlp_data.evaluator, MOI.get(jp.model, MOI.NumberOfVariables())),
             jp.nlp_data.has_objective,
         ))
