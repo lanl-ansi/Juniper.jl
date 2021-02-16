@@ -17,36 +17,16 @@ Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     mip_optimizer = MOI.instantiate(m.mip_solver, with_bridge_type=Float64)
-    mx = MOI.SingleVariable.(MOI.add_variables(mip_optimizer, m.num_var))
-    # FIXME we should use `copy_to` here to actually map indices and support
-    # cases where indices of the optimizer are not as expected.
-    for i in eachindex(mx)
-        @assert mx[i].variable == MOI.VariableIndex(i)
-    end
-    var_con(i, set) = MOI.add_constraint(mip_optimizer, mx[i], set)
+    index_map = MOI.copy_to(mip_optimizer, NoObjectiveFilter(LinearFilter(optimizer)); copy_names=false)
+    x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
+    mx = MOI.SingleVariable.(x)
     for i in 1:m.num_var
-        if m.var_type[i] == :Int
-            var_con(i, MOI.Integer())
-        end
         if m.var_type[i] == :Bin
-            var_con(i, MOI.ZeroOne())
             if m.l_var[i] > 0
-                var_con(i, MOI.EqualTo(1.0))
+                set_bounds(mip_optimizer, x[i], 1.0, 1.0)
             elseif m.u_var[i] < 1
-                var_con(i, MOI.EqualTo(0.0))
+                set_bounds(mip_optimizer, x[i], 0.0, 0.0)
             end
-        else
-            # only add bounds for non binary variables
-            var_con(i, MOI.Interval(m.l_var[i], m.u_var[i]))
-        end
-    end
-
-    llc = optimizer.linear_le_constraints
-    lgc = optimizer.linear_ge_constraints
-    lec = optimizer.linear_eq_constraints
-    for constr_type in [llc, lgc, lec]
-        for constr in constr_type
-            MOI.add_constraint(mip_optimizer, constr[1], constr[2])
         end
     end
 
@@ -111,7 +91,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
         obj_val = MOI.get(mip_optimizer, MOI.ObjectiveValue())
 
         # round mip values
-        values = [MOI.get(mip_optimizer, MOI.VariablePrimal(), v.variable) for v in mx]
+        values = MOI.get(mip_optimizer, MOI.VariablePrimal(), x)
         for i=1:m.num_disc_var
             vi = m.disc2var_idx[i]
             values[vi] = round(values[vi])
@@ -129,37 +109,15 @@ Generates the original nlp but changes the objective to minimize the distance to
 """
 function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type=Float64)
-    nx = [add_constrained_var(nlp_optimizer, MOI.Interval(m.l_var[i], m.u_var[i])) for i in 1:m.num_var]
-    x = [nxi.variable for nxi in nx]
-    # FIXME we should use `copy_to` here to actually map indices and support
-    # cases where indices of the optimizer are not as expected.
-    for i in eachindex(x)
-        @assert x[i] == MOI.VariableIndex(i)
-    end
+    index_map = MOI.copy_to(nlp_optimizer, NoObjectiveFilter(IntegerRelaxation(optimizer)); copy_names=false)
+    x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
+    nx = MOI.SingleVariable.(x)
     if random_start
         restart_values = generate_random_restart(m)
     else
         restart_values = mip_sol
     end
     MOI.set(nlp_optimizer, MOI.VariablePrimalStart(), x, restart_values)
-
-    # add all constraints
-    llc = optimizer.linear_le_constraints
-    lgc = optimizer.linear_ge_constraints
-    lec = optimizer.linear_eq_constraints
-    qlc = optimizer.quadratic_le_constraints
-    qgc = optimizer.quadratic_ge_constraints
-    qec = optimizer.quadratic_eq_constraints
-    for constr_type in [llc, lgc, lec, qlc, qgc, qec]
-        for constr in constr_type
-            MOI.add_constraint(nlp_optimizer, constr[1], constr[2])
-        end
-    end
-
-    # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
-    # So we disable the nonlinear objective if present with `false` here.
-    nlp_data_no_objective = MOI.NLPBlockData(optimizer.nlp_data.constraint_bounds, optimizer.nlp_data.evaluator, false)
-    MOI.set(nlp_optimizer, MOI.NLPBlock(), nlp_data_no_objective)
 
     MOI.set(nlp_optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE)
     obj = sum((nx[m.disc2var_idx[i]] - mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var)
@@ -194,60 +152,25 @@ Generate the original nlp and get the objective for that
 """
 function generate_real_nlp(optimizer, m, sol; random_start=false)
     if m.num_var == m.num_disc_var
-        if optimizer.nlp_data.has_objective
-            nlp_obj = MOI.eval_objective(optimizer.nlp_data.evaluator, sol)
-        else
-            nlp_obj = evaluate_objective(optimizer, m, sol)
-        end
-        status = MOI.OPTIMAL
-        return status, sol, nlp_obj
+        return MOI.OPTIMAL, sol, evaluate_objective(optimizer, m, sol)
     end
 
     nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type=Float64)
-    disc2var_set = Set(m.disc2var_idx)
-    rx = map(1:m.num_var) do i
-        if i in disc2var_set
-            set = MOI.EqualTo(sol[i])
-        else
-            set = MOI.Interval(m.l_var[i], m.u_var[i])
-        end
-        add_constrained_var(nlp_optimizer, set)
-    end
-    x = [rxi.variable for rxi in rx]
-    # FIXME we should use `copy_to` here to actually map indices and support
-    # cases where indices of the optimizer are not as expected.
-    for i in eachindex(x)
-        @assert x[i] == MOI.VariableIndex(i)
-    end
+    vis = collect(MOI.get(optimizer, MOI.ListOfVariableIndices()))
+    disc_vals = Dict(vis[i] => sol[i] for i in m.disc2var_idx)
+    index_map = MOI.copy_to(nlp_optimizer, FixVariables(IntegerRelaxation(optimizer), disc_vals); copy_names=false)
+    x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
+    rx = MOI.SingleVariable.(x)
+
     if random_start
         restart_values = generate_random_restart(m)
         for i=1:m.num_var
             if m.var_type[i] == :Cont
-                MOI.set(nlp_optimize, MOI.VariablePrimalStart(), x[i], restart_values[i])
-            end # discrete will be fixed anyway
-        end
-    end
-
-    MOI.set(nlp_optimizer, MOI.ObjectiveSense(), optimizer.sense)
-    MOI.set(nlp_optimizer, MOI.NLPBlock(), optimizer.nlp_data)
-
-    # define the objective function
-    # TODO check whether it is supported
-    # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
-    # So we first check that `optimizer.nlp_data.has_objective` is `false`.
-    if !optimizer.nlp_data.has_objective && optimizer.objective !== nothing
-        MOI.set(nlp_optimizer, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
-    end
-
-    llc = optimizer.linear_le_constraints
-    lgc = optimizer.linear_ge_constraints
-    lec = optimizer.linear_eq_constraints
-    qlc = optimizer.quadratic_le_constraints
-    qgc = optimizer.quadratic_ge_constraints
-    qec = optimizer.quadratic_eq_constraints
-    for constr_type in [llc, lgc, lec, qlc, qgc, qec]
-        for constr in constr_type
-            MOI.add_constraint(nlp_optimizer, constr[1], constr[2])
+                MOI.set(nlp_optimizer, MOI.VariablePrimalStart(), x[i], restart_values[i])
+            else
+                # discrete are fixed anyway
+                MOI.set(nlp_optimizer, MOI.VariablePrimalStart(), x[i], nothing)
+            end
         end
     end
 
@@ -371,7 +294,7 @@ function fpump(optimizer, m)
         time()-m.start_time < m.options.time_limit
 
         # generate a mip or just round if no linear constraints
-        if m.num_l_constr > 0
+        if any(FS -> FS[1] != MOI.SingleVariable, MOI.get(LinearFilter(optimizer), MOI.ListOfConstraints()))
             mip_status, mip_sol, mip_obj = generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
         else
             # if no linear constraints just round the discrete variables

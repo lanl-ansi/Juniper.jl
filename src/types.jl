@@ -74,19 +74,14 @@ mutable struct JuniperProblem
     best_bound          :: Float64
 
     x                   :: Vector{MOI.VariableIndex}
-    cx                  :: Vector{MOI.ConstraintIndex{MOI.SingleVariable, MOI.Interval{Float64}}}
     primal_start        :: Vector{Real}
-    num_constr          :: Int64
-    num_nl_constr       :: Int64
-    num_q_constr        :: Int64
-    num_l_constr        :: Int64
     num_var             :: Int64
     l_var               :: Vector{Float64}
     u_var               :: Vector{Float64}
 
-    nlp_data            :: MOI.NLPBlockData
+    nlp_data            :: Union{MOI.NLPBlockData, Nothing}
 
-    objective           :: Union{SVF, SAF, SQF, Nothing}
+    objective           :: Union{MOI.AbstractScalarFunction, Nothing}
 
     disc2var_idx        :: Vector{Int64}
     var2disc_idx        :: Vector{Int64}

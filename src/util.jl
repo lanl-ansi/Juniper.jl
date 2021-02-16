@@ -1,3 +1,89 @@
+# TODO maybe move to MOI.Utilities alongside `MOIU.get_bounds`
+function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper::T) where T
+    xval = vi.value
+    c_lt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.LessThan{T}}(xval)
+    c_gt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.GreaterThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    if MOI.is_valid(model, c_int)
+        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, upper))
+        # It is assumed that none of the other ConstraintIndexs are valid
+        return
+    end
+    if MOI.is_valid(model, c_eq)
+        # Maybe delete it and add an interval constraint if this case is useful
+        lower == upper || error("Cannot set different bounds $lower and $upper to a variables with `EqualTo` constraint.")
+        MOI.set(model, MOI.ConstraintSet(), c_eq, MOI.EqualTo(lower))
+        # It is assumed that none of the other `ConstraintIndex`s are valid
+        return
+    end
+    lt = MOI.LessThan(upper)
+    if MOI.is_valid(model, c_lt)
+        if upper == typemin(upper)
+            MOI.delete(model, c_lt)
+        else
+            MOI.set(model, MOI.ConstraintSet(), c_lt, lt)
+        end
+    elseif upper != typemax(upper)
+        MOI.add_constraint(model, MOI.SingleVariable(vi), lt)
+    end
+    gt = MOI.GreaterThan(lower)
+    if MOI.is_valid(model, c_gt)
+        if lower == typemin(lower)
+            MOI.delete(model, c_gt)
+        else
+            MOI.set(model, MOI.ConstraintSet(), c_gt, gt)
+        end
+    elseif lower != typemin(lower)
+        MOI.add_constraint(model, MOI.SingleVariable(vi), gt)
+    end
+    return
+end
+function set_lower_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T) where T
+    xval = vi.value
+    c_gt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.GreaterThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    if MOI.is_valid(model, c_int)
+        set = MOI.get(model, MOI.ConstraintSet(), c_int)
+        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, set.upper))
+        # It is assumed that none of the other ConstraintIndexs are valid
+        return
+    end
+    if MOI.is_valid(model, c_eq)
+        error("Cannot set lower bound to fixed variable.")
+    end
+    gt = MOI.GreaterThan(lower)
+    if MOI.is_valid(model, c_gt)
+        MOI.set(model, MOI.ConstraintSet(), c_gt, gt)
+    else
+        MOI.add_constraint(model, MOI.SingleVariable(vi), gt)
+    end
+    return
+end
+function set_upper_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, upper::T) where T
+    xval = vi.value
+    c_lt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.LessThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    if MOI.is_valid(model, c_int)
+        set = MOI.get(model, MOI.ConstraintSet(), c_int)
+        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(set.lower, upper))
+        # It is assumed that none of the other ConstraintIndexs are valid
+        return
+    end
+    if MOI.is_valid(model, c_eq)
+        error("Cannot set lower bound to fixed variable.")
+    end
+    lt = MOI.LessThan(upper)
+    if MOI.is_valid(model, c_lt)
+        MOI.set(model, MOI.ConstraintSet(), c_lt, lt)
+    else
+        MOI.add_constraint(model, MOI.SingleVariable(vi), lt)
+    end
+    return
+end
+
 function generate_random_restart(m; cont=true)
     values = []
     for i=1:m.num_var
@@ -54,15 +140,6 @@ function get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
         push!(reasonable_disc_vars,i)
     end
     return reasonable_disc_vars
-end
-
-function get_type_dict(obj)
-    T = typeof(obj)
-    type_dict = Dict{Symbol,Type}()
-    for (name, typ) in zip(fieldnames(T), T.types)
-        type_dict[name] = typ
-    end
-    return type_dict
 end
 
 """
@@ -149,13 +226,12 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
     else # linear or quadratic
         if isa(jp.objective, MOI.SingleVariable)
             i = findfirst(isequal(jp.objective.variable), jp.x)
-            set = MOI.get(jp.model, MOI.ConstraintSet(), jp.cx[i])
+            vi = jp.objective.variable
             if jp.obj_sense == :Min
-                set = MOI.Interval(set.lower, rhs)
+                set_upper_bound(jp.model, vi, rhs)
             else
-                set = MOI.Interval(rhs, set.upper)
+                set_lower_bound(jp.model, vi, rhs)
             end
-            MOI.set(jp.model, MOI.ConstraintSet(), jp.cx[i], set)
         else
             if jp.obj_sense == :Min
                 MOI.add_constraint(jp.model, jp.objective, MOI.LessThan(rhs))
@@ -174,10 +250,11 @@ If no objective exists => return 0
 Evaluate the objective whether it is non linear, linear or quadratic
 """
 function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
-    if optimizer.nlp_data.has_objective
-        return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
-    elseif optimizer.objective !== nothing
-        return MOIU.eval_variables(vi -> xs[vi.value], optimizer.objective)
+    # NLP objective has priority if both are set
+    if jp.nlp_data !== nothing && jp.nlp_data.has_objective
+        return MOI.eval_objective(jp.nlp_data.evaluator, xs)
+    elseif jp.objective !== nothing
+        return MOIU.eval_variables(vi -> xs[vi.value], jp.objective)
     else
         return 0.0
     end

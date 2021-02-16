@@ -1,43 +1,13 @@
 include("debug.jl")
 include("fpump.jl")
 
-function create_root_model!(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem; fix_start=false)
+function create_root_model!(optimizer::MOI.ModelLike, jp::JuniperProblem; fix_start=false)
     ps = jp.options.log_levels
 
     jp.model = MOI.instantiate(jp.nl_solver, with_bridge_type=Float64)
+    index_map = MOI.copy_to(jp.model, IntegerRelaxation(optimizer); copy_names=false)
     # all continuous we solve relaxation first
-    jp.x = Vector{MOI.VariableIndex}(undef, jp.num_var)
-    jp.cx = Vector{MOI.ConstraintIndex{MOI.SingleVariable, MOI.Interval{Float64}}}(undef, jp.num_var)
-    for i in 1:jp.num_var
-        jp.x[i], jp.cx[i] = MOI.add_constrained_variable(jp.model, MOI.Interval(jp.l_var[i], jp.u_var[i]))
-    end
-    # FIXME we should use `copy_to` here to actually map indices and support
-    # cases where indices of the optimizer are not as expected.
-    for i in eachindex(jp.x)
-        @assert jp.x[i] == MOI.VariableIndex(i)
-    end
-    MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x, jp.primal_start)
-
-    MOI.set(jp.model, MOI.ObjectiveSense(), optimizer.sense)
-    MOI.set(jp.model, MOI.NLPBlock(), optimizer.nlp_data)
-
-    # Nonlinear objectives *override* any objective set by using the `ObjectiveFunction` attribute.
-    # So we first check that `optimizer.nlp_data.has_objective` is `false`.
-    if !optimizer.nlp_data.has_objective && optimizer.objective !== nothing
-        MOI.set(jp.model, MOI.ObjectiveFunction{typeof(optimizer.objective)}(), optimizer.objective)
-    end
-
-    llc = optimizer.linear_le_constraints
-    lgc = optimizer.linear_ge_constraints
-    lec = optimizer.linear_eq_constraints
-    qlc = optimizer.quadratic_le_constraints
-    qgc = optimizer.quadratic_ge_constraints
-    qec = optimizer.quadratic_eq_constraints
-    for constr_type in [llc, lgc, lec, qlc, qgc, qec]
-        for constr in constr_type
-            MOI.add_constraint(jp.model, constr[1], constr[2])
-        end
-    end
+    jp.x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
 end
 
 function fix_primal_start!(jp::JuniperProblem)
@@ -46,7 +16,7 @@ function fix_primal_start!(jp::JuniperProblem)
     x = jp.x
     for i=1:jp.num_var
         if jp.var_type[i] != :Cont && lb[i] <= jp.primal_start[i] <= ub[i]
-            MOI.set(jp.model, MOI.ConstraintSet(), jp.cx[i], MOI.Interval(jp.primal_start[i], jp.primal_start[i]))
+            set_bounds(jp.model, jp.x[i], jp.primal_start[i], jp.primal_start[i])
         else
             MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x[i], jp.primal_start[i])
         end
@@ -58,7 +28,7 @@ function unfix_primal_start!(jp::JuniperProblem)
     ub = jp.u_var
     x = jp.x
     for i=1:jp.num_var
-        MOI.set(jp.model, MOI.ConstraintSet(), jp.cx[i], MOI.Interval(lb[i], ub[i]))
+        set_bounds(jp.model, jp.x[i], lb[i], ub[i])
         MOI.set(jp.model, MOI.VariablePrimalStart(), jp.x[i], jp.primal_start[i])
     end
 end

@@ -3,63 +3,16 @@ MOI_wrapper.jl defines the Juniper.Optimizer struct
 with all mandatory MOI functions overloaded
 """
 
-
-""" 
-MOI functions, sets and, other type definitions
-"""
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-# sets
-const BOUNDS = Union{
-    MOI.EqualTo{Float64}, 
-    MOI.GreaterThan{Float64},
-    MOI.LessThan{Float64}, 
-}
-
-const VAR_TYPES = Union{
-    MOI.ZeroOne, 
-    MOI.Integer
-}
-
-# other MOI types
-const AFF_TERM = MOI.ScalarAffineTerm{Float64}
-const QUAD_TERM = MOI.ScalarQuadraticTerm{Float64}
-
-"""
-Variable information struct definition 
-""" 
-mutable struct VariableInfo
-    lower_bound::Float64  # May be -Inf even if has_lower_bound == true
-    has_lower_bound::Bool # false implies lower_bound == -Inf
-    upper_bound::Float64  # May be Inf even if has_upper_bound == true
-    has_upper_bound::Bool # false implies upper_bound == Inf
-    is_fixed::Bool        # Implies lower_bound == upper_bound and !has_lower_bound and !has_upper_bound
-    is_binary::Bool       # Implies lower_bound == 0, upper_bound == 1 and is MOI.ZeroOne
-    is_integer::Bool      # Implies variable is MOI.Integer
-    start::Real           # Primal start
-    name::String
-end
-VariableInfo() = VariableInfo(-Inf, false, Inf, false, false, false, false, 0.0, "")
-
 """
 Optimizer struct
-"""  
+"""
 mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::Union{JuniperProblem, Nothing}
-    variable_info::Vector{VariableInfo}
-    nlp_data::MOI.NLPBlockData
-    sense::MOI.OptimizationSense 
-    objective::Union{SVF, SAF, SQF, Nothing}
-    linear_le_constraints::Vector{Tuple{SAF, MOI.LessThan{Float64}}}
-    linear_ge_constraints::Vector{Tuple{SAF, MOI.GreaterThan{Float64}}}
-    linear_eq_constraints::Vector{Tuple{SAF, MOI.EqualTo{Float64}}}
-    quadratic_le_constraints::Vector{Tuple{SQF, MOI.LessThan{Float64}}}
-    quadratic_ge_constraints::Vector{Tuple{SQF, MOI.GreaterThan{Float64}}}
-    quadratic_eq_constraints::Vector{Tuple{SQF, MOI.EqualTo{Float64}}}
+    model_cache::MOIU.UniversalFallback{MOIU.Model{Float64}}
     options::SolverOptions
 end
+
+MOI.is_valid(model::Optimizer, index::MOI.Index) = MOI.is_valid(model.model_cache, index)
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 
@@ -116,9 +69,9 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
         else
             @error "The option $(p.name) has a different type ($(type_of_param))"
         end
-    else 
+    else
         @error "The option $(p.name) doesn't exist."
-    end 
+    end
     return
 end
 
@@ -138,33 +91,6 @@ function MOI.get(model::Optimizer, p::MOI.RawParameter)
     @error "The option $(p.name) doesn't exist."
 end
 
-"""
-EmptyNLPEvaluator struct and associated functions 
-"""
-struct EmptyNLPEvaluator <: MOI.AbstractNLPEvaluator end
-MOI.features_available(::EmptyNLPEvaluator) = [:Grad, :Jac, :Hess]
-MOI.initialize(::EmptyNLPEvaluator, features) = nothing
-MOI.eval_objective(::EmptyNLPEvaluator, x) = NaN
-function MOI.eval_constraint(::EmptyNLPEvaluator, g, x)
-    @assert length(g) == 0
-    return
-end
-function MOI.eval_objective_gradient(::EmptyNLPEvaluator, g, x)
-    fill!(g, 0.0)
-    return
-end
-MOI.jacobian_structure(::EmptyNLPEvaluator) = Tuple{Int64,Int64}[]
-MOI.hessian_lagrangian_structure(::EmptyNLPEvaluator) = Tuple{Int64,Int64}[]
-function MOI.eval_constraint_jacobian(::EmptyNLPEvaluator, J, x)
-    @assert length(J) == 0
-    return
-end
-function MOI.eval_hessian_lagrangian(::EmptyNLPEvaluator, H, x, σ, μ)
-    @assert length(H) == 0
-    return
-end
-empty_nlp_data() = MOI.NLPBlockData([], EmptyNLPEvaluator(), false)
-
 function register(s::Symbol, dimension::Integer, f::Function; autodiff::Bool=false)
     return RegisteredFunction(s, dimension, f, nothing, nothing, autodiff)
 end
@@ -178,96 +104,67 @@ function register(s::Symbol, dimension::Integer, f::Function, gradf::Function, g
 end
 
 """
-Optimizer struct constructor 
+Optimizer struct constructor
 """
-function Optimizer(;options...) 
-    
+function Optimizer(;options...)
+
     solver_options = combine_options(options)
 
     return Optimizer(
-    nothing, 
-    [], 
-    empty_nlp_data(), 
-    MOI.FEASIBILITY_SENSE, 
-    nothing, 
-    [], [], [], # linear constraints 
-    [], [], [], # quadratic constraints
+    nothing,
+    MOIU.UniversalFallback(MOIU.Model{Float64}()),
     solver_options)
-end 
+end
 
-function Optimizer(options::Vector{Pair{String,Any}}) 
+function Optimizer(options::Vector{Pair{String,Any}})
     symbol_options = Dict{Symbol, Any}()
     for option in options
         symbol_options[Symbol(option.first)] = option.second
     end
     return Optimizer(symbol_options)
-end 
+end
 
-function Optimizer(options::Dict{Symbol,Any}) 
-    
+function Optimizer(options::Dict{Symbol,Any})
+
     solver_options = combine_options(options)
 
     return Optimizer(
-    nothing, 
-    [], 
-    empty_nlp_data(), 
-    MOI.FEASIBILITY_SENSE, 
-    nothing, 
-    [], [], [], # linear constraints 
-    [], [], [], # quadratic constraints
+    nothing,
+    MOIU.UniversalFallback(MOIU.Model{Float64}()),
     solver_options)
-end 
+end
 
 """
-Printing the optimizer 
+Printing the optimizer
 """
 function Base.show(io::IO, model::Optimizer)
     println("A Juniper MathOptInterface model with backend")
     return
 end
 
-""" 
+"""
 Copy constructor for the optimizer
 """
 MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = true
 function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
-    return MOI.Utilities.automatic_copy_to(model, src; kws...)
+    return MOI.copy_to(model.model_cache, src; kws...)
 end
 
 """
 ``MOI.is_empty(model::Optimizer)`` overload for Alpine.Optimizer
 """
-function MOI.is_empty(model::Optimizer)
-    return isempty(model.variable_info) &&
-        model.nlp_data.evaluator isa EmptyNLPEvaluator &&
-        model.sense == MOI.FEASIBILITY_SENSE &&
-        isempty(model.linear_le_constraints) &&
-        isempty(model.linear_ge_constraints) &&
-        isempty(model.linear_eq_constraints) &&
-        isempty(model.quadratic_le_constraints) &&
-        isempty(model.quadratic_ge_constraints) &&
-        isempty(model.quadratic_eq_constraints)
-end
+MOI.is_empty(model::Optimizer) = MOI.is_empty(model.model_cache)
 
 """
 ``MOI.empty!(model::Optimizer)`` overload for Alpine.Optimizer
 """
 function MOI.empty!(model::Optimizer)
     model.inner = nothing
-    empty!(model.variable_info)
-    model.nlp_data = empty_nlp_data()
-    model.sense = MOI.FEASIBILITY_SENSE
-    model.objective = nothing
-    empty!(model.linear_le_constraints)
-    empty!(model.linear_ge_constraints)
-    empty!(model.linear_eq_constraints)
-    empty!(model.quadratic_le_constraints)
-    empty!(model.quadratic_ge_constraints)
-    empty!(model.quadratic_eq_constraints)
+    MOI.empty!(model.model_cache)
 end
 
 """
-ordering of constraints provided to Juniper.jl 
+ordering of constraints provided to Juniper.jl
 """
 linear_le_offset(model::Optimizer) = 0
 linear_ge_offset(model::Optimizer) = length(model.linear_le_constraints)
@@ -276,24 +173,6 @@ quadratic_le_offset(model::Optimizer) = linear_eq_offset(model) + length(model.l
 quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(model.quadratic_le_constraints)
 quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
 nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
-
-
-function info_array_of_variables(variable_info::Vector{VariableInfo}, attr::Symbol)
-    len_var_info = length(variable_info)
-    type_dict = get_type_dict(variable_info[1])
-    result = Array{type_dict[attr], 1}(undef, len_var_info)
-    for i = 1:len_var_info
-        result[i] = getfield(variable_info[i], attr)
-        # if type is binary then set bounds correctly
-        if result[i] < 0 && attr == :lower_bound && getfield(variable_info[i], :is_binary)
-            result[i] = 0
-        end
-        if result[i] > 1 && attr == :upper_bound && getfield(variable_info[i], :is_binary)
-            result[i] = 1
-        end
-    end
-    return result
-end
 
 function replace_solution!(m::JuniperProblem, tree::BnBTreeObj)
     status_dict = Dict{Symbol,MOI.TerminationStatusCode}()
@@ -310,13 +189,13 @@ function replace_solution!(m::JuniperProblem, tree::BnBTreeObj)
     end
     if tree.limit == :None
         if tree.incumbent.only_almost
-            if !tree.global_solver 
+            if !tree.global_solver
                 m.status = MOI.ALMOST_LOCALLY_SOLVED
             else
                 m.status = MOI.ALMOST_OPTIMAL
             end
-        else  
-            if !tree.global_solver 
+        else
+            if !tree.global_solver
                 m.status = MOI.LOCALLY_SOLVED
             else
                 m.status = MOI.OPTIMAL
@@ -330,26 +209,19 @@ end
 
 """
 ``MOI.optimize!()`` for Juniper
-""" 
+"""
 function MOI.optimize!(model::Optimizer)
     # feasibility_pump only if mip solver exists
     if model.options.feasibility_pump && model.options.mip_solver === nothing
         model.options.feasibility_pump = false
     end
     Random.seed!(JUNIPER_RNG, model.options.seed)
-    MOI.initialize(model.nlp_data.evaluator, [:ExprGraph])
-    
-    if ~isa(model.nlp_data.evaluator, EmptyNLPEvaluator)
-
-    else 
-        @info "no explicit NLP constraints or objective provided using @NLconstraint or @NLobjective macros"
-    end 
 
     # fill JuniperProblem
     model.inner = JuniperProblem()
     @views jp = model.inner
     init_juniper_problem!(jp, model)
-    
+
     ps = jp.options.log_levels
     jp.debugDict = Dict{Any,Any}()
 
@@ -395,7 +267,7 @@ function MOI.optimize!(model::Optimizer)
     end
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
-    
+
     jp.relaxation_objval   = MOI.get(jp.model, MOI.ObjectiveValue())
     jp.relaxation_solution = MOI.get(jp.model, MOI.VariablePrimal(), jp.x)
 
@@ -404,12 +276,12 @@ function MOI.optimize!(model::Optimizer)
 
     (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.relaxation_objval)
 
-   
+
     only_almost_solved = false
     if jp.num_disc_var > 0
         if jp.options.feasibility_pump
             fpump_incumbent = fpump(model,jp)
-            if fpump_incumbent !== nothing 
+            if fpump_incumbent !== nothing
                 if incumbent === nothing
                     incumbent = fpump_incumbent
                 else
@@ -440,7 +312,7 @@ function MOI.optimize!(model::Optimizer)
     jp.soltime = time()-jp.start_time
 
     (:All in ps || :Info in ps) && println("Obj: ",jp.objval)
-    
+
     if length(jp.solutions) == 0
         push!(jp.solutions, SolutionObj(jp.solution, jp.objval))
     end
@@ -450,14 +322,52 @@ function MOI.optimize!(model::Optimizer)
         write(jp.options.debug_file_path, JSON.json(jp.debugDict))
     end
 
-end 
+end
 
 getnsolutions(m::JuniperProblem) = m.nsolutions
 getsolutions(m::JuniperProblem) = m.solutions
 getnbranches(m::JuniperProblem) = m.nbranches
 
-include("variables.jl")
-include("constraints.jl")
-include("objective.jl")
+# `UniversalFallback` supports everything so we can return `true`.
+MOI.supports(model::Optimizer, attr::MOI.AbstractModelAttribute) = true
+MOI.set(model::Optimizer, attr::MOI.AbstractModelAttribute, value) = MOI.set(model.model_cache, attr, value)
+MOI.get(model::Optimizer, attr::MOI.AbstractModelAttribute) = MOI.get(model.model_cache, attr)
+
+"""
+MOI variables
+"""
+
+MOI.add_variable(model::Optimizer) = MOI.add_variable(model.model_cache)
+MOI.add_variables(model::Optimizer, n) = MOI.add_variables(model.model_cache, n)
+
+# `UniversalFallback` supports everything so we can return `true`.
+MOI.supports(::Optimizer, ::MOI.AbstractVariableAttribute, ::Type{MOI.VariableIndex}) = true
+function MOI.set(model::Optimizer, attr::MOI.AbstractVariableAttribute, vi::MOI.VariableIndex, value)
+    MOI.set(model.model_cache, attr, vi, value)
+    return
+end
+function MOI.get(model::Optimizer, attr::MOI.AbstractVariableAttribute, vi::MOI.VariableIndex)
+    return MOI.get(model.model_cache, attr, vi)
+end
+
+"""
+MOI constraints
+"""
+
+# `UniversalFallback` supports everything so we can return `true`.
+MOI.supports_constraint(::Optimizer, ::Type{<:MOI.AbstractFunction}, ::Type{<:MOI.AbstractSet}) = true
+function MOI.add_constraint(model::Optimizer, func::MOI.AbstractFunction, set::MOI.AbstractSet)
+    return MOI.add_constraint(model.model_cache, func, set)
+end
+
+# `UniversalFallback` supports everything so we can return `true`.
+MOI.supports(::Optimizer, ::MOI.AbstractConstraintAttribute, ::Type{<:MOI.ConstraintIndex}) = true
+function MOI.set(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MOI.ConstraintIndex, value)
+    MOI.set(model.model_cache, attr, ci, value)
+    return
+end
+function MOI.get(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MOI.ConstraintIndex)
+    return MOI.get(model.model_cache, attr, ci)
+end
+
 include("results.jl")
-include("nlp.jl")

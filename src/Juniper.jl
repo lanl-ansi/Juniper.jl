@@ -37,6 +37,7 @@ function Base.show(io::IO, opts::SolverOptions)
 end
 
 include("util.jl")
+include("filter.jl")
 include("printing.jl")
 include("solver.jl")
 include("model.jl")

@@ -54,7 +54,7 @@ Return state
 function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
      # set bounds
     for i=1:m.num_var
-        MOI.set(m.model, MOI.ConstraintSet(), m.cx[i], MOI.Interval(cnode.l_var[i], cnode.u_var[i]))
+        set_bounds(m.model, m.x[i], cnode.l_var[i], cnode.u_var[i])
     end
     if restarts > 0
         println("Doing one restart")
