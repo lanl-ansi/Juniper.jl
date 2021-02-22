@@ -1,7 +1,10 @@
 # Juniper.jl Changelog
 
+### v0.7.0
+- Removed JuMP dependency [PR #207 by blegat](https://github.com/lanl-ansi/Juniper.jl/pull/207)
+
 ### v0.6.5
-Bugfix: FPump failed for an optimizer without attributes [Issue #201](https://github.com/lanl-ansi/Juniper.jl/pull/201)
+- Bugfix: FPump failed for an optimizer without attributes [Issue #201](https://github.com/lanl-ansi/Juniper.jl/pull/201)
 
 ### v0.6.4
 - Use of `JUNIPER_RNG` for random numbers. Makes sure that `rand` outside of Juniper is unaffected.
