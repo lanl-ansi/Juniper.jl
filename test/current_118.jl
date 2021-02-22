@@ -47,8 +47,7 @@ ll(δ...) = low_level(Blinks,δ...)
 
 JuMP.register(m,:ll,length(Blinks),ll,autodiff=true)
 solver = JuniperSolver(IpoptSolver(print_level=0);
-                       mip_solver=CbcSolver(),
-                       registered_functions=[Juniper.register(:ll,length(Blinks),ll,autodiff=true)])
+                       mip_solver=CbcSolver())
 
 setsolver(m, solver)                
 

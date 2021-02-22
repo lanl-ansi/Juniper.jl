@@ -1,7 +1,5 @@
 module Juniper
 
-import JuMP
-using JuMP: @variable, @constraint, @objective, Model, optimizer_with_attributes
 using JSON
 using LinearAlgebra
 using Random
@@ -9,6 +7,9 @@ const JUNIPER_RNG = MersenneTwister(1)
 
 using Distributed
 using Statistics
+
+import MutableArithmetics
+const MA = MutableArithmetics
 
 using MathOptInterface
 const MOI = MathOptInterface
@@ -36,6 +37,7 @@ function Base.show(io::IO, opts::SolverOptions)
 end
 
 include("util.jl")
+include("filter.jl")
 include("printing.jl")
 include("solver.jl")
 include("model.jl")

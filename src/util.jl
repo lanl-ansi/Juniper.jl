@@ -1,25 +1,87 @@
-#=
-    Used from https://github.com/lanl-ansi/Alpine.jl
-=# 
-function expr_dereferencing!(expr, m)
-    for i in 2:length(expr.args)
-        if isa(expr.args[i], Union{Float64,Int64,JuMP.VariableRef})
-            k = 0
-        elseif expr.args[i].head == :ref
-            @assert isa(expr.args[i].args[2], MOI.VariableIndex)
-            expr.args[i] = JuMP.VariableRef(m, expr.args[i].args[2])
-        elseif expr.args[i].head == :call
-            expr_dereferencing!(expr.args[i], m)
-        else
-            error("expr_dereferencing :: Unexpected term in expression tree.")
-        end
+# TODO maybe move to MOI.Utilities alongside `MOIU.get_bounds`
+function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper::T) where T
+    xval = vi.value
+    c_lt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.LessThan{T}}(xval)
+    c_gt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.GreaterThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    if MOI.is_valid(model, c_int)
+        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, upper))
+        # It is assumed that none of the other ConstraintIndexs are valid
+        return
     end
+    if MOI.is_valid(model, c_eq)
+        # Maybe delete it and add an interval constraint if this case is useful
+        lower == upper || error("Cannot set different bounds $lower and $upper to a variables with `EqualTo` constraint.")
+        MOI.set(model, MOI.ConstraintSet(), c_eq, MOI.EqualTo(lower))
+        # It is assumed that none of the other `ConstraintIndex`s are valid
+        return
+    end
+    lt = MOI.LessThan(upper)
+    if MOI.is_valid(model, c_lt)
+        if upper == typemin(upper)
+            MOI.delete(model, c_lt)
+        else
+            MOI.set(model, MOI.ConstraintSet(), c_lt, lt)
+        end
+    elseif upper != typemax(upper)
+        MOI.add_constraint(model, MOI.SingleVariable(vi), lt)
+    end
+    gt = MOI.GreaterThan(lower)
+    if MOI.is_valid(model, c_gt)
+        if lower == typemin(lower)
+            MOI.delete(model, c_gt)
+        else
+            MOI.set(model, MOI.ConstraintSet(), c_gt, gt)
+        end
+    elseif lower != typemin(lower)
+        MOI.add_constraint(model, MOI.SingleVariable(vi), gt)
+    end
+    return
 end
-
-function expr_dereferencing(expr, m)
-    c_expr = copy(expr)
-    expr_dereferencing!(c_expr, m) 
-    return c_expr   
+function set_lower_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T) where T
+    xval = vi.value
+    c_gt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.GreaterThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    if MOI.is_valid(model, c_int)
+        set = MOI.get(model, MOI.ConstraintSet(), c_int)
+        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, set.upper))
+        # It is assumed that none of the other ConstraintIndexs are valid
+        return
+    end
+    if MOI.is_valid(model, c_eq)
+        error("Cannot set lower bound to fixed variable.")
+    end
+    gt = MOI.GreaterThan(lower)
+    if MOI.is_valid(model, c_gt)
+        MOI.set(model, MOI.ConstraintSet(), c_gt, gt)
+    else
+        MOI.add_constraint(model, MOI.SingleVariable(vi), gt)
+    end
+    return
+end
+function set_upper_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, upper::T) where T
+    xval = vi.value
+    c_lt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.LessThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    if MOI.is_valid(model, c_int)
+        set = MOI.get(model, MOI.ConstraintSet(), c_int)
+        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(set.lower, upper))
+        # It is assumed that none of the other ConstraintIndexs are valid
+        return
+    end
+    if MOI.is_valid(model, c_eq)
+        error("Cannot set lower bound to fixed variable.")
+    end
+    lt = MOI.LessThan(upper)
+    if MOI.is_valid(model, c_lt)
+        MOI.set(model, MOI.ConstraintSet(), c_lt, lt)
+    else
+        MOI.add_constraint(model, MOI.SingleVariable(vi), lt)
+    end
+    return
 end
 
 function generate_random_restart(m; cont=true)
@@ -27,28 +89,28 @@ function generate_random_restart(m; cont=true)
     for i=1:m.num_var
         lbi_def = true
         ubi_def = true
-        if m.l_var[i] > typemin(Int64) 
+        if m.l_var[i] > typemin(Int64)
             lbi = m.l_var[i]
         else
             lbi = typemin(Int64)
             lbi_def = false
         end
 
-        if m.u_var[i] < typemax(Int64) 
+        if m.u_var[i] < typemax(Int64)
             ubi = m.u_var[i]
         else
             ubi = typemin(Int64)
             ubi_def = false
         end
 
-        if !ubi_def && !lbi_def 
+        if !ubi_def && !lbi_def
             ubi = 10
             lbi = -10
         elseif !ubi_def
             ubi = lbi+20
         elseif !lbi_def
             lbi = ubi-20
-        end             
+        end
 
         if m.var_type[i] == :Cont || cont
             push!(values,(ubi-lbi)*rand(JUNIPER_RNG;)+lbi)
@@ -64,7 +126,7 @@ end
 """
     get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
 
-Get all discrete variables which aren't close to discrete yet based on atol 
+Get all discrete variables which aren't close to discrete yet based on atol
 """
 function get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
     reasonable_disc_vars = zeros(Int64,0)
@@ -78,15 +140,6 @@ function get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
         push!(reasonable_disc_vars,i)
     end
     return reasonable_disc_vars
-end
-
-function get_type_dict(obj)
-    T = typeof(obj)
-    type_dict = Dict{Symbol,Type}()
-    for (name, typ) in zip(fieldnames(T), T.types)
-        type_dict[name] = typ
-    end
-    return type_dict
 end
 
 """
@@ -113,7 +166,7 @@ end
 Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED` and `ALMOST_OPTIMAL`
 """
 function state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
-    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED || 
+    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED ||
             (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED) || (allow_almost && state == MOI.ALMOST_OPTIMAL)
 end
 
@@ -126,6 +179,32 @@ function state_is_infeasible(state::MOI.TerminationStatusCode)
     return state == MOI.INFEASIBLE || state == MOI.LOCALLY_INFEASIBLE
 end
 
+struct ObjectiveConstraint{E<:MOI.AbstractNLPEvaluator} <: MOI.AbstractNLPEvaluator
+    evaluator::E
+    num_variables::Int
+end
+MOI.features_available(oc::ObjectiveConstraint) = MOI.features_available(oc.evaluator)
+MOI.initialize(oc::ObjectiveConstraint, features) = MOI.initialize(oc.evaluator, features)
+MOI.eval_objective(oc::ObjectiveConstraint, x) = MOI.eval_objective(oc.evaluator, x)
+MOI.eval_objective_gradient(oc::ObjectiveConstraint, g, x) = MOI.eval_objective_gradient(oc.evaluator, g, c)
+MOI.hessian_lagrangian_structure(oc::ObjectiveConstraint) = MOI.hessian_lagrangian_structure(oc.evaluator)
+MOI.eval_hessian_lagrangian(oc::ObjectiveConstraint, H, x, σ, μ) = MOI.eval_hessian_lagrangian(oc.evaluator, H, x, σ, μ)
+function MOI.eval_constraint(oc::ObjectiveConstraint, g, x)
+    g[1] = MOI.eval_objective(oc.evaluator, x)
+    MOI.eval_constraint(oc.evaluator, view(g, 2:length(g)), x)
+    return
+end
+function MOI.jacobian_structure(oc::ObjectiveConstraint)
+    sparsity = [(1, i) for i in 1:oc.num_variables]
+    append!(sparsity, MOI.jacobian_structure(oc.evaluator))
+    return sparsity
+end
+function MOI.eval_constraint_jacobian(oc::ObjectiveConstraint, J, x)
+    MOI.eval_objective_gradient(oc.evaluator, view(J, 1:oc.num_variables), x)
+    MOI.eval_constraint_jacobian(oc.evaluator, view(J, (oc.num_variables + 1):length(J)), x)
+    return
+end
+
 """
     add_obj_constraint(jp::JuniperProblem, rhs::Float64)
 
@@ -133,28 +212,31 @@ Add a constraint for the objective based on whether the objective is linear/quad
 If the objective sense is :MIN than add objective <= rhs else objective >= rhs
 """
 function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
-    if jp.has_nl_objective
-        obj_expr = MOI.objective_expr(jp.nlp_evaluator)
+    if jp.nlp_data.has_objective
         if jp.obj_sense == :Min
-            obj_constr = Expr(:call, :<=, obj_expr, rhs)
+            lb, ub = -Inf, rhs
         else
-            obj_constr = Expr(:call, :>=, obj_expr, rhs)
+            lb, ub = rhs, Inf
         end
-        Juniper.expr_dereferencing!(obj_constr, jp.model)
-        JuMP.add_NL_constraint(jp.model, obj_constr)
+        MOI.set(jp.model, MOI.NLPBlock(), MOI.NLPBlockData(
+            [jp.nlp_data.constraint_bounds; MOI.NLPBoundsPair(lb, ub)],
+            ObjectiveConstraint(jp.nlp_data.evaluator, MOI.get(jp.model, MOI.NumberOfVariables())),
+            jp.nlp_data.has_objective,
+        ))
     else # linear or quadratic
-        backend = JuMP.backend(jp.model);
         if isa(jp.objective, MOI.SingleVariable)
+            i = findfirst(isequal(jp.objective.variable), jp.x)
+            vi = jp.objective.variable
             if jp.obj_sense == :Min
-                JuMP.set_upper_bound(jp.x[jp.objective.variable.value], rhs)
+                set_upper_bound(jp.model, vi, rhs)
             else
-                JuMP.set_lower_bound(jp.x[jp.objective.variable.value], rhs)
+                set_lower_bound(jp.model, vi, rhs)
             end
         else
             if jp.obj_sense == :Min
-                MOI.add_constraint(backend, jp.objective, MOI.LessThan(rhs))
+                MOI.add_constraint(jp.model, jp.objective, MOI.LessThan(rhs))
             else
-                MOI.add_constraint(backend, jp.objective, MOI.GreaterThan(rhs))
+                MOI.add_constraint(jp.model, jp.objective, MOI.GreaterThan(rhs))
             end
         end
     end
@@ -168,101 +250,46 @@ If no objective exists => return 0
 Evaluate the objective whether it is non linear, linear or quadratic
 """
 function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
-    if optimizer.nlp_data.has_objective
-        return MOI.eval_objective(optimizer.nlp_data.evaluator, xs)
-    elseif optimizer.objective !== nothing
-        return MOIU.eval_variables(vi -> xs[vi.value], optimizer.objective)
-    else 
+    # NLP objective has priority if both are set
+    if jp.nlp_data !== nothing && jp.nlp_data.has_objective
+        return MOI.eval_objective(jp.nlp_data.evaluator, xs)
+    elseif jp.objective !== nothing
+        return MOIU.eval_variables(vi -> xs[vi.value], jp.objective)
+    else
         return 0.0
     end
 end
 
 """
-    set_subsolver_option!(jp::JuniperProblem, model::JuMP.model, type_of_subsolver::String,
-                          subsolver_name::String, param::String, change::Pair)
+    set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizerAttribute, change::Pair)
 
 Set the optimizer of the model if the subsolver_name is part of the name of the optimizer.
-Change the option `param` of the sub_solver. i.e `change=0.1 => 1e-5` means the default 
+Change the option `param` of the sub_solver. i.e `change=0.1 => 1e-5` means the default
 normally is 0.1 and will be changed to 1e-5.
 Normally reset_subsolver_option! should be run to return to reset this change after `optimize!`
-Return the previous value of the param option or if not previously set return change.first   
+Return the previous value of the param option or if not previously set return change.first
 """
-function set_subsolver_option!(jp::JuniperProblem, model::JuMP.Model, type_of_subsolver::String,
-                              subsolver_name::String, param::String, change::Pair)
-
-    old_value = change.first
-    if type_of_subsolver == "nl"
-        sub_solver = getfield(jp, :nl_solver)
-        sub_solver_options = getfield(jp, :nl_solver_options)
-    elseif type_of_subsolver == "mip"
-        sub_solver = getfield(jp, :mip_solver)
-        sub_solver_options = getfield(jp, :mip_solver_options)
+function set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizerAttribute, change::Pair)
+    prev = try
+        MOI.get(model, attr)
+    catch
+        change.first
     end
-
-    if occursin(subsolver_name, string(sub_solver))
-        overwritten = false
-        for i=1:length(sub_solver_options)
-            if sub_solver_options[i][1] == param
-                old_value = sub_solver_options[i][2]
-                sub_solver_options[i] = param => change.second
-                overwritten = true
-                break
-            end
-        end
-        if !overwritten
-            push!(sub_solver_options, param => change.second)
-        end
-        sub_solver = JuMP.optimizer_with_attributes(sub_solver.optimizer_constructor, sub_solver_options...)
-    end
-
-    if type_of_subsolver == "nl"
-        setfield!(jp, :nl_solver, sub_solver)
-        setfield!(jp, :nl_solver_options, sub_solver_options)
-        JuMP.set_optimizer(model, jp.nl_solver)  
-    elseif type_of_subsolver == "mip"
-        setfield!(jp, :mip_solver, sub_solver)
-        setfield!(jp, :mip_solver_options, sub_solver_options)
-        JuMP.set_optimizer(model, jp.mip_solver) 
-    end
-
-    
-    return old_value
+    MOI.set(model, attr, change.second)
+    return prev
 end
-
-"""
-    reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
-                            subsolver_name::String, param::String, value)
-
-Resets the subsolver option `param` to `value` if the subsolver for the type i.e "nl" matches
-`subsolver_name`. `value` is normally get by calling `set_subsolver_option!`
-"""
-function reset_subsolver_option!(jp::JuniperProblem, type_of_subsolver::String,
-                                subsolver_name::String, param::String, value)
-    if type_of_subsolver == "nl"
-        sub_solver = getfield(jp, :nl_solver)
-        sub_solver_options = getfield(jp, :nl_solver_options)
-    elseif type_of_subsolver == "mip"
-        sub_solver = getfield(jp, :mip_solver)
-        sub_solver_options = getfield(jp, :mip_solver_options)
+function set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizerAttribute, change)
+    MOI.set(model, attr, change)
+    return
+end
+function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, attr::MOI.AbstractOptimizerAttribute, change)
+    if occursin(subsolver_name, MOI.get(model, MOI.SolverName()))
+        return set_subsolver_option!(model, attr, change)
     end
-
-    if occursin(subsolver_name, string(sub_solver))
-        for i=1:length(sub_solver_options)
-            if sub_solver_options[i][1] == param
-                sub_solver_options[i] = param => value
-                break
-            end
-        end
-        sub_solver = JuMP.optimizer_with_attributes(sub_solver.optimizer_constructor, sub_solver_options...)
-    end
-
-    if type_of_subsolver == "nl"
-        setfield!(jp, :nl_solver, sub_solver)
-        setfield!(jp, :nl_solver_options, sub_solver_options)
-    elseif type_of_subsolver == "mip"
-        setfield!(jp, :mip_solver, sub_solver)
-        setfield!(jp, :mip_solver_options, sub_solver_options)
-    end
+    return value
+end
+function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, param::String, change)
+    set_subsolver_option!(model, subsolver_name, MOI.RawParameter(param), change)
 end
 
 function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
@@ -272,35 +299,4 @@ function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
         MOI.set(optimizer, MOI.TimeLimitSec(), time_limit)
     end
     return old_time_limit
-end
-
-"""
-    optimize_get_status_backend(model::JuMP.Model; solver=nothing) 
-
-Run optimize! and get the status and the backend
-"""
-function optimize_get_status_backend(model::JuMP.Model; solver=nothing) 
-    if solver === nothing
-        JuMP.optimize!(model)
-    else
-        JuMP.set_optimizer(model, solver)
-        JuMP.optimize!(model)
-    end
-    backend = JuMP.backend(model)
-    status = MOI.get(backend, MOI.TerminationStatus()) 
-    return status, backend
-end
-
-function register_functions!(model, registered_functions)
-    if registered_functions !== nothing
-        for reg_f in registered_functions
-            if reg_f.gradf === nothing
-                JuMP.register(model, reg_f.s, reg_f.dimension, reg_f.f; autodiff=reg_f.autodiff)
-            elseif reg_f.grad2f === nothing
-                JuMP.register(model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf)
-            else
-                JuMP.register(model, reg_f.s, reg_f.dimension, reg_f.f, reg_f.gradf, reg_f.grad2f)
-            end
-        end
-    end
 end

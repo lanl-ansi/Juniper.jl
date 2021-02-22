@@ -113,24 +113,25 @@ function new_default_step_obj(m,node)
     return step_obj
 end
 
+_ci(vi::MOI.VariableIndex, S::Type) = MOI.ConstraintIndex{MOI.SingleVariable, S}(vi.value)
 function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
-    num_variables = length(model.variable_info)
-    num_linear_le_constraints = length(model.linear_le_constraints)
-    num_linear_ge_constraints = length(model.linear_ge_constraints)
-    num_linear_eq_constraints = length(model.linear_eq_constraints)
-    num_quadratic_le_constraints = length(model.quadratic_le_constraints)
-    num_quadratic_ge_constraints = length(model.quadratic_ge_constraints)
-    num_quadratic_eq_constraints = length(model.quadratic_eq_constraints)
+    jp.num_var = MOI.get(model, MOI.NumberOfVariables())
 
     jp.status = MOI.OPTIMIZE_NOT_CALLED
     jp.relaxation_status = MOI.OPTIMIZE_NOT_CALLED
-    jp.has_nl_objective = model.nlp_data.has_objective
-    jp.nlp_evaluator = model.nlp_data.evaluator
-    jp.objective = model.objective
+    jp.nlp_data = nothing
+    jp.objective = nothing
+    for attr in MOI.get(model, MOI.ListOfModelAttributesSet())
+        if attr isa MOI.NLPBlock
+            jp.nlp_data = MOI.get(model, MOI.NLPBlock())
+        elseif attr isa MOI.ObjectiveFunction
+            jp.objective = MOI.get(model, attr)
+        end
+    end
 
     jp.objval = NaN
     jp.best_bound = NaN
-    jp.solution = fill(NaN, num_variables)
+    jp.solution = fill(NaN, jp.num_var)
     jp.nsolutions = 0
     jp.solutions = []
     jp.num_disc_var = 0
@@ -145,44 +146,39 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.start_time = time()
 
     jp.nl_solver = model.options.nl_solver
-    nl_vec_opts = Vector{Pair}()
-    if isa(jp.nl_solver, MOI.OptimizerWithAttributes)
-        for arg in model.options.nl_solver.params
-            push!(nl_vec_opts, arg)
-        end
-    else
-        jp.nl_solver = JuMP.optimizer_with_attributes(jp.nl_solver)
-    end
-    jp.nl_solver_options = nl_vec_opts
 
     if model.options.mip_solver !== nothing
         jp.mip_solver = model.options.mip_solver
-        mip_vec_opts = Vector{Pair}()
-        if isa(jp.mip_solver, MOI.OptimizerWithAttributes)
-            for arg in model.options.mip_solver.params
-                push!(mip_vec_opts, arg)
-            end
-        else
-            jp.mip_solver = JuMP.optimizer_with_attributes(jp.mip_solver)
-        end
-        jp.mip_solver_options = mip_vec_opts
     end
     jp.options = model.options
-    if model.sense == MOI.MIN_SENSE
+    if MOI.get(model, MOI.ObjectiveSense()) == MOI.MIN_SENSE
         jp.obj_sense = :Min
     else
         jp.obj_sense = :Max
     end
-    jp.l_var = info_array_of_variables(model.variable_info, :lower_bound)
-    jp.u_var = info_array_of_variables(model.variable_info, :upper_bound)
-    integer_bool_arr = info_array_of_variables(model.variable_info, :is_integer)
-    binary_bool_arr = info_array_of_variables(model.variable_info, :is_binary)
-    primal_start_arr = info_array_of_variables(model.variable_info, :start)
+    vis = MOI.get(model, MOI.ListOfVariableIndices())
+    jp.l_var = map(vis) do vi
+        lb = MOIU.get_bounds(model, Float64, vi)[1]
+        MOI.is_valid(model, _ci(vi, MOI.ZeroOne)) ? max(lb, 0.0) : lb
+    end
+    jp.u_var = map(vis) do vi
+        ub = MOIU.get_bounds(model, Float64, vi)[2]
+        MOI.is_valid(model, _ci(vi, MOI.ZeroOne)) ? min(ub, 1.0) : ub
+    end
+    integer_bool_arr = map(vis) do vi
+        MOI.is_valid(model, _ci(vi, MOI.Integer))
+    end
+    binary_bool_arr = map(vis) do vi
+        MOI.is_valid(model, _ci(vi, MOI.ZeroOne))
+    end
+    primal_start_arr = map(vis) do vi
+        start = MOI.get(model, MOI.VariablePrimalStart(), vi)
+        start === nothing ? 0.0 : start
+    end
     jp.primal_start = primal_start_arr
     jp.nintvars = sum(integer_bool_arr)
     jp.nbinvars = sum(binary_bool_arr)
     jp.num_disc_var = sum(integer_bool_arr)+sum(binary_bool_arr)
-    jp.num_var = length(model.variable_info)
     jp.var_type = [:Cont for i in 1:jp.num_var]
     jp.var_type[integer_bool_arr .== true] .= :Int
     jp.var_type[binary_bool_arr .== true] .= :Bin
@@ -196,10 +192,6 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
             int_i += 1
         end
     end
-    jp.num_l_constr = num_linear_le_constraints+num_linear_ge_constraints+num_linear_eq_constraints
-    jp.num_q_constr = num_quadratic_le_constraints+num_quadratic_ge_constraints+num_quadratic_eq_constraints
-    jp.num_nl_constr = length(model.nlp_data.constraint_bounds)
-    jp.num_constr = jp.num_l_constr+jp.num_q_constr+jp.num_nl_constr
 end
 
 function new_default_strong_branch_step_obj(var_idx)

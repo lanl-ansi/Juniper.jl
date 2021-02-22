@@ -54,29 +54,29 @@ Return state
 function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
      # set bounds
     for i=1:m.num_var
-        JuMP.set_lower_bound(m.x[i], cnode.l_var[i])
-        JuMP.set_upper_bound(m.x[i], cnode.u_var[i])
+        set_bounds(m.model, m.x[i], cnode.l_var[i], cnode.u_var[i])
     end
     if restarts > 0
         println("Doing one restart")
         restart_values = generate_random_restart(m)
-        JuMP.set_start_value.(m.x[1:m.num_var], restart_values)
+        MOI.set(m.model, MOI.VariablePrimalStart(), m.x, restart_values)
     else
-        JuMP.set_start_value.(m.x[1:m.num_var], step_obj.node.solution)
+        MOI.set(m.model, MOI.VariablePrimalStart(), m.x, step_obj.node.solution)
     end
 
-    old_mu_init = set_subsolver_option!(m, m.model, "nl", "Ipopt", "mu_init", 0.1 => 1e-5)                                   
+    old_mu_init = set_subsolver_option!(m.model, "Ipopt", "mu_init", 0.1 => 1e-5)
 
-    status, backend = optimize_get_status_backend(m.model)
+    MOI.optimize!(m.model)
+    status = MOI.get(m.model, MOI.TerminationStatus())
 
     # reset mu_init
-    reset_subsolver_option!(m, "nl", "Ipopt", "mu_init", old_mu_init)
+    set_subsolver_option!(m.model, "Ipopt", "mu_init", old_mu_init)
 
     objval = NaN
     cnode.solution = fill(NaN, m.num_var)
     if state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
-        objval = JuMP.objective_value(m.model)
-        cnode.solution = JuMP.value.(m.x)
+        objval = MOI.get(m.model, MOI.ObjectiveValue())
+        cnode.solution = MOI.get(m.model, MOI.VariablePrimal(), m.x)
     end
 
     cnode.relaxation_state = status
@@ -85,7 +85,7 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
     elseif state_is_optimal(status; allow_almost=m.options.allow_almost_solved)
         cnode.best_bound = objval
         set_cnode_state!(cnode, m, step_obj, disc2var_idx)
-        if only_almost_solved(status) && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral) 
+        if only_almost_solved(status) && (!(cnode.state == :Integral) || m.options.allow_almost_solved_integral)
             @warn "Only almost solved"
         end
 
@@ -93,9 +93,8 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
         if cnode.state == :Integral && only_almost_solved(status) && !m.options.allow_almost_solved_integral
             if restarts >= 1
                 cnode.state = :Almost_Solved
-                Base.finalize(backend)
                 return cnode.state
-            else 
+            else
                 return process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=restarts+1)
             end
         end
@@ -105,7 +104,6 @@ function process_node!(m, step_obj, cnode, disc2var_idx, temp; restarts=0)
     else
         cnode.state = :Infeasible
     end
-    Base.finalize(backend)
     return cnode.state
 end
 
@@ -566,12 +564,12 @@ function solvemip(tree::BnBTreeObj)
     # check if already integral
     if are_type_correct(tree.m.relaxation_solution,tree.m.var_type,tree.disc2var_idx, tree.options.atol)
         tree.nsolutions = 1
-        objval = JuMP.objective_value(tree.m.model)
-        sol = JuMP.value.(tree.m.x)
-        bbound = try 
-            JuMP.objective_bound(tree.m.model)
+        objval = MOI.get(tree.m.model, MOI.ObjectiveValue())
+        sol = MOI.get(tree.m.model, MOI.VariablePrimal(), tree.m.x)
+        bbound = try
+            MOI.get(tree.m.model, MOI.ObjectiveBound())
         catch
-            JuMP.objective_value(tree.m.model)
+            MOI.get(tree.m.model, MOI.ObjectiveValue())
         end
         tree.incumbent = Incumbent(objval,sol,only_almost_solved(tree.m.status))
         return tree.incumbent

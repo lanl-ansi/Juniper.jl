@@ -60,6 +60,6 @@ function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
         @error "optimize! not called"
     end
-    check_inbounds(model, vi)
+    MOI.throw_if_not_valid(model, vi)
     return model.inner.solution[vi.value]
 end

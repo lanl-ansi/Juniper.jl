@@ -43,7 +43,7 @@ mutable struct SolverOptions
     allow_almost_solved_integral        :: Bool
     registered_functions                :: Union{Nothing, Vector{RegisteredFunction}}
     seed                                :: Int64
-    
+
     # only for testing
     force_parallel                      :: Bool
     debug                               :: Bool
@@ -58,13 +58,12 @@ mutable struct SolutionObj
     objval      :: Float64
 end
 
-# Juniper MOI struct 
+# Juniper MOI struct
 
-mutable struct JuniperProblem 
+mutable struct JuniperProblem
     nl_solver           :: Any
-    nl_solver_options   :: Vector{Pair}
-   
-    model               :: JuMP.Model
+
+    model               :: MOI.AbstractOptimizer
 
     relaxation_status   :: MOI.TerminationStatusCode
     relaxation_objval   :: Float64
@@ -74,20 +73,15 @@ mutable struct JuniperProblem
     objval              :: Float64
     best_bound          :: Float64
 
-    x                   :: Vector{JuMP.VariableRef}
+    x                   :: Vector{MOI.VariableIndex}
     primal_start        :: Vector{Real}
-    num_constr          :: Int64
-    num_nl_constr       :: Int64
-    num_q_constr        :: Int64
-    num_l_constr        :: Int64
     num_var             :: Int64
     l_var               :: Vector{Float64}
     u_var               :: Vector{Float64}
 
-    has_nl_objective    :: Bool
-    nlp_evaluator       :: MOI.AbstractNLPEvaluator
+    nlp_data            :: Union{MOI.NLPBlockData, Nothing}
 
-    objective           :: Union{SVF, SAF, SQF, Nothing}
+    objective           :: Union{MOI.AbstractScalarFunction, Nothing}
 
     disc2var_idx        :: Vector{Int64}
     var2disc_idx        :: Vector{Int64}
@@ -104,12 +98,11 @@ mutable struct JuniperProblem
     nsolutions          :: Int64
 
     mip_solver          :: Any
-    mip_solver_options  :: Vector{Pair}
 
     relaxation_time     :: Float64
     start_time          :: Float64
 
-    # Info  
+    # Info
     nintvars            :: Int64
     nbinvars            :: Int64
     nnodes              :: Int64
@@ -119,11 +112,11 @@ mutable struct JuniperProblem
 
     fpump_info          :: Dict{Symbol,Float64}
 
-    # debug 
+    # debug
     debugDict           :: Dict{Symbol,Any}
 
     JuniperProblem() = new()
-end 
+end
 
 ###########################################################################
 ########################## FPump ##########################################
@@ -166,7 +159,7 @@ mutable struct GainObj
     plus_counter    :: Vector{Int64} # obj_gain_p / obj_gain_pc => average gain on right node
     # counter of how often one child is infeasible (>= 0) subtract 1 if both Optimal
     # can be negative temporately in step_obj but not in tree.obj_gain_
-    inf_counter     :: Vector{Int64} 
+    inf_counter     :: Vector{Int64}
 end
 
 mutable struct BnBTreeObj
@@ -178,7 +171,7 @@ mutable struct BnBTreeObj
     var2disc_idx    :: Vector{Int64}
     options         :: Juniper.SolverOptions
     obj_fac         :: Int64 # factor for objective 1 if max -1 if min
-    start_time      :: Float64 
+    start_time      :: Float64
     nsolutions      :: Int64
     branch_nodes    :: Vector{BnBNode}
     best_bound      :: Float64
@@ -201,7 +194,7 @@ mutable struct StepObj
     node                :: BnBNode # current branch node
     var_idx             :: Int64   # variable to branch on
     state               :: Symbol  # if infeasible => break (might be set by strong branching)
-    nrestarts           :: Int64 
+    nrestarts           :: Int64
     gain_gap            :: Float64
     obj_gain            :: GainObj
     idx_time            :: Float64

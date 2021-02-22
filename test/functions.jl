@@ -97,46 +97,6 @@ end
     @test !isa(try option_not_available() catch ex ex end, Exception) 
 end
 
-@testset "Function not registered should throw error" begin
-    # registered function for objective
-    special_minimizer_fct(x) = x
-    grad(x) = 1.0
-    grad2(x) = 0.0
-
-    register_args = [:special_minimizer_fct, 1, special_minimizer_fct, grad, grad2]
-
-    m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
-        DefaultTestSolver()...
-    ))
-
-    JuMP.register(m, register_args...)
-
-    @variable(m, x[1:5], Bin)
-    @NLobjective(m,Min,special_minimizer_fct(x[1]))
-    # function need to be registered for Juniper as well
-    @test_throws ErrorException optimize!(m)
-
-    # for a constraint 
-    special_minimizer_fct_1(x) = x
-    grad_1(x) = 1.0
-    grad2_1(x) = 0.0
-
-    register_args = [:special_minimizer_fct_1, 1, special_minimizer_fct_1, grad_1, grad2_1]
-
-    m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
-        DefaultTestSolver()...
-    ))
-
-    JuMP.register(m, register_args...)
-
-    @variable(m, x[1:5], Bin)
-    @NLconstraint(m, special_minimizer_fct_1(x[1]) >= 1)
-    # function need to be registered for Juniper as well
-    @test_throws ErrorException optimize!(m)
-end
-
 @testset "Info/Table" begin
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer, 

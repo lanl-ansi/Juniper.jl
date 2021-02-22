@@ -16,10 +16,6 @@ end
 function print_info(m::JuniperProblem)
     println("#Variables: ", m.num_var)
     println("#IntBinVar: ", m.num_disc_var)
-    println("#Constraints: ", m.num_constr)
-    println("#Linear Constraints: ", m.num_l_constr)
-    println("#Quadratic Constraints: ", m.num_q_constr)
-    println("#NonLinear Constraints: ", m.num_nl_constr)
     println("Obj Sense: ", m.obj_sense)
     println()
 end

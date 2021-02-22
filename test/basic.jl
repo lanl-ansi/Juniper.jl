@@ -58,7 +58,6 @@ end
         list_of_solutions = true,
         strong_restart = true,
         debug = true,
-        registered_functions=[Juniper.register(register_args...)]
     )
 
     JuMP.set_optimizer(m, optimizer_with_attributes(
@@ -580,17 +579,9 @@ end
 
     @NLobjective(m,Min,myf(x,y))
 
-    juniper_reliable_restart_registered = DefaultTestSolver(
-        branch_strategy=:Reliability,
-        reliability_branching_perc = 25,
-        reliability_branching_threshold = 2,
-        strong_restart = true,
-        registered_functions=[Juniper.register(register_args...)]
-    )
-
     JuMP.set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
-        juniper_reliable_restart_registered...
+        juniper_reliable_restart...
         )
     )
 
@@ -664,7 +655,6 @@ end
         Juniper.Optimizer,
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
-            registered_functions=[Juniper.register(register_args...; autodiff=true)]
         )...)
     )
 
