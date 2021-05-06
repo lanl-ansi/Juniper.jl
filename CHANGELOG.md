@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.7.1
+- Bugfix `set_subsolver_option!` nothing should be returned if `subsolver_name` doesn't match [PR #214](https://github.com/lanl-ansi/Juniper.jl/pull/214)
+
 ### v0.7.0
 - Removed JuMP dependency [PR #207 by blegat](https://github.com/lanl-ansi/Juniper.jl/pull/207)
 
