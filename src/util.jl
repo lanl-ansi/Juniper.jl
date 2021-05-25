@@ -286,7 +286,6 @@ function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, att
     if occursin(subsolver_name, MOI.get(model, MOI.SolverName()))
         return set_subsolver_option!(model, attr, change)
     end
-    return value
 end
 function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, param::String, change)
     set_subsolver_option!(model, subsolver_name, MOI.RawParameter(param), change)
