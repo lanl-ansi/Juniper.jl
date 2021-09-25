@@ -27,7 +27,7 @@ function MOI.get(f::LinearFilter, attr::MOI.ListOfModelAttributesSet)
         return !(a isa MOI.NLPBlock)
     end
 end
-function MOI.get(f::LinearFilter, attr::MOI.ListOfConstraints)
+function MOI.get(f::LinearFilter, attr::MOI.ListOfConstraintTypesPresent)
     return filter(MOI.get(f.inner, attr)) do FS
         F = FS[1]
         return !(F <: MOI.ScalarQuadraticFunction || F <: MOI.VectorQuadraticFunction)
@@ -38,7 +38,7 @@ struct IntegerRelaxation{M<:MOI.ModelLike} <: AbstractModelFilter
     inner::M
 end
 
-function MOI.get(f::IntegerRelaxation, attr::MOI.ListOfConstraints)
+function MOI.get(f::IntegerRelaxation, attr::MOI.ListOfConstraintTypesPresent)
     return filter(MOI.get(f.inner, attr)) do FS
         S = FS[2]
         return !(S <: MOI.Integer || S <: MOI.ZeroOne)
@@ -50,7 +50,7 @@ struct FixVariables{T, M<:MOI.ModelLike} <: AbstractModelFilter
     fixed_values::Dict{MOI.VariableIndex, T}
 end
 
-function MOI.get(f::FixVariables, attr::MOI.ListOfConstraints)
+function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintTypesPresent)
     return [MOI.get(f.inner, attr); (MOI.SingleVariable, MOI.EqualTo{Float64})]
 end
 function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintIndices{MOI.SingleVariable, S}) where S

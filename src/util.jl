@@ -288,7 +288,7 @@ function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, att
     end
 end
 function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, param::String, change)
-    set_subsolver_option!(model, subsolver_name, MOI.RawParameter(param), change)
+    set_subsolver_option!(model, subsolver_name, MOI.RawOptimizerAttribute(param), change)
 end
 
 function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})

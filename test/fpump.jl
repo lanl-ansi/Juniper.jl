@@ -62,7 +62,7 @@ end
     status = solve(m)
 
     # should have feasibility_pump be set to true
-    @test MOI.get(m, MOI.RawParameter(:feasibility_pump))
+    @test MOI.get(m, MOI.RawOptimizerAttribute("feasibility_pump"))
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 

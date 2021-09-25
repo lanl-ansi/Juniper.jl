@@ -56,7 +56,7 @@ end
 
 function getsolvetime(m::Model)
     bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.SolveTime()) 
+    return MOI.get(bm, MOI.SolveTimeSec()) 
 end
 
 function internalmodel(m::Model)
