@@ -61,7 +61,7 @@ end
 
 function internalmodel(m::Model)
     bm = JuMP.backend(m)
-    return bm.optimizer.model.inner
+    return bm.optimizer.model.optimizer.inner
 end
 
 function getobjgap(m::Model)

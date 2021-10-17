@@ -113,7 +113,7 @@ function new_default_step_obj(m,node)
     return step_obj
 end
 
-_ci(vi::MOI.VariableIndex, S::Type) = MOI.ConstraintIndex{MOI.SingleVariable, S}(vi.value)
+_ci(vi::MOI.VariableIndex, S::Type) = MOI.ConstraintIndex{MOI.VariableIndex, S}(vi.value)
 function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.num_var = MOI.get(model, MOI.NumberOfVariables())
 

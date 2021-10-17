@@ -30,7 +30,7 @@ include("basic/gamsworld.jl")
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 
     bm = JuMP.backend(m)
-    innermodel = bm.optimizer.model.inner
+    innermodel = internalmodel(m)
     debugDict = innermodel.debugDict
     counter_test(debugDict,Juniper.getnbranches(innermodel))
 end
@@ -144,7 +144,7 @@ end
     @test isapprox(gap_val, 0, atol=1e-2)
 
     bm = JuMP.backend(m)
-    innermodel = bm.optimizer.model.inner
+    innermodel = internalmodel(m)
     debugDict = innermodel.debugDict
     counter_test(debugDict,Juniper.getnbranches(innermodel))
     end

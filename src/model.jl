@@ -5,7 +5,7 @@ function create_root_model!(optimizer::MOI.ModelLike, jp::JuniperProblem; fix_st
     ps = jp.options.log_levels
 
     jp.model = MOI.instantiate(jp.nl_solver, with_bridge_type=Float64)
-    index_map = MOI.copy_to(jp.model, IntegerRelaxation(optimizer); copy_names=false)
+    index_map = MOI.copy_to(jp.model, IntegerRelaxation(optimizer))
     # all continuous we solve relaxation first
     jp.x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
 end

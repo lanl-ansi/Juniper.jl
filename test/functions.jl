@@ -17,7 +17,7 @@
 
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
-    options = bm.optimizer.model.options
+    options = bm.optimizer.model.optimizer.options
 
     nd_options = Juniper.get_non_default_options(options)    
     @test nd_options[:obj_epsilon] == 0.5
@@ -67,7 +67,7 @@ function option_no_mip_solver()
     optimize!(m)
 
     bm = JuMP.backend(m)
-    return bm.optimizer.model.options
+    return bm.optimizer.model.optimizer.options
 end
 
 @testset "Silent/TimeLimitSec" begin
@@ -82,7 +82,7 @@ end
     MOI.set(optimizer, MOI.Silent(), true)
     MOI.set(optimizer, MOI.TimeLimitSec(), nothing)
     @test MOI.get(optimizer, MOI.Silent()) === true 
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute(:mip_gap)) == 1.0 
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("mip_gap")) == 1.0 
     @test_logs (:error, r"doesn't exist") MOI.get(optimizer, MOI.RawOptimizerAttribute("mip_gap_1"))
     @test isinf(MOI.get(optimizer, MOI.TimeLimitSec()))
     MOI.set(optimizer, MOI.TimeLimitSec(), 12.0)
@@ -115,9 +115,10 @@ end
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     JuMP.optimize!(m)
+    innermodel = internalmodel(m)
     
-    options = bm.optimizer.model.options
-    jp = bm.optimizer.model.inner
+    options = innermodel.options
+    jp = innermodel
     println("typeof(m): ", typeof(m))
     println("typeof(jp): ", typeof(jp))
 
@@ -245,7 +246,7 @@ end
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     JuMP.optimize!(m)
-    model = bm.optimizer.model.inner
+    model = internalmodel(m)
 
 
     cont_restart = Juniper.generate_random_restart(model)
@@ -286,7 +287,7 @@ end
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     JuMP.optimize!(m)
-    model = bm.optimizer.model.inner
+    model = internalmodel(m)
 
 
     cont_restart2 = Juniper.generate_random_restart(model)
@@ -318,7 +319,7 @@ end
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     JuMP.optimize!(m)
-    model = bm.optimizer.model.inner
+    model = internalmodel(m)
 
 
     cont_restart3 = Juniper.generate_random_restart(model)

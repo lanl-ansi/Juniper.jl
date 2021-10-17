@@ -12,7 +12,12 @@ const optimizer = Juniper.Optimizer(juniper)
     @test MOI.get(optimizer, MOI.SolverName()) == "Juniper"
 end
 
-const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLVED, duals=false, infeas_certificates=false)
+const config = MOIT.Config(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLVED, exclude = Any[
+    MOI.ConstraintDual,
+    MOI.VariableName,
+    MOI.ConstraintName,
+    MOI.delete,
+])
 
 @testset "Unit" begin
     bridged = MOIB.full_bridge_optimizer(optimizer, Float64)
@@ -49,5 +54,5 @@ const config = MOIT.TestConfig(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_
                 "solve_result_index", # no support for `MOI.ConstraintPrimal` atm
                 "update_dimension_nonnegative_variables", # currently no support for ConstraintFunction 
                ]
-    MOIT.unittest(bridged, config, exclude)
+    MOIT.runtests(bridged, config, exclude)
 end
