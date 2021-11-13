@@ -20,7 +20,6 @@ const config = MOIT.Config(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLV
 ])
 
 @testset "Unit" begin
-    bridged = MOIB.full_bridge_optimizer(optimizer, Float64)
     # A number of test cases are excluded because loadfromstring! works only
     # if the solver supports variable and constraint names.
     exclude = [
@@ -54,5 +53,5 @@ const config = MOIT.Config(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLV
                 "solve_result_index", # no support for `MOI.ConstraintPrimal` atm
                 "update_dimension_nonnegative_variables", # currently no support for ConstraintFunction 
                ]
-    MOIT.runtests(bridged, config, exclude)
+    MOIT.runtests(optimizer, config; exclude=exclude)
 end

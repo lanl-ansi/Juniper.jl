@@ -18,8 +18,9 @@ Cbc = ">= 0.8.0"
 GLPK = ">= 0.15"
 Ipopt = ">= 0.8.0"
 JSON = "~0.18, ~0.19, ~0.20, ~0.21"
+JuMP = "0.22"
 MathOptInterface = "^0.10"
-MutableArithmetics = "0.2.14"
+MutableArithmetics = "0.3.1"
 julia = "1"
 
 [extras]
