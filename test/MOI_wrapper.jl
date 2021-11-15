@@ -16,6 +16,7 @@ const config = MOIT.Config(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLV
     MOI.ConstraintDual,
     MOI.VariableName,
     MOI.ConstraintName,
+    MOI.ConstraintPrimal,
     MOI.delete,
 ])
 
@@ -53,5 +54,9 @@ const config = MOIT.Config(atol=1e-4, rtol=1e-4, optimal_status=MOI.LOCALLY_SOLV
                 "solve_result_index", # no support for `MOI.ConstraintPrimal` atm
                 "update_dimension_nonnegative_variables", # currently no support for ConstraintFunction 
                ]
-    MOIT.runtests(optimizer, config; exclude=exclude)
+    caching_optimizer = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        optimizer,
+    )
+    MOIT.runtests(caching_optimizer, config; exclude=exclude)
 end
