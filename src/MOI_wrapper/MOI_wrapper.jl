@@ -15,11 +15,12 @@ end
 MOI.is_valid(model::Optimizer, index::MOI.Index) = MOI.is_valid(model.model_cache, index)
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
+MOI.get(::Optimizer, ::MOI.SolverVersion) = "v0.7.0"
 
 MOI.supports(::Optimizer, ::MOI.Silent) = true
 MOI.supports(::Optimizer, ::MOI.NumberOfThreads) = true
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
-MOI.supports(::Optimizer, ::MOI.RawParameter) = true
+MOI.supports(::Optimizer, ::MOI.RawOptimizerAttribute) = true
 
 function MOI.set(model::Optimizer, ::MOI.Silent, value::Bool)
     if value
@@ -47,7 +48,7 @@ function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Floa
     return
 end
 
-function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+function MOI.set(model::Optimizer, p::MOI.RawOptimizerAttribute, value)
     p_symbol = Symbol(p.name)
     if in(p_symbol, fieldnames(SolverOptions))
         type_of_param = fieldtype(SolverOptions, p_symbol)
@@ -84,9 +85,10 @@ MOI.get(model::Optimizer, ::MOI.TimeLimitSec) = model.options.time_limit
 
 MOI.get(model::Optimizer, ::MOI.Silent) = model.options.silent
 
-function MOI.get(model::Optimizer, p::MOI.RawParameter)
-    if in(p.name, fieldnames(SolverOptions))
-        return getfield(model.options, p.name)
+function MOI.get(model::Optimizer, p::MOI.RawOptimizerAttribute)
+    p_symbol = Symbol(p.name)
+    if in(p_symbol, fieldnames(SolverOptions))
+        return getfield(model.options, p_symbol)
     end
     @error "The option $(p.name) doesn't exist."
 end
@@ -367,6 +369,14 @@ function MOI.set(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MO
     return
 end
 function MOI.get(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MOI.ConstraintIndex)
+    return MOI.get(model.model_cache, attr, ci)
+end
+
+function MOI.get(
+    model::Optimizer,
+    attr::Union{MOI.ConstraintFunction,MOI.ConstraintSet},
+    ci::MOI.ConstraintIndex,
+)
     return MOI.get(model.model_cache, attr, ci)
 end
 

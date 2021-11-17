@@ -1,10 +1,10 @@
 # TODO maybe move to MOI.Utilities alongside `MOIU.get_bounds`
 function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper::T) where T
     xval = vi.value
-    c_lt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.LessThan{T}}(xval)
-    c_gt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.GreaterThan{T}}(xval)
-    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
-    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    c_lt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{T}}(xval)
+    c_gt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.GreaterThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.VariableIndex,MOI.EqualTo{T}}(xval)
     if MOI.is_valid(model, c_int)
         MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, upper))
         # It is assumed that none of the other ConstraintIndexs are valid
@@ -25,7 +25,7 @@ function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper
             MOI.set(model, MOI.ConstraintSet(), c_lt, lt)
         end
     elseif upper != typemax(upper)
-        MOI.add_constraint(model, MOI.SingleVariable(vi), lt)
+        MOI.add_constraint(model, vi, lt)
     end
     gt = MOI.GreaterThan(lower)
     if MOI.is_valid(model, c_gt)
@@ -35,15 +35,16 @@ function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper
             MOI.set(model, MOI.ConstraintSet(), c_gt, gt)
         end
     elseif lower != typemin(lower)
-        MOI.add_constraint(model, MOI.SingleVariable(vi), gt)
+        MOI.add_constraint(model, vi, gt)
     end
     return
 end
+
 function set_lower_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T) where T
     xval = vi.value
-    c_gt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.GreaterThan{T}}(xval)
-    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
-    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    c_gt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.GreaterThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.VariableIndex,MOI.EqualTo{T}}(xval)
     if MOI.is_valid(model, c_int)
         set = MOI.get(model, MOI.ConstraintSet(), c_int)
         MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, set.upper))
@@ -57,15 +58,15 @@ function set_lower_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T) 
     if MOI.is_valid(model, c_gt)
         MOI.set(model, MOI.ConstraintSet(), c_gt, gt)
     else
-        MOI.add_constraint(model, MOI.SingleVariable(vi), gt)
+        MOI.add_constraint(model, MOI.VariableIndex(vi), gt)
     end
     return
 end
 function set_upper_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, upper::T) where T
     xval = vi.value
-    c_lt = MOI.ConstraintIndex{MOI.SingleVariable,MOI.LessThan{T}}(xval)
-    c_int = MOI.ConstraintIndex{MOI.SingleVariable,MOI.Interval{T}}(xval)
-    c_eq = MOI.ConstraintIndex{MOI.SingleVariable,MOI.EqualTo{T}}(xval)
+    c_lt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{T}}(xval)
+    c_int = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{T}}(xval)
+    c_eq = MOI.ConstraintIndex{MOI.VariableIndex,MOI.EqualTo{T}}(xval)
     if MOI.is_valid(model, c_int)
         set = MOI.get(model, MOI.ConstraintSet(), c_int)
         MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(set.lower, upper))
@@ -79,7 +80,7 @@ function set_upper_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, upper::T) 
     if MOI.is_valid(model, c_lt)
         MOI.set(model, MOI.ConstraintSet(), c_lt, lt)
     else
-        MOI.add_constraint(model, MOI.SingleVariable(vi), lt)
+        MOI.add_constraint(model, vi, lt)
     end
     return
 end
@@ -224,9 +225,9 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
             jp.nlp_data.has_objective,
         ))
     else # linear or quadratic
-        if isa(jp.objective, MOI.SingleVariable)
-            i = findfirst(isequal(jp.objective.variable), jp.x)
-            vi = jp.objective.variable
+        if isa(jp.objective, MOI.VariableIndex)
+            i = findfirst(isequal(jp.objective), jp.x)
+            vi = jp.objective
             if jp.obj_sense == :Min
                 set_upper_bound(jp.model, vi, rhs)
             else
@@ -288,7 +289,7 @@ function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, att
     end
 end
 function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, param::String, change)
-    set_subsolver_option!(model, subsolver_name, MOI.RawParameter(param), change)
+    set_subsolver_option!(model, subsolver_name, MOI.RawOptimizerAttribute(param), change)
 end
 
 function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})

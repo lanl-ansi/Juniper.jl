@@ -27,7 +27,7 @@ function MOI.get(f::LinearFilter, attr::MOI.ListOfModelAttributesSet)
         return !(a isa MOI.NLPBlock)
     end
 end
-function MOI.get(f::LinearFilter, attr::MOI.ListOfConstraints)
+function MOI.get(f::LinearFilter, attr::MOI.ListOfConstraintTypesPresent)
     return filter(MOI.get(f.inner, attr)) do FS
         F = FS[1]
         return !(F <: MOI.ScalarQuadraticFunction || F <: MOI.VectorQuadraticFunction)
@@ -38,7 +38,7 @@ struct IntegerRelaxation{M<:MOI.ModelLike} <: AbstractModelFilter
     inner::M
 end
 
-function MOI.get(f::IntegerRelaxation, attr::MOI.ListOfConstraints)
+function MOI.get(f::IntegerRelaxation, attr::MOI.ListOfConstraintTypesPresent)
     return filter(MOI.get(f.inner, attr)) do FS
         S = FS[2]
         return !(S <: MOI.Integer || S <: MOI.ZeroOne)
@@ -50,23 +50,29 @@ struct FixVariables{T, M<:MOI.ModelLike} <: AbstractModelFilter
     fixed_values::Dict{MOI.VariableIndex, T}
 end
 
-function MOI.get(f::FixVariables, attr::MOI.ListOfConstraints)
-    return [MOI.get(f.inner, attr); (MOI.SingleVariable, MOI.EqualTo{Float64})]
+function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintTypesPresent)
+    ret = MOI.get(f.inner, attr)
+    fix = (MOI.VariableIndex, MOI.EqualTo{Float64})
+    if !(fix  in ret)
+        push!(ret, fix)
+    end
+    return ret
 end
-function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintIndices{MOI.SingleVariable, S}) where S
+
+function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintIndices{MOI.VariableIndex, S}) where S
     list = filter(MOI.get(f.inner, attr)) do ci
         !haskey(f.fixed_values, MOI.VariableIndex(ci.value))
     end
     if S <: MOI.EqualTo
-        fix = [MOI.ConstraintIndex{MOI.SingleVariable, S}(vi.value) for vi in keys(f.fixed_values)]
+        fix = [MOI.ConstraintIndex{MOI.VariableIndex, S}(vi.value) for vi in keys(f.fixed_values)]
         list = [list; fix]
     end
     return list
 end
-function MOI.get(f::FixVariables, attr::MOI.ConstraintFunction, ci::MOI.ConstraintIndex{MOI.SingleVariable, <:MOI.EqualTo})
-    return MOI.SingleVariable(MOI.VariableIndex(ci.value))
+function MOI.get(f::FixVariables, attr::MOI.ConstraintFunction, ci::MOI.ConstraintIndex{MOI.VariableIndex, <:MOI.EqualTo})
+    return MOI.VariableIndex(ci.value)
 end
-function MOI.get(f::FixVariables, attr::MOI.ConstraintSet, ci::MOI.ConstraintIndex{MOI.SingleVariable, <:MOI.EqualTo})
+function MOI.get(f::FixVariables, attr::MOI.ConstraintSet, ci::MOI.ConstraintIndex{MOI.VariableIndex, <:MOI.EqualTo})
     vi = MOI.VariableIndex(ci.value)
     if haskey(f.fixed_values, vi)
         return MOI.EqualTo(f.fixed_values[vi])

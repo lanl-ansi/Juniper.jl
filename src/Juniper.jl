@@ -16,7 +16,6 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
 # functions
-const SVF = MOI.SingleVariable
 const SAF = MOI.ScalarAffineFunction{Float64}
 const SQF = MOI.ScalarQuadraticFunction{Float64}
 const VECTOR = MOI.VectorOfVariables

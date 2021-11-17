@@ -1,11 +1,11 @@
 function add_constrained_var(model, set::MOI.AbstractScalarSet)
     vi, con_idx = MOI.add_constrained_variable(model, set)
-    return MOI.SingleVariable(vi)
+    return vi
 end
 
 function add_constrained_var(model, set::MOI.AbstractVectorSet)
     vis, con_idx = MOI.add_constrained_variables(model, set)
-    return MOI.SingleVariable.(vis)
+    return vis
 end
 
 """
@@ -17,9 +17,8 @@ Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     mip_optimizer = MOI.instantiate(m.mip_solver, with_bridge_type=Float64)
-    index_map = MOI.copy_to(mip_optimizer, NoObjectiveFilter(LinearFilter(optimizer)); copy_names=false)
+    index_map = MOI.copy_to(mip_optimizer, NoObjectiveFilter(LinearFilter(optimizer)))
     x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
-    mx = MOI.SingleVariable.(x)
     for i in 1:m.num_var
         if m.var_type[i] == :Bin
             if m.l_var[i] > 0
@@ -34,7 +33,7 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
     for (mabsxi, vi) in zip(mabsx, m.disc2var_idx)
         MOI.add_constraint(
             mip_optimizer,
-            MOIU.operate(vcat, Float64, mabsxi, mx[vi] - nlp_sol[vi]),
+            MOIU.operate(vcat, Float64, mabsxi, x[vi] - nlp_sol[vi]),
             MOI.NormOneCone(2)
         )
     end
@@ -59,8 +58,8 @@ function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
             lbi = m.l_var[i] > typemin(Int64) ? m.l_var[i] : typemin(Int64)
             ubi = m.u_var[i] < typemax(Int64) ? m.u_var[i] : typemax(Int64)
             MOI.add_constraint(mip_optimizer, 1.0z1[j,k] + 1.0z2[j,k], MOI.LessThan(1.0))
-            MOI.add_constraint(mip_optimizer, MA.@rewrite((lbi - v[k][j]) * z1[j,k] + z2[j,k] - mx[i]), MOI.LessThan(-v[k][j]))
-            MOI.add_constraint(mip_optimizer, MA.@rewrite((ubi - v[k][j]) * z2[j,k] - z1[j,k] - mx[i]), MOI.GreaterThan(-v[k][j]))
+            MOI.add_constraint(mip_optimizer, MA.@rewrite((lbi - v[k][j]) * z1[j,k] + z2[j,k] - x[i]), MOI.LessThan(-v[k][j]))
+            MOI.add_constraint(mip_optimizer, MA.@rewrite((ubi - v[k][j]) * z2[j,k] - z1[j,k] - x[i]), MOI.GreaterThan(-v[k][j]))
         end
         for k=1:num_sols
             MOI.add_constraint(mip_optimizer, sum(1.0z1) + sum(1.0z2), MOI.GreaterThan(1.0))
@@ -109,9 +108,8 @@ Generates the original nlp but changes the objective to minimize the distance to
 """
 function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type=Float64)
-    index_map = MOI.copy_to(nlp_optimizer, NoObjectiveFilter(IntegerRelaxation(optimizer)); copy_names=false)
+    index_map = MOI.copy_to(nlp_optimizer, NoObjectiveFilter(IntegerRelaxation(optimizer)))
     x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
-    nx = MOI.SingleVariable.(x)
     if random_start
         restart_values = generate_random_restart(m)
     else
@@ -120,7 +118,7 @@ function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start=false)
     MOI.set(nlp_optimizer, MOI.VariablePrimalStart(), x, restart_values)
 
     MOI.set(nlp_optimizer, MOI.ObjectiveSense(), MOI.MIN_SENSE)
-    obj = sum((nx[m.disc2var_idx[i]] - mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var)
+    obj = sum((x[m.disc2var_idx[i]] - mip_sol[m.disc2var_idx[i]])^2 for i=1:m.num_disc_var)
     MOI.set(nlp_optimizer, MOI.ObjectiveFunction{typeof(obj)}(), obj)
 
     current_time = time()-start_fpump
@@ -158,9 +156,8 @@ function generate_real_nlp(optimizer, m, sol; random_start=false)
     nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type=Float64)
     vis = collect(MOI.get(optimizer, MOI.ListOfVariableIndices()))
     disc_vals = Dict(vis[i] => sol[i] for i in m.disc2var_idx)
-    index_map = MOI.copy_to(nlp_optimizer, FixVariables(IntegerRelaxation(optimizer), disc_vals); copy_names=false)
+    index_map = MOI.copy_to(nlp_optimizer, FixVariables(IntegerRelaxation(optimizer), disc_vals))
     x = [index_map[vi] for vi in MOI.get(optimizer, MOI.ListOfVariableIndices())]
-    rx = MOI.SingleVariable.(x)
 
     if random_start
         restart_values = generate_random_restart(m)
@@ -294,7 +291,7 @@ function fpump(optimizer, m)
         time()-m.start_time < m.options.time_limit
 
         # generate a mip or just round if no linear constraints
-        if any(FS -> FS[1] != MOI.SingleVariable, MOI.get(LinearFilter(optimizer), MOI.ListOfConstraints()))
+        if any(FS -> FS[1] != MOI.VariableIndex, MOI.get(LinearFilter(optimizer), MOI.ListOfConstraintTypesPresent()))
             mip_status, mip_sol, mip_obj = generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
         else
             # if no linear constraints just round the discrete variables

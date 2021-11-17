@@ -1,6 +1,9 @@
 # MathOptInterface results
-	
+
 function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
+    if model.inner === nothing
+        return MOI.OPTIMIZE_NOT_CALLED
+    end
 	return model.inner.status
 end
 
@@ -9,7 +12,10 @@ function MOI.get(model::Optimizer, ::MOI.RawStatusString)
 end
 
 function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
-    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved) 
+    if model.inner === nothing
+        return MOI.NO_SOLUTION
+    end
+    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved)
         return MOI.FEASIBLE_POINT
     else
         return MOI.INFEASIBLE_POINT
@@ -17,21 +23,24 @@ function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
 end
 
 function MOI.get(model::Optimizer, ::MOI.DualStatus)
-    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved) 
+    if model.inner === nothing
+        return MOI.NO_SOLUTION
+    end
+    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved)
         return MOI.FEASIBLE_POINT
     else
         return MOI.INFEASIBLE_POINT
     end
 end
 
-	
+
 function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
         @error "optimize! not called"
     end
     return model.inner.objval
 end
-	
+
 function MOI.get(model::Optimizer, ::MOI.ObjectiveBound)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
         @error "optimize! not called"
@@ -49,7 +58,7 @@ function MOI.get(model::Optimizer, ::MOI.RelativeGap)
     return abs(model.inner.best_bound-model.inner.objval)/abs(model.inner.objval)
 end
 
-function MOI.get(model::Optimizer, ::MOI.SolveTime)
+function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
         @error "optimize! not called"
     end
@@ -62,4 +71,12 @@ function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
     end
     MOI.throw_if_not_valid(model, vi)
     return model.inner.solution[vi.value]
+end
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintPrimal,
+    ci::MOI.ConstraintIndex,
+)
+    return MOI.Utilities.get_fallback(model, attr, ci)
 end
