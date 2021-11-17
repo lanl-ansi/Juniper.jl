@@ -1,7 +1,7 @@
 # MathOptInterface results
 
 function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
-    if isnothing(model.inner)
+    if model.inner === nothing
         return MOI.OPTIMIZE_NOT_CALLED
     end
 	return model.inner.status
