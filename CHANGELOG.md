@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.8.0
+- Updated to MathOptInterface v0.10
+
 ### v0.7.1
 - Bugfix `set_subsolver_option!` nothing should be returned if `subsolver_name` doesn't match [PR #214](https://github.com/lanl-ansi/Juniper.jl/pull/214)
 
