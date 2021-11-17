@@ -51,8 +51,14 @@ struct FixVariables{T, M<:MOI.ModelLike} <: AbstractModelFilter
 end
 
 function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintTypesPresent)
-    return [MOI.get(f.inner, attr); (MOI.VariableIndex, MOI.EqualTo{Float64})]
+    ret = MOI.get(f.inner, attr)
+    fix = (MOI.VariableIndex, MOI.EqualTo{Float64})
+    if !(fix  in ret)
+        push!(ret, fix)
+    end
+    return ret
 end
+
 function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintIndices{MOI.VariableIndex, S}) where S
     list = filter(MOI.get(f.inner, attr)) do ci
         !haskey(f.fixed_values, MOI.VariableIndex(ci.value))
