@@ -372,4 +372,12 @@ function MOI.get(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MO
     return MOI.get(model.model_cache, attr, ci)
 end
 
+function MOI.get(
+    model::Optimizer,
+    attr::Union{MOI.ConstraintFunction,MOI.ConstraintSet},
+    ci::MOI.ConstraintIndex,
+)
+    return MOI.get(model.model_cache, attr, ci)
+end
+
 include("results.jl")
