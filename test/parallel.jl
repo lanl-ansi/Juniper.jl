@@ -13,9 +13,9 @@ include("basic/gamsworld.jl")
         branch_strategy=:Reliability,
         strong_restart = false,
         processors = 4,
-        mip_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
+        mip_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false),
         incumbent_constr = true
-    ) 
+    )
 
     set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
@@ -45,10 +45,10 @@ end
         log_levels=[:Table],
         branch_strategy=:MostInfeasible,
         solution_limit=1,
-        mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
+        mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false),
         processors = 3
     )
-    
+
     m = Model()
 
     v = [10,20,12,23,42]
@@ -57,18 +57,18 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         juniper_one_solution...
     ))
-    
+
     status = solve(m)
     @test status == MOI.SOLUTION_LIMIT
 
     # maybe all three found a solution at the same time
-    @test Juniper.getnsolutions(internalmodel(m)) <= 3 
+    @test Juniper.getnsolutions(internalmodel(m)) <= 3
     @test Juniper.getnsolutions(internalmodel(m)) >= 1
 end
 
@@ -88,7 +88,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     status = solve(m)
     println("Obj: ", JuMP.objective_value(m))
@@ -110,7 +110,7 @@ end
         branch_strategy=:Reliability,
         strong_restart = false,
         processors = 10
-    ) 
+    )
 
     set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
@@ -128,7 +128,7 @@ end
     println("bound: ", juniper_bb)
 
     im = internalmodel(m)
-    # must have changed to 4 processors 
+    # must have changed to 4 processors
     @test im.options.processors == 4
     @test isapprox(juniper_val, 285506.5082, atol=opt_atol, rtol=opt_rtol)
 end
@@ -144,7 +144,7 @@ end
         branch_strategy=:StrongPseudoCost,
         strong_restart = false,
         processors = 4
-    ) 
+    )
 
     set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
@@ -172,11 +172,11 @@ end
 
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
-        DefaultTestSolver(;processors=2, traverse_strategy=:DBFS, mip_gap=100, 
+        DefaultTestSolver(;processors=2, traverse_strategy=:DBFS, mip_gap=100,
                            branch_strategy=:MostInfeasible)...
         )
     )
-            
+
     v = [10,20,12,23,42]
     w = [12,45,12,22,21]
     # don't allow start to be an incumbent
@@ -184,7 +184,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     status = solve(m)
     objval = JuMP.objective_value(m)
@@ -268,7 +268,7 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         juniper_all_solutions...)
-    )    
+    )
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -312,7 +312,7 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         juniper_all_solutions...
-    ))  
+    ))
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -343,8 +343,8 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
-    )  
-    
+    )
+
     @variable(m, 1 <= x <= 5, Int)
     @variable(m, -2 <= y <= 2, Int)
 
@@ -366,8 +366,8 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
-    )  
-    
+    )
+
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
     @objective(m, Min, sum(x))
@@ -389,7 +389,7 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
-    )  
+    )
 
     @variable(m, 0 <= x[1:10] <= 2, Int)
 
@@ -412,7 +412,7 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(branch_strategy=:StrongPseudoCost,processors = 2)...)
-    )  
+    )
 
     @variable(m, 0 <= x[1:5] <= 2, Int)
 

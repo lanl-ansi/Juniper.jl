@@ -16,10 +16,10 @@ include("basic/gamsworld.jl")
             branch_strategy=:StrongPseudoCost,
             strong_branching_nsteps= 100,
             strong_branching_perc = 100,
-            strong_restart = false, 
+            strong_restart = false,
             debug = true)...
     ))
-    
+
     status = solve(m)
     @test status == MOI.LOCALLY_SOLVED
 
@@ -78,7 +78,7 @@ end
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart = true,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -98,7 +98,7 @@ end
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             strong_restart=false,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)

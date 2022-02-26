@@ -53,7 +53,7 @@ w = [12,45,12,22,21]
 
 @objective(m, Max, dot(v,x))
 
-@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
 optimize!(m)
 
@@ -68,10 +68,10 @@ This solver is a NLP solver therefore you should have at least one `NLconstraint
 It is recommended to specify a mip solver as well i.e.
 
 ```julia
-using Cbc
+using HiGHS
 optimizer = Juniper.Optimizer
 nl_solver= optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
-mip_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+mip_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
 m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver))
 ```
 

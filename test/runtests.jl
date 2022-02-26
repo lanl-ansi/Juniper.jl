@@ -28,13 +28,13 @@ using Random
 using JuMP
 
 using Ipopt
-using Cbc
+using HiGHS
 using GLPK
 # using PowerModels
 
-using MathOptInterface 
+using MathOptInterface
 
-const MOI = MathOptInterface 
+const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
 using Juniper
@@ -51,12 +51,12 @@ sol_atol = 1e-3
 function solve(m::Model)
     JuMP.optimize!(m)
     bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.TerminationStatus()) 
+    return MOI.get(bm, MOI.TerminationStatus())
 end
 
 function getsolvetime(m::Model)
     bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.SolveTimeSec()) 
+    return MOI.get(bm, MOI.SolveTimeSec())
 end
 
 function internalmodel(m::Model)
@@ -66,7 +66,7 @@ end
 
 function getobjgap(m::Model)
     bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.RelativeGap()) 
+    return MOI.get(bm, MOI.RelativeGap())
 end
 
 juniper_strong_restart_2 = DefaultTestSolver(
