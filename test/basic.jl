@@ -80,7 +80,7 @@ end
     bm = JuMP.backend(m)
     status = MOI.get(bm, MOI.TerminationStatus())
 
-    innermodel = bm.optimizer.model.optimizer.inner
+    innermodel = JuMP.unsafe_backend(m).inner
     debugDict = innermodel.debugDict
     @test getnstate(debugDict,:Integral) == 24
     @test different_hashes(debugDict) == true

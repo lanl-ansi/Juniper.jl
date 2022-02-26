@@ -60,8 +60,7 @@ function getsolvetime(m::Model)
 end
 
 function internalmodel(m::Model)
-    bm = JuMP.backend(m)
-    return bm.optimizer.model.optimizer.inner
+    return JuMP.unsafe_backend(m).inner
 end
 
 function getobjgap(m::Model)
