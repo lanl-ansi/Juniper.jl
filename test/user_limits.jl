@@ -5,7 +5,6 @@ include("POD_experiment/FLay02H.jl")
         println("==================================")
         println("KNAPSACK 50%")
         println("==================================")
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
@@ -16,34 +15,24 @@ include("POD_experiment/FLay02H.jl")
                 )...,
             ),
         )
-
         v = [10, 20, 12, 23, 42]
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin, start = 0.5)
-
-        @objective(m, Max, dot(v, x))
-
+        @objective(m, Max, v' * x)
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
-
-        status = solve(m)
+        optimize!(m)
         objval = JuMP.objective_value(m)
         println("Obj: ", objval)
-        best_bound_val = JuMP.objective_bound(m)
-        gap_val = getobjgap(m)
-
-        @test status == MOI.OBJECTIVE_LIMIT
-
-        @test best_bound_val >= objval
-        @test 0.1 <= gap_val <= 0.5
+        @test termination_status(m) == MOI.OBJECTIVE_LIMIT
+        @test JuMP.objective_bound(m) >= objval
+        @test 0.1 <= relative_gap(m) <= 0.5
     end
 
     @testset "FLay02H time limit" begin
         println("==================================")
         println("FLay02H time limit")
         println("==================================")
-
         m = get_FLay02H()
-
         set_optimizer(
             m,
             optimizer_with_attributes(
@@ -55,10 +44,9 @@ include("POD_experiment/FLay02H.jl")
                 )...,
             ),
         )
-
-        status = solve(m)
-
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
-        @test getsolvetime(m) <= 15 # it might be a bit higher than 5s
+        @test solve_time(m) <= 15 # it might be a bit higher than 5s
     end
 end

@@ -14,7 +14,8 @@
         @NLconstraint(m, aeiou^2 == 1)
 
         setsolver(m, juniper_strong_no_restart)
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == :Optimal || status == :LocalOptimal
 
@@ -47,7 +48,8 @@
             traverse_strategy = :DFS,
         )
         setsolver(m, solver...)
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == :Optimal || status == :LocalOptimal
 
@@ -83,7 +85,8 @@
             traverse_strategy = :DFS,
         )
         setsolver(m, solver...)
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == :Optimal || status == :LocalOptimal
 

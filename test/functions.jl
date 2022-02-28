@@ -14,11 +14,11 @@
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        MOIU.attach_optimizer(m)
+        MOI.Utilities.attach_optimizer(m)
         options = JuMP.unsafe_backend(m).options
 
         nd_options = Juniper.get_non_default_options(options)
@@ -76,7 +76,7 @@
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
         # there it is detected that no mip solver is present
@@ -145,14 +145,12 @@
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        MOIU.attach_optimizer(m)
-        bm = JuMP.backend(m)
         JuMP.optimize!(m)
-        innermodel = internalmodel(m)
+        innermodel = unsafe_backend(m).inner
 
         options = innermodel.options
         jp = innermodel
@@ -382,14 +380,12 @@
         JuMP.set_upper_bound(x[3], 1)
         JuMP.set_upper_bound(x[2], 1)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        MOIU.attach_optimizer(m)
-        bm = JuMP.backend(m)
         JuMP.optimize!(m)
-        model = internalmodel(m)
+        model = unsafe_backend(m).inner
 
         cont_restart = Juniper.generate_random_restart(model)
         @test length(cont_restart) == 5
@@ -431,14 +427,12 @@
         JuMP.set_upper_bound(x[3], 1)
         JuMP.set_upper_bound(x[2], 1)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        MOIU.attach_optimizer(m)
-        bm = JuMP.backend(m)
         JuMP.optimize!(m)
-        model = internalmodel(m)
+        model = unsafe_backend(m).inner
 
         cont_restart2 = Juniper.generate_random_restart(model)
         # all random numbers should be different then before
@@ -468,14 +462,12 @@
         JuMP.set_upper_bound(x[3], 1)
         JuMP.set_upper_bound(x[2], 1)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        MOIU.attach_optimizer(m)
-        bm = JuMP.backend(m)
         JuMP.optimize!(m)
-        model = internalmodel(m)
+        model = unsafe_backend(m).inner
 
         cont_restart3 = Juniper.generate_random_restart(model)
         # all random numbers should be the same as before

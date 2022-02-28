@@ -15,12 +15,14 @@ include("basic/gamsworld.jl")
         @constraint(m, x <= 5)
         @NLconstraint(m, x^2 >= 17)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         rand_num = rand()
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test rand() != rand_num
 
-        inner = internalmodel(m)
+        inner = unsafe_backend(m).inner
         @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
         @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
         @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
@@ -75,8 +77,7 @@ include("basic/gamsworld.jl")
 
         JuMP.set_optimizer_attribute(m, "all_solutions", true)
         JuMP.optimize!(m)
-        bm = JuMP.backend(m)
-        status = MOI.get(bm, MOI.TerminationStatus())
+        status = JuMP.termination_status(m)
 
         innermodel = JuMP.unsafe_backend(m).inner
         debugDict = innermodel.debugDict
@@ -164,14 +165,15 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
         @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
+              Juniper.getnsolutions(unsafe_backend(m).inner)
 
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
     end
 
     @testset "bruteforce approx time limit" begin
@@ -206,14 +208,15 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
         @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
+              Juniper.getnsolutions(unsafe_backend(m).inner)
 
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
     end
 
     @testset "bruteforce time limit reliable" begin
@@ -235,11 +238,9 @@ include("basic/gamsworld.jl")
         )
 
         m = Model(optimizer)
-        moi_optimizer = JuMP.backend(m).optimizer.model
-
         # default => 1
-        @test MOI.supports(moi_optimizer, MOI.NumberOfThreads()) == true
-        MOI.set(moi_optimizer, MOI.NumberOfThreads(), nothing)
+        @test MOI.supports(backend(m), MOI.NumberOfThreads()) == true
+        JuMP.set_optimizer_attribute(m, MOI.NumberOfThreads(), nothing)
 
         @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -254,18 +255,18 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
         @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
-        @test MOI.get(moi_optimizer, MOI.NumberOfThreads()) == 1
+              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test JuMP.get_optimizer_attribute(m, MOI.NumberOfThreads()) == 1
         # all solutions are saved => nsolutions should equal length(solutions)
-        @test MOI.get(moi_optimizer, MOI.ResultCount()) ==
-              Juniper.getnsolutions(internalmodel(m))
+        @test result_count(m) == Juniper.getnsolutions(unsafe_backend(m).inner)
 
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
     end
 
     @testset "bruteforce PseudoCost" begin
@@ -299,14 +300,15 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
         @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
+              Juniper.getnsolutions(unsafe_backend(m).inner)
 
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
     end
 
     @testset "bruteforce Reliability" begin
@@ -339,14 +341,15 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
         @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
+              Juniper.getnsolutions(unsafe_backend(m).inner)
 
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
     end
 
     @testset "no integer" begin
@@ -369,7 +372,8 @@ include("basic/gamsworld.jl")
 
         @NLconstraint(m, y == 2 * cos(2 * x))
         println("before solve")
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
 
         @test status == MOI.LOCALLY_SOLVED
@@ -393,7 +397,8 @@ include("basic/gamsworld.jl")
 
         @NLconstraint(m, y == 2 * cos(2 * x))
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         println("Status: ", status)
 
@@ -401,7 +406,7 @@ include("basic/gamsworld.jl")
         @test JuMP.termination_status(m) == MOI.LOCALLY_INFEASIBLE
         @test JuMP.primal_status(m) == MOI.INFEASIBLE_POINT
         @test JuMP.dual_status(m) == MOI.INFEASIBLE_POINT
-        @test isnan(getobjgap(m))
+        @test isnan(relative_gap(m))
     end
 
     @testset "infeasible int reliable" begin
@@ -423,11 +428,12 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, y >= sqrt(2))
         @NLconstraint(m, y <= sqrt(3))
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
 
         @test status == MOI.LOCALLY_INFEASIBLE
-        @test isnan(getobjgap(m))
+        @test isnan(relative_gap(m))
     end
 
     @testset "infeasible sin with different bounds" begin
@@ -458,7 +464,8 @@ include("basic/gamsworld.jl")
 
         @NLconstraint(m, y == sin(x))
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == MOI.LOCALLY_INFEASIBLE
     end
@@ -482,9 +489,10 @@ include("basic/gamsworld.jl")
         @constraint(m, sum(x[1:5]) <= 20)
         @NLconstraint(m, x[1] * x[2] * x[3] >= 10)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
-        debug1 = internalmodel(m).debugDict
+        debug1 = unsafe_backend(m).inner.debugDict
 
         m = Model(
             optimizer_with_attributes(
@@ -500,10 +508,11 @@ include("basic/gamsworld.jl")
         @constraint(m, sum(x[1:5]) <= 20)
         @NLconstraint(m, x[1] * x[2] * x[3] >= 10)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
-        debug2 = internalmodel(m).debugDict
-        opts = internalmodel(m).options
+        debug2 = unsafe_backend(m).inner.debugDict
+        opts = unsafe_backend(m).inner.options
 
         # should be deterministic
         @test debug1[:relaxation][:nrestarts] ==
@@ -539,7 +548,8 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, x[1]^2 + x[2]^2 + x[3]^2 + y^2 <= 3)
         @NLconstraint(m, x[1]^2 * x[2]^2 * x[3]^2 * y^2 >= 10)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
 
         @test status == MOI.LOCALLY_INFEASIBLE
@@ -564,7 +574,8 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, x[1] * x[2] * x[3] >= 7)
         @NLconstraint(m, x[1] * x[2] * x[3] <= 7.5)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
 
         @test status == MOI.LOCALLY_INFEASIBLE
@@ -588,7 +599,8 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, x[3]^2 <= 2)
         @NLconstraint(m, x[3]^2 >= 1.2)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
 
         @test status == MOI.LOCALLY_INFEASIBLE
@@ -627,7 +639,8 @@ include("basic/gamsworld.jl")
         @constraint(m, 3x + 10 <= 20)
         @NLconstraint(m, y^2 <= u * w)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
         println("x: ", JuMP.value(x))
         println("y: ", JuMP.value(y))
@@ -660,7 +673,8 @@ include("basic/gamsworld.jl")
         @constraint(m, 3x + 10 <= 20)
         @NLconstraint(m, y^2 <= u * w)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
         println("x: ", JuMP.value(x))
         println("y: ", JuMP.value(y))
@@ -700,7 +714,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
         println("x: ", JuMP.value(x))
         println("y: ", JuMP.value(y))
@@ -730,7 +745,8 @@ include("basic/gamsworld.jl")
         @constraint(m, 3x + 10 <= 20)
         @NLconstraint(m, y^2 <= u * w)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
         println("x: ", JuMP.value(x))
         println("y: ", JuMP.value(y))
@@ -763,7 +779,8 @@ include("basic/gamsworld.jl")
         @constraint(m, 3x + 10 <= 20)
         @NLconstraint(m, y^2 <= u * w)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
 
         @test status == MOI.LOCALLY_SOLVED
@@ -791,7 +808,8 @@ include("basic/gamsworld.jl")
         @constraint(m, 3x + 10 <= 20)
         @NLconstraint(m, y^2 <= u * w)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
 
         @test status == MOI.LOCALLY_SOLVED
@@ -819,7 +837,8 @@ include("basic/gamsworld.jl")
         @constraint(m, 3x + 10 <= 20)
         @NLconstraint(m, y^2 <= u * w)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
 
         @test status == MOI.LOCALLY_SOLVED
@@ -852,11 +871,12 @@ include("basic/gamsworld.jl")
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
 
         @test status == MOI.LOCALLY_SOLVED
@@ -886,11 +906,12 @@ include("basic/gamsworld.jl")
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
 
         @test status == MOI.LOCALLY_SOLVED
@@ -914,7 +935,8 @@ include("basic/gamsworld.jl")
         @constraint(m, x[1:6] .== 1)
         @objective(m, Max, sum(x))
         @NLconstraint(m, x[1] * x[2] * x[3] + x[4] * x[5] * x[6] <= 100)
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED
         @test isapprox(JuMP.objective_value(m), 6, atol = opt_atol)
         # objective bound doesn't exists anymore in Ipopt
@@ -940,11 +962,12 @@ include("basic/gamsworld.jl")
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Obj: ", JuMP.objective_value(m))
 
         @test status == MOI.LOCALLY_SOLVED
@@ -972,11 +995,12 @@ include("basic/gamsworld.jl")
         # set all to 1 which is infeasible otherwise incumbent solution would be found
         @variable(m, x[1:5], Bin, start = 1)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == MOI.LOCALLY_INFEASIBLE
     end
@@ -996,7 +1020,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED
 
         juniper_val = JuMP.objective_value(m)
@@ -1027,7 +1052,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED
 
         juniper_val = JuMP.objective_value(m)
@@ -1058,7 +1084,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED
 
         juniper_val = JuMP.objective_value(m)
@@ -1084,7 +1111,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED
 
         juniper_val = JuMP.objective_value(m)
@@ -1111,7 +1139,7 @@ include("basic/gamsworld.jl")
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
 
-        @objective(m, Max, dot(v, x))
+        @objective(m, Max, v' * x)
 
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
 
@@ -1123,12 +1151,13 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         @test status == MOI.SOLUTION_LIMIT
 
         # maybe 2 found at the same time
-        @test Juniper.getnsolutions(internalmodel(m)) <= 2
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) <= 2
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
     end
 
     @testset "bruteforce obj_epsilon" begin
@@ -1157,7 +1186,8 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         # maybe 2 found at the same time
         @test status == MOI.LOCALLY_SOLVED
@@ -1191,7 +1221,8 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         # not possible to reach but should be solved anyway
         @test status == MOI.LOCALLY_SOLVED
@@ -1226,13 +1257,14 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         # reachable and should break
         @test status == MOI.OBJECTIVE_LIMIT
         # maybe 2 found at the same time
-        @test Juniper.getnsolutions(internalmodel(m)) <= 2
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) <= 2
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
     end
 
     # this test has a lot "Only almost locally solved" warnings (in mumps at least)
@@ -1248,7 +1280,8 @@ include("basic/gamsworld.jl")
         @constraint(m, [i = 2:11], x[i-1] <= x[i] - 1)
         @NLconstraint(m, sum(1 / x[i] for i in 1:11) == 2)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         # in mumps/on travis this returns ALMOST_LOCALLY_SOLVED but with ma27/locally it is LOCALLY_SOLVED
         @test Juniper.state_is_optimal(status; allow_almost = true)
@@ -1274,7 +1307,8 @@ include("basic/gamsworld.jl")
         @constraint(m, [i = 2:11], x[i-1] <= x[i] - 1)
         @NLconstraint(m, sum(1 / x[i] for i in 1:11) == 2)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         # even without almost this should still be solveable
         @test status == MOI.LOCALLY_SOLVED

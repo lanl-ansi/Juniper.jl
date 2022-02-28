@@ -23,8 +23,9 @@ include("basic/gamsworld.jl")
         @constraint(m, x <= 5)
         @NLconstraint(m, x^2 >= 17)
 
-        status = solve(m)
-        inner = internalmodel(m)
+        optimize!(m)
+        status = termination_status(m)
+        inner = unsafe_backend(m).inner
         @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
         @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
         @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
@@ -63,11 +64,12 @@ include("basic/gamsworld.jl")
         )
         set_optimizer(m, optimizer)
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         # should have feasibility_pump be set to true
         @test MOI.get(m, MOI.RawOptimizerAttribute("feasibility_pump"))
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
     end
 
     @testset "GLPK Binary bounds #143" begin
@@ -87,7 +89,8 @@ include("basic/gamsworld.jl")
         @variable(m, x >= 0.5, Bin)
         @constraint(m, sum(z) + x <= 2)
         @objective(m, Max, sum(z) + x)
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == MOI.LOCALLY_SOLVED
         @test isapprox(JuMP.objective_value(m), 2.0, atol = opt_atol)
@@ -132,8 +135,9 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        optimize!(m)
+        status = termination_status(m)
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
     end
 
     @testset "FP: Integer test2" begin
@@ -169,8 +173,9 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        optimize!(m)
+        status = termination_status(m)
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
     end
 
     @testset "FP: infeasible cos" begin
@@ -202,11 +207,12 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
 
         @test status == MOI.LOCALLY_INFEASIBLE
-        @test Juniper.getnsolutions(internalmodel(m)) == 0
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 0
     end
 
     @testset "FP: tspn05" begin
@@ -231,7 +237,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == MOI.LOCALLY_SOLVED
         @test isapprox(JuMP.objective_value(m), 191.2541, atol = 1e0)
@@ -262,10 +269,11 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
     end
 
     @testset "FP: FLay02H short feasibility_pump_time_limit" begin
@@ -293,7 +301,8 @@ include("basic/gamsworld.jl")
             ),
         )
 
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
 
         @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
     end
