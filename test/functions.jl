@@ -47,7 +47,7 @@
     end
 
     function option_not_available()
-        return  Model(
+        return Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
                 DefaultTestSolver(; branch = :Pseudo, obj_epsilon = 0.5)...,
