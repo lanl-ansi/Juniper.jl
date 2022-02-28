@@ -79,12 +79,6 @@ const juniper_mosti = DefaultTestSolver(branch_strategy = :MostInfeasible)
 
 const juniper_pseudo = DefaultTestSolver(branch_strategy = :PseudoCost)
 
-# TODO(odow): files not tested
-#  * include("current_118.jl")
-#  * include("power_models_acp.jl")
-#  * include("power_models_socwr.jl")
-#  * include("MINLPTests/run_minlptests")
-
 # Contains utilities used in the tests
 include("debug.jl")
 
