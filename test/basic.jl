@@ -19,9 +19,8 @@ include("basic/gamsworld.jl")
         @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
         @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
         @test isapprox(JuMP.value(x), 5, atol = sol_atol)
-        inner = unsafe_backend(m).inner
-        @test Juniper.getnsolutions(inner) == 1
-        @test inner.primal_start[1] == 3
+        @test result_count(m) == 1
+        @test unsafe_backend(m).inner.primal_start[1] == 3
     end
 
     @testset "bruteforce" begin
@@ -70,10 +69,9 @@ include("basic/gamsworld.jl")
         @test different_hashes(innermodel.debugDict) == true
         counter_test(innermodel.debugDict, Juniper.getnbranches(innermodel))
         list_of_solutions = Juniper.getsolutions(innermodel)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(innermodel)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(innermodel) == 24
+        @test result_count(m) == 24
     end
 
     @testset "bruteforce optimizer without attributes" begin
@@ -140,10 +138,9 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
         optimize!(m)
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test termination_status(m) == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
     end
 
     @testset "bruteforce approx time limit" begin
@@ -175,10 +172,9 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
         optimize!(m)
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test termination_status(m) == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
     end
 
     @testset "bruteforce time limit reliable" begin
@@ -213,13 +209,12 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
         optimize!(m)
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test JuMP.get_optimizer_attribute(m, MOI.NumberOfThreads()) == 1
         # all solutions are saved => nsolutions should equal length(solutions)
-        @test result_count(m) == Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test result_count(m) == result_count(m)
         @test termination_status(m) == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
     end
 
     @testset "bruteforce PseudoCost" begin
@@ -252,10 +247,9 @@ include("basic/gamsworld.jl")
         status = termination_status(m)
         println("Status: ", status)
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
     end
 
     @testset "bruteforce Reliability" begin
@@ -287,10 +281,9 @@ include("basic/gamsworld.jl")
         status = termination_status(m)
         println("Status: ", status)
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
     end
 
     @testset "no integer" begin
@@ -929,8 +922,8 @@ include("basic/gamsworld.jl")
         optimize!(m)
         @test termination_status(m) == MOI.SOLUTION_LIMIT
         # maybe 2 found at the same time
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) <= 2
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
+        @test result_count(m) <= 2
+        @test result_count(m) >= 1
     end
 
     @testset "bruteforce obj_epsilon" begin
@@ -1016,8 +1009,8 @@ include("basic/gamsworld.jl")
         # reachable and should break
         @test termination_status(m) == MOI.OBJECTIVE_LIMIT
         # maybe 2 found at the same time
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) <= 2
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
+        @test result_count(m) <= 2
+        @test result_count(m) >= 1
     end
 
     # this test has a lot "Only almost locally solved" warnings (in mumps at least)

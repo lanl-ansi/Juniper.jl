@@ -24,9 +24,8 @@ include("basic/gamsworld.jl")
         @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
         @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
         @test isapprox(JuMP.value(x), 5, atol = sol_atol)
-        inner = unsafe_backend(m).inner
-        @test Juniper.getnsolutions(inner) == 1
-        @test inner.primal_start[1] == 3
+        @test result_count(m) == 1
+        @test unsafe_backend(m).inner.primal_start[1] == 3
     end
 
     @testset "FP: no linear" begin
@@ -117,7 +116,7 @@ include("basic/gamsworld.jl")
         )
         optimize!(m)
         @test termination_status(m) == LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
+        @test result_count(m) >= 1
     end
 
     @testset "FP: Integer test2" begin
@@ -140,7 +139,7 @@ include("basic/gamsworld.jl")
                 DefaultTestSolver(
                     branch_strategy = :MostInfeasible,
                     feasibility_pump = true,
-                    time_limit = 1,
+                    time_limit = 10.0,
                     mip_solver = optimizer_with_attributes(
                         HiGHS.Optimizer,
                         "output_flag" => false,
@@ -150,7 +149,7 @@ include("basic/gamsworld.jl")
         )
         optimize!(m)
         @test termination_status(m) == LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
+        @test result_count(m) >= 1
     end
 
     @testset "FP: infeasible cos" begin
@@ -181,7 +180,7 @@ include("basic/gamsworld.jl")
         status = termination_status(m)
         println("Status: ", status)
         @test status == MOI.LOCALLY_INFEASIBLE
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 0
+        @test result_count(m) == 0
     end
 
     @testset "FP: tspn05" begin
@@ -233,7 +232,7 @@ include("basic/gamsworld.jl")
         optimize!(m)
         status = termination_status(m)
         @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) >= 1
+        @test result_count(m) >= 1
     end
 
     @testset "FP: FLay02H short feasibility_pump_time_limit" begin

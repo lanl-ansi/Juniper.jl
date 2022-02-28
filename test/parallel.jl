@@ -182,8 +182,7 @@ include("basic/gamsworld.jl")
         println("bb: ", JuMP.objective_bound(m))
         @test termination_status(m) == MOI.OBJECTIVE_LIMIT
         @test best_bound_val >= objval
-        @test 0.01 <= gap_val <= 1 ||
-              Juniper.getnsolutions(unsafe_backend(m).inner) == 1
+        @test 0.01 <= gap_val <= 1 || result_count(m) == 1
     end
 
     @testset "bruteforce" begin
@@ -217,10 +216,9 @@ include("basic/gamsworld.jl")
         optimize!(m)
         debugDict = unsafe_backend(m).inner.debugDict
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test termination_status(m) == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
         @test getnstate(debugDict, :Integral) == 24
         @test different_hashes(debugDict) == true
         counter_test(debugDict, Juniper.getnbranches(unsafe_backend(m).inner))
@@ -306,10 +304,9 @@ include("basic/gamsworld.jl")
         status = termination_status(m)
         println("Status: ", status)
         list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(unsafe_backend(m).inner) == 24
+        @test result_count(m) == 24
     end
 
     @testset "infeasible cos" begin
