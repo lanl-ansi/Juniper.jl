@@ -23,14 +23,17 @@ const VECTOR = MOI.VectorOfVariables
 include("types.jl")
 
 function Base.show(io::IO, opts::SolverOptions)
-    longest_field_name = maximum([length(string(fname)) for fname in fieldnames(SolverOptions)])+2
+    longest_field_name =
+        maximum([
+            length(string(fname)) for fname in fieldnames(SolverOptions)
+        ]) + 2
     for name in fieldnames(SolverOptions)
         sname = string(name)
-        pname = sname*repeat(" ", longest_field_name-length(sname))
-        if getfield(opts,name) === nothing
+        pname = sname * repeat(" ", longest_field_name - length(sname))
+        if getfield(opts, name) === nothing
             println(io, pname, ": NA")
         else
-            println(io, pname, ": ", getfield(opts,name))
+            println(io, pname, ": ", getfield(opts, name))
         end
     end
 end

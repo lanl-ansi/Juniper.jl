@@ -9,9 +9,9 @@ Traverse over the debug dict and call callback for every entry with the hash, st
 as well as parameters.
 Returns the results array in the end.
 """
-function traverse(entry,callback,params,results)
-    push!(results,callback(entry[:hash],entry[:step_obj],params))
-    if haskey(entry,:children)
+function traverse(entry, callback, params, results)
+    push!(results, callback(entry[:hash], entry[:step_obj], params))
+    if haskey(entry, :children)
         results = traverse(entry[:children][1], callback, params, results)
         results = traverse(entry[:children][2], callback, params, results)
     end
@@ -23,7 +23,7 @@ end
 
 A callback function for traverse which checks whether a given state (params[:state]) is present
 """
-function c_isstate(hash,entry,params)
+function c_isstate(hash, entry, params)
     return entry[:node][:state] == params[:state]
 end
 
@@ -32,7 +32,7 @@ end
 
 A callback function for traverse which gets the hash
 """
-function c_hashes(hash,entry,params)
+function c_hashes(hash, entry, params)
     return hash
 end
 
@@ -41,17 +41,16 @@ end
 
 A callback function for traverse which gets the counter
 """
-function c_counter(hash,entry,params)
-    return haskey(entry,:counter) ? entry[:counter] : 0
+function c_counter(hash, entry, params)
+    return haskey(entry, :counter) ? entry[:counter] : 0
 end
-
 
 """
     getnstate(d,state)
 
 Get number of how often a given state arised
 """
-function getnstate(d,state)
+function getnstate(d, state)
     dictTree = d[:tree]
     params = Dict{Symbol,Symbol}()
     params[:state] = state

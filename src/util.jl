@@ -1,5 +1,10 @@
 # TODO maybe move to MOI.Utilities alongside `MOIU.get_bounds`
-function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper::T) where T
+function set_bounds(
+    model::MOI.ModelLike,
+    vi::MOI.VariableIndex,
+    lower::T,
+    upper::T,
+) where {T}
     xval = vi.value
     c_lt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{T}}(xval)
     c_gt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.GreaterThan{T}}(xval)
@@ -12,7 +17,9 @@ function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper
     end
     if MOI.is_valid(model, c_eq)
         # Maybe delete it and add an interval constraint if this case is useful
-        lower == upper || error("Cannot set different bounds $lower and $upper to a variables with `EqualTo` constraint.")
+        lower == upper || error(
+            "Cannot set different bounds $lower and $upper to a variables with `EqualTo` constraint.",
+        )
         MOI.set(model, MOI.ConstraintSet(), c_eq, MOI.EqualTo(lower))
         # It is assumed that none of the other `ConstraintIndex`s are valid
         return
@@ -40,14 +47,23 @@ function set_bounds(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T, upper
     return
 end
 
-function set_lower_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T) where T
+function set_lower_bound(
+    model::MOI.ModelLike,
+    vi::MOI.VariableIndex,
+    lower::T,
+) where {T}
     xval = vi.value
     c_gt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.GreaterThan{T}}(xval)
     c_int = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{T}}(xval)
     c_eq = MOI.ConstraintIndex{MOI.VariableIndex,MOI.EqualTo{T}}(xval)
     if MOI.is_valid(model, c_int)
         set = MOI.get(model, MOI.ConstraintSet(), c_int)
-        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(lower, set.upper))
+        MOI.set(
+            model,
+            MOI.ConstraintSet(),
+            c_int,
+            MOI.Interval(lower, set.upper),
+        )
         # It is assumed that none of the other ConstraintIndexs are valid
         return
     end
@@ -62,14 +78,23 @@ function set_lower_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, lower::T) 
     end
     return
 end
-function set_upper_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, upper::T) where T
+function set_upper_bound(
+    model::MOI.ModelLike,
+    vi::MOI.VariableIndex,
+    upper::T,
+) where {T}
     xval = vi.value
     c_lt = MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{T}}(xval)
     c_int = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{T}}(xval)
     c_eq = MOI.ConstraintIndex{MOI.VariableIndex,MOI.EqualTo{T}}(xval)
     if MOI.is_valid(model, c_int)
         set = MOI.get(model, MOI.ConstraintSet(), c_int)
-        MOI.set(model, MOI.ConstraintSet(), c_int, MOI.Interval(set.lower, upper))
+        MOI.set(
+            model,
+            MOI.ConstraintSet(),
+            c_int,
+            MOI.Interval(set.lower, upper),
+        )
         # It is assumed that none of the other ConstraintIndexs are valid
         return
     end
@@ -85,9 +110,9 @@ function set_upper_bound(model::MOI.ModelLike, vi::MOI.VariableIndex, upper::T) 
     return
 end
 
-function generate_random_restart(m; cont=true)
+function generate_random_restart(m; cont = true)
     values = []
-    for i=1:m.num_var
+    for i in 1:m.num_var
         lbi_def = true
         ubi_def = true
         if m.l_var[i] > typemin(Int64)
@@ -108,17 +133,17 @@ function generate_random_restart(m; cont=true)
             ubi = 10
             lbi = -10
         elseif !ubi_def
-            ubi = lbi+20
+            ubi = lbi + 20
         elseif !lbi_def
-            lbi = ubi-20
+            lbi = ubi - 20
         end
 
         if m.var_type[i] == :Cont || cont
-            push!(values,(ubi-lbi)*rand(JUNIPER_RNG;)+lbi)
+            push!(values, (ubi - lbi) * rand(JUNIPER_RNG;) + lbi)
         else
             lbi = Int(round(lbi))
             ubi = Int(round(ubi))
-            push!(values, rand(JUNIPER_RNG,lbi:ubi))
+            push!(values, rand(JUNIPER_RNG, lbi:ubi))
         end
     end
     return values
@@ -130,15 +155,16 @@ end
 Get all discrete variables which aren't close to discrete yet based on atol
 """
 function get_reasonable_disc_vars(node, var_type, disc_vars, disc2var_idx, atol)
-    reasonable_disc_vars = zeros(Int64,0)
-    for i=1:disc_vars
+    reasonable_disc_vars = zeros(Int64, 0)
+    for i in 1:disc_vars
         idx = disc2var_idx[i]
         u_b = node.u_var[idx]
         l_b = node.l_var[idx]
-        if isapprox(u_b,l_b; atol=atol) || is_type_correct(node.solution[idx],var_type[idx],atol)
+        if isapprox(u_b, l_b; atol = atol) ||
+           is_type_correct(node.solution[idx], var_type[idx], atol)
             continue
         end
-        push!(reasonable_disc_vars,i)
+        push!(reasonable_disc_vars, i)
     end
     return reasonable_disc_vars
 end
@@ -149,7 +175,9 @@ end
 Returns true if either ALMOST_OPTIMAL, OPTIMAL or INFEASIBLE and false otherwise
 """
 function is_global_status(state::MOI.TerminationStatusCode)
-    return state == MOI.ALMOST_OPTIMAL || state == MOI.OPTIMAL || state == MOI.INFEASIBLE
+    return state == MOI.ALMOST_OPTIMAL ||
+           state == MOI.OPTIMAL ||
+           state == MOI.INFEASIBLE
 end
 
 """
@@ -166,9 +194,14 @@ end
 
 Returns true if either optimal or locally solved. If allow_almost then check for `ALMOST_LOCALLY_SOLVED` and `ALMOST_OPTIMAL`
 """
-function state_is_optimal(state::MOI.TerminationStatusCode; allow_almost=false)
-    return state == MOI.OPTIMAL || state == MOI.LOCALLY_SOLVED ||
-            (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED) || (allow_almost && state == MOI.ALMOST_OPTIMAL)
+function state_is_optimal(
+    state::MOI.TerminationStatusCode;
+    allow_almost = false,
+)
+    return state == MOI.OPTIMAL ||
+           state == MOI.LOCALLY_SOLVED ||
+           (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED) ||
+           (allow_almost && state == MOI.ALMOST_OPTIMAL)
 end
 
 """
@@ -180,16 +213,29 @@ function state_is_infeasible(state::MOI.TerminationStatusCode)
     return state == MOI.INFEASIBLE || state == MOI.LOCALLY_INFEASIBLE
 end
 
-struct ObjectiveConstraint{E<:MOI.AbstractNLPEvaluator} <: MOI.AbstractNLPEvaluator
+struct ObjectiveConstraint{E<:MOI.AbstractNLPEvaluator} <:
+       MOI.AbstractNLPEvaluator
     evaluator::E
     num_variables::Int
 end
-MOI.features_available(oc::ObjectiveConstraint) = MOI.features_available(oc.evaluator)
-MOI.initialize(oc::ObjectiveConstraint, features) = MOI.initialize(oc.evaluator, features)
-MOI.eval_objective(oc::ObjectiveConstraint, x) = MOI.eval_objective(oc.evaluator, x)
-MOI.eval_objective_gradient(oc::ObjectiveConstraint, g, x) = MOI.eval_objective_gradient(oc.evaluator, g, c)
-MOI.hessian_lagrangian_structure(oc::ObjectiveConstraint) = MOI.hessian_lagrangian_structure(oc.evaluator)
-MOI.eval_hessian_lagrangian(oc::ObjectiveConstraint, H, x, σ, μ) = MOI.eval_hessian_lagrangian(oc.evaluator, H, x, σ, μ)
+function MOI.features_available(oc::ObjectiveConstraint)
+    return MOI.features_available(oc.evaluator)
+end
+function MOI.initialize(oc::ObjectiveConstraint, features)
+    return MOI.initialize(oc.evaluator, features)
+end
+function MOI.eval_objective(oc::ObjectiveConstraint, x)
+    return MOI.eval_objective(oc.evaluator, x)
+end
+function MOI.eval_objective_gradient(oc::ObjectiveConstraint, g, x)
+    return MOI.eval_objective_gradient(oc.evaluator, g, c)
+end
+function MOI.hessian_lagrangian_structure(oc::ObjectiveConstraint)
+    return MOI.hessian_lagrangian_structure(oc.evaluator)
+end
+function MOI.eval_hessian_lagrangian(oc::ObjectiveConstraint, H, x, σ, μ)
+    return MOI.eval_hessian_lagrangian(oc.evaluator, H, x, σ, μ)
+end
 function MOI.eval_constraint(oc::ObjectiveConstraint, g, x)
     g[1] = MOI.eval_objective(oc.evaluator, x)
     MOI.eval_constraint(oc.evaluator, view(g, 2:length(g)), x)
@@ -202,7 +248,11 @@ function MOI.jacobian_structure(oc::ObjectiveConstraint)
 end
 function MOI.eval_constraint_jacobian(oc::ObjectiveConstraint, J, x)
     MOI.eval_objective_gradient(oc.evaluator, view(J, 1:oc.num_variables), x)
-    MOI.eval_constraint_jacobian(oc.evaluator, view(J, (oc.num_variables + 1):length(J)), x)
+    MOI.eval_constraint_jacobian(
+        oc.evaluator,
+        view(J, (oc.num_variables+1):length(J)),
+        x,
+    )
     return
 end
 
@@ -219,11 +269,18 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
         else
             lb, ub = rhs, Inf
         end
-        MOI.set(jp.model, MOI.NLPBlock(), MOI.NLPBlockData(
-            [jp.nlp_data.constraint_bounds; MOI.NLPBoundsPair(lb, ub)],
-            ObjectiveConstraint(jp.nlp_data.evaluator, MOI.get(jp.model, MOI.NumberOfVariables())),
-            jp.nlp_data.has_objective,
-        ))
+        MOI.set(
+            jp.model,
+            MOI.NLPBlock(),
+            MOI.NLPBlockData(
+                [jp.nlp_data.constraint_bounds; MOI.NLPBoundsPair(lb, ub)],
+                ObjectiveConstraint(
+                    jp.nlp_data.evaluator,
+                    MOI.get(jp.model, MOI.NumberOfVariables()),
+                ),
+                jp.nlp_data.has_objective,
+            ),
+        )
     else # linear or quadratic
         if isa(jp.objective, MOI.VariableIndex)
             i = findfirst(isequal(jp.objective), jp.x)
@@ -243,14 +300,17 @@ function add_obj_constraint(jp::JuniperProblem, rhs::Float64)
     end
 end
 
-
 """
     evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
 
 If no objective exists => return 0
 Evaluate the objective whether it is non linear, linear or quadratic
 """
-function evaluate_objective(optimizer::MOI.AbstractOptimizer, jp::JuniperProblem, xs::Vector{Float64})
+function evaluate_objective(
+    optimizer::MOI.AbstractOptimizer,
+    jp::JuniperProblem,
+    xs::Vector{Float64},
+)
     # NLP objective has priority if both are set
     if jp.nlp_data !== nothing && jp.nlp_data.has_objective
         return MOI.eval_objective(jp.nlp_data.evaluator, xs)
@@ -270,7 +330,11 @@ normally is 0.1 and will be changed to 1e-5.
 Normally reset_subsolver_option! should be run to return to reset this change after `optimize!`
 Return the previous value of the param option or if not previously set return change.first
 """
-function set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizerAttribute, change::Pair)
+function set_subsolver_option!(
+    model::MOI.ModelLike,
+    attr::MOI.AbstractOptimizerAttribute,
+    change::Pair,
+)
     prev = try
         MOI.get(model, attr)
     catch
@@ -279,17 +343,36 @@ function set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizer
     MOI.set(model, attr, change.second)
     return prev
 end
-function set_subsolver_option!(model::MOI.ModelLike, attr::MOI.AbstractOptimizerAttribute, change)
+function set_subsolver_option!(
+    model::MOI.ModelLike,
+    attr::MOI.AbstractOptimizerAttribute,
+    change,
+)
     MOI.set(model, attr, change)
     return
 end
-function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, attr::MOI.AbstractOptimizerAttribute, change)
+function set_subsolver_option!(
+    model::MOI.ModelLike,
+    subsolver_name::String,
+    attr::MOI.AbstractOptimizerAttribute,
+    change,
+)
     if occursin(subsolver_name, MOI.get(model, MOI.SolverName()))
         return set_subsolver_option!(model, attr, change)
     end
 end
-function set_subsolver_option!(model::MOI.ModelLike, subsolver_name::String, param::String, change)
-    set_subsolver_option!(model, subsolver_name, MOI.RawOptimizerAttribute(param), change)
+function set_subsolver_option!(
+    model::MOI.ModelLike,
+    subsolver_name::String,
+    param::String,
+    change,
+)
+    return set_subsolver_option!(
+        model,
+        subsolver_name,
+        MOI.RawOptimizerAttribute(param),
+        change,
+    )
 end
 
 function set_time_limit!(optimizer, time_limit::Union{Nothing,Float64})
