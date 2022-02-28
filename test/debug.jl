@@ -74,7 +74,7 @@ end
 """
     counter_test(d,nbranches)
 
-Check whether every counter is used exactly onces and that it is the same as the 
+Check whether every counter is used exactly onces and that it is the same as the
 number of branches.
 """
 function counter_test(d, nbranches)

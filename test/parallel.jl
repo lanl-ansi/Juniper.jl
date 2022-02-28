@@ -5,9 +5,7 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("BATCH.MOD reliable")
         println("==================================")
-
         m = batch_problem()
-
         juniper = DefaultTestSolver(
             branch_strategy = :Reliability,
             strong_restart = false,
@@ -18,22 +16,17 @@ include("basic/gamsworld.jl")
             ),
             incumbent_constr = true,
         )
-
         set_optimizer(
             m,
             optimizer_with_attributes(Juniper.Optimizer, juniper...),
         )
-
-        status = solve(m)
-        @test status == MOI.LOCALLY_SOLVED
-
+        optimize!(m)
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
         juniper_val = JuMP.objective_value(m)
         juniper_bb = JuMP.objective_bound(m)
-
         println("Solution by Juniper")
         println("obj: ", juniper_val)
         println("bound: ", juniper_bb)
-
         @test isapprox(
             juniper_val,
             285506.5082,
@@ -46,7 +39,6 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("Knapsack solution limit and table print test")
         println("==================================")
-
         juniper_one_solution = DefaultTestSolver(
             log_levels = [:Table],
             branch_strategy = :MostInfeasible,
@@ -57,17 +49,12 @@ include("basic/gamsworld.jl")
             ),
             processors = 3,
         )
-
         m = Model()
-
         v = [10, 20, 12, 23, 42]
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
-
-        @objective(m, Max, dot(v, x))
-
+        @objective(m, Max, v' * x)
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
-
         set_optimizer(
             m,
             optimizer_with_attributes(
@@ -75,20 +62,15 @@ include("basic/gamsworld.jl")
                 juniper_one_solution...,
             ),
         )
-
-        status = solve(m)
-        @test status == MOI.SOLUTION_LIMIT
-
-        # maybe all three found a solution at the same time
-        @test Juniper.getnsolutions(internalmodel(m)) <= 3
-        @test Juniper.getnsolutions(internalmodel(m)) >= 1
+        optimize!(m)
+        @test termination_status(m) == MOI.SOLUTION_LIMIT
+        @test 1 <= result_count(m) <= 3
     end
 
     @testset "Knapsack Max Reliable incumbent_constr" begin
         println("==================================")
         println("KNAPSACK Reliable incumbent_constr")
         println("==================================")
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
@@ -99,19 +81,14 @@ include("basic/gamsworld.jl")
                 )...,
             ),
         )
-
         v = [10, 20, 12, 23, 42]
         w = [12, 45, 12, 22, 21]
         @variable(m, x[1:5], Bin)
-
-        @objective(m, Max, dot(v, x))
-
+        @objective(m, Max, v' * x)
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
-
-        status = solve(m)
+        optimize!(m)
         println("Obj: ", JuMP.objective_value(m))
-
-        @test status == MOI.LOCALLY_SOLVED
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
         @test isapprox(JuMP.objective_value(m), 65, atol = opt_atol)
         @test isapprox(JuMP.value.(x), [0, 0, 0, 1, 1], atol = sol_atol)
     end
@@ -120,33 +97,25 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("BATCH.MOD reliable more processors than available")
         println("==================================")
-
         m = batch_problem()
-
         juniper = DefaultTestSolver(
             branch_strategy = :Reliability,
             strong_restart = false,
             processors = 10,
         )
-
         set_optimizer(
             m,
             optimizer_with_attributes(Juniper.Optimizer, juniper...),
         )
-
-        status = solve(m)
-        @test status == MOI.LOCALLY_SOLVED
-
+        optimize!(m)
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
         juniper_val = JuMP.objective_value(m)
         juniper_bb = JuMP.objective_bound(m)
-
         println("Solution by Juniper")
         println("obj: ", juniper_val)
         println("bound: ", juniper_bb)
-
-        im = internalmodel(m)
         # must have changed to 4 processors
-        @test im.options.processors == 4
+        @test unsafe_backend(m).inner.options.processors == 4
         @test isapprox(
             juniper_val,
             285506.5082,
@@ -159,30 +128,23 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("BATCH.MOD NO RESTART")
         println("==================================")
-
         m = batch_problem()
-
         juniper = DefaultTestSolver(
             branch_strategy = :StrongPseudoCost,
             strong_restart = false,
             processors = 4,
         )
-
         set_optimizer(
             m,
             optimizer_with_attributes(Juniper.Optimizer, juniper...),
         )
-
-        status = solve(m)
-        @test status == MOI.LOCALLY_SOLVED
-
+        optimize!(m)
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
         juniper_val = JuMP.objective_value(m)
         juniper_bb = JuMP.objective_bound(m)
-
         println("Solution by Juniper")
         println("obj: ", juniper_val)
         println("bound: ", juniper_bb)
-
         @test isapprox(
             juniper_val,
             285506.5082,
@@ -195,7 +157,6 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("KNAPSACK 100%")
         println("==================================")
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
@@ -207,28 +168,21 @@ include("basic/gamsworld.jl")
                 )...,
             ),
         )
-
         v = [10, 20, 12, 23, 42]
         w = [12, 45, 12, 22, 21]
         # don't allow start to be an incumbent
         @variable(m, x[1:5], Bin, start = 0.5)
-
-        @objective(m, Max, dot(v, x))
-
+        @objective(m, Max, v' * x)
         @NLconstraint(m, sum(w[i] * x[i]^2 for i in 1:5) <= 45)
-
-        status = solve(m)
+        optimize!(m)
         objval = JuMP.objective_value(m)
         println("Obj: ", objval)
         best_bound_val = JuMP.objective_bound(m)
-        gap_val = getobjgap(m)
+        gap_val = relative_gap(m)
         println("bb: ", JuMP.objective_bound(m))
-
-        @test status == MOI.OBJECTIVE_LIMIT
-
+        @test termination_status(m) == MOI.OBJECTIVE_LIMIT
         @test best_bound_val >= objval
-        @test 0.01 <= gap_val <= 1 ||
-              Juniper.getnsolutions(internalmodel(m)) == 1
+        @test 0.01 <= gap_val <= 1 || result_count(m) == 1
     end
 
     @testset "bruteforce" begin
@@ -243,18 +197,14 @@ include("basic/gamsworld.jl")
             processors = 3,
             debug = true,
         )
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
                 juniper_all_solutions...,
             ),
         )
-
         @variable(m, 1 <= x[1:4] <= 5, Int)
-
         @objective(m, Min, x[1])
-
         @constraint(m, x[1] >= 0.9)
         @constraint(m, x[1] <= 1.1)
         @NLconstraint(m, (x[1] - x[2])^2 >= 0.1)
@@ -263,20 +213,15 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[1] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
-
-        status = solve(m)
-
-        debugDict = internalmodel(m).debugDict
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
-
-        @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
-
+        optimize!(m)
+        debugDict = unsafe_backend(m).inner.debugDict
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
+        @test result_count(m) == 24
         @test getnstate(debugDict, :Integral) == 24
         @test different_hashes(debugDict) == true
-        counter_test(debugDict, Juniper.getnbranches(internalmodel(m)))
+        counter_test(debugDict, Juniper.getnbranches(unsafe_backend(m).inner))
     end
 
     @testset "bruteforce fake parallel vs sequential" begin
@@ -290,7 +235,6 @@ include("basic/gamsworld.jl")
             strong_restart = false,
             processors = 1,
         )
-
         juniper_all_solutions_p = DefaultTestSolver(
             branch_strategy = :PseudoCost,
             all_solutions = true,
@@ -299,18 +243,14 @@ include("basic/gamsworld.jl")
             processors = 1,
             force_parallel = true, # just for testing this goes into the parallel branch (using driver + 1)
         )
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
                 juniper_all_solutions...,
             ),
         )
-
         @variable(m, 1 <= x[1:4] <= 5, Int)
-
         @objective(m, Min, x[1])
-
         @constraint(m, x[1] >= 0.9)
         @constraint(m, x[1] <= 1.1)
         @NLconstraint(m, (x[1] - x[2])^2 >= 0.1)
@@ -319,10 +259,8 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[1] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
-
-        status = solve(m)
-        nbranches = Juniper.getnbranches(internalmodel(m))
-
+        optimize!(m)
+        nbranches = Juniper.getnbranches(unsafe_backend(m).inner)
         set_optimizer(
             m,
             optimizer_with_attributes(
@@ -331,9 +269,8 @@ include("basic/gamsworld.jl")
             ),
         )
         JuMP.set_start_value.(x, zeros(4))
-
-        status = solve(m)
-        @test Juniper.getnbranches(internalmodel(m)) == nbranches
+        optimize!(m)
+        @test Juniper.getnbranches(unsafe_backend(m).inner) == nbranches
     end
 
     @testset "bruteforce PseudoCost" begin
@@ -347,18 +284,14 @@ include("basic/gamsworld.jl")
             strong_restart = true,
             processors = 3,
         )
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
                 juniper_all_solutions...,
             ),
         )
-
         @variable(m, 1 <= x[1:4] <= 5, Int)
-
         @objective(m, Min, x[1])
-
         @constraint(m, x[1] >= 0.9)
         @constraint(m, x[1] <= 1.1)
         @NLconstraint(m, (x[1] - x[2])^2 >= 0.1)
@@ -367,15 +300,13 @@ include("basic/gamsworld.jl")
         @NLconstraint(m, (x[1] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[2] - x[4])^2 >= 0.1)
         @NLconstraint(m, (x[3] - x[4])^2 >= 0.1)
-
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-        list_of_solutions = Juniper.getsolutions(internalmodel(m))
-        @test length(unique(list_of_solutions)) ==
-              Juniper.getnsolutions(internalmodel(m))
-
+        list_of_solutions = Juniper.getsolutions(unsafe_backend(m).inner)
+        @test length(unique(list_of_solutions)) == result_count(m)
         @test status == MOI.LOCALLY_SOLVED
-        @test Juniper.getnsolutions(internalmodel(m)) == 24
+        @test result_count(m) == 24
     end
 
     @testset "infeasible cos" begin
@@ -391,17 +322,13 @@ include("basic/gamsworld.jl")
                 )...,
             ),
         )
-
         @variable(m, 1 <= x <= 5, Int)
         @variable(m, -2 <= y <= 2, Int)
-
         @objective(m, Min, -x - y)
-
         @NLconstraint(m, y == 2 * cos(2 * x))
-
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-
         @test status == MOI.LOCALLY_INFEASIBLE
     end
 
@@ -409,7 +336,6 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("Infeasible relaxation")
         println("==================================")
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
@@ -419,17 +345,13 @@ include("basic/gamsworld.jl")
                 )...,
             ),
         )
-
         @variable(m, 0 <= x[1:10] <= 2, Int)
-
         @objective(m, Min, sum(x))
-
         @constraint(m, sum(x[1:5]) <= 20)
         @NLconstraint(m, x[1] * x[2] * x[3] >= 10)
-
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-
         @test status == MOI.LOCALLY_INFEASIBLE
     end
 
@@ -437,7 +359,6 @@ include("basic/gamsworld.jl")
         println("==================================")
         println("Infeasible integer")
         println("==================================")
-
         m = Model(
             optimizer_with_attributes(
                 Juniper.Optimizer,
@@ -447,18 +368,14 @@ include("basic/gamsworld.jl")
                 )...,
             ),
         )
-
         @variable(m, 0 <= x[1:10] <= 2, Int)
-
         @objective(m, Min, sum(x))
-
         @constraint(m, sum(x[1:5]) <= 20)
         @NLconstraint(m, x[1] * x[2] * x[3] >= 7)
         @NLconstraint(m, x[1] * x[2] * x[3] <= 7.5)
-
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-
         @test status == MOI.LOCALLY_INFEASIBLE
     end
 
@@ -475,17 +392,13 @@ include("basic/gamsworld.jl")
                 )...,
             ),
         )
-
         @variable(m, 0 <= x[1:5] <= 2, Int)
-
         @objective(m, Min, sum(x))
-
         @NLconstraint(m, x[3]^2 <= 2)
         @NLconstraint(m, x[3]^2 >= 1.2)
-
-        status = solve(m)
+        optimize!(m)
+        status = termination_status(m)
         println("Status: ", status)
-
         @test status == MOI.LOCALLY_INFEASIBLE
     end
 end

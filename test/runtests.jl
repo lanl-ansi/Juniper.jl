@@ -1,6 +1,4 @@
-using Base, Logging
-
-using Test, Distributed
+using Distributed
 
 if nworkers() > 1
     rmprocs(workers())
@@ -22,84 +20,76 @@ end
 
 println("Workers:", nworkers())
 
-using LinearAlgebra
-using Statistics
-using Random
-
 using JuMP
+using Test
 
-using Ipopt
-using HiGHS
-using GLPK
-# using PowerModels
+import GLPK
+import HiGHS
+import Ipopt
+import Juniper
 
-using MathOptInterface
+const opt_rtol = 1e-6
+const opt_atol = 1e-6
+const sol_rtol = 1e-3
+const sol_atol = 1e-3
 
-const MOI = MathOptInterface
-const MOIU = MOI.Utilities
-
-using Juniper
-include("util.jl")
-
-opt_rtol = 1e-6
-opt_atol = 1e-6
-
-sol_rtol = 1e-3
-sol_atol = 1e-3
-
-function solve(m::Model)
-    JuMP.optimize!(m)
-    bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.TerminationStatus())
+function DefaultTestSolver(;
+    nl_solver = optimizer_with_attributes(
+        Ipopt.Optimizer,
+        "print_level" => 0,
+        "sb" => "yes",
+    ),
+    solver_args...,
+)
+    solver_args_result = Pair{String,Any}[]
+    push!(solver_args_result, "log_levels" => Symbol[])
+    push!(solver_args_result, "nl_solver" => nl_solver)
+    for v in solver_args
+        push!(solver_args_result, string(v[1]) => v[2])
+    end
+    return solver_args_result
 end
 
-function getsolvetime(m::Model)
-    bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.SolveTimeSec())
-end
-
-function internalmodel(m::Model)
-    return JuMP.unsafe_backend(m).inner
-end
-
-function getobjgap(m::Model)
-    bm = JuMP.backend(m)
-    return MOI.get(bm, MOI.RelativeGap())
-end
-
-juniper_strong_restart_2 = DefaultTestSolver(
+const juniper_strong_restart_2 = DefaultTestSolver(
     branch_strategy = :StrongPseudoCost,
     strong_branching_perc = 25,
     strong_branching_nsteps = 2,
     strong_restart = true,
 )
 
-juniper_reliable_restart = DefaultTestSolver(
+const juniper_reliable_restart = DefaultTestSolver(
     branch_strategy = :Reliability,
     reliability_branching_perc = 25,
     reliability_branching_threshold = 2,
     strong_restart = true,
 )
 
-juniper_strong_restart = DefaultTestSolver(
+const juniper_strong_restart = DefaultTestSolver(
     branch_strategy = :StrongPseudoCost,
     strong_branching_perc = 25,
     strong_restart = true,
 )
-juniper_strong_no_restart = DefaultTestSolver(
+const juniper_strong_no_restart = DefaultTestSolver(
     branch_strategy = :StrongPseudoCost,
     strong_branching_perc = 25,
     strong_restart = false,
 )
 
-juniper_mosti = DefaultTestSolver(branch_strategy = :MostInfeasible)
+const juniper_mosti = DefaultTestSolver(branch_strategy = :MostInfeasible)
 
-juniper_pseudo = DefaultTestSolver(branch_strategy = :PseudoCost)
+const juniper_pseudo = DefaultTestSolver(branch_strategy = :PseudoCost)
+
+# TODO(odow): files not tested
+#  * include("current_118.jl")
+#  * include("power_models_acp.jl")
+#  * include("power_models_socwr.jl")
+#  * include("MINLPTests/run_minlptests")
+
+# Contains utilities used in the tests
+include("debug.jl")
 
 start = time()
-
 @testset "Juniper" begin
-    include("debug.jl")
     include("functions.jl")
     include("basic.jl")
     include("user_limits.jl")
@@ -107,7 +97,5 @@ start = time()
     include("fpump.jl")
     include("pod.jl")
     include("MOI_wrapper.jl")
-    # include("power_models_acp.jl")
-    # include("power_models_socwr.jl")
 end
 println("Time for all tests: ", time() - start)
