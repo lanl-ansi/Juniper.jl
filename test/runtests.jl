@@ -1,6 +1,3 @@
-using Base
-using Logging
-using Test
 using Distributed
 
 if nworkers() > 1
@@ -24,13 +21,12 @@ end
 println("Workers:", nworkers())
 
 using JuMP
+using Test
+
 import GLPK
 import HiGHS
 import Ipopt
 import Juniper
-import MathOptInterface
-
-const MOI = MathOptInterface
 
 const opt_rtol = 1e-6
 const opt_atol = 1e-6
@@ -85,6 +81,12 @@ const juniper_pseudo = DefaultTestSolver(branch_strategy = :PseudoCost)
 
 start = time()
 
+# TODO(odow): files not tested
+#  * include("current_118.jl")
+#  * include("power_models_acp.jl")
+#  * include("power_models_socwr.jl")
+#  * include("MINLPTests/run_minlptests")
+
 @testset "Juniper" begin
     include("debug.jl")
     include("functions.jl")
@@ -94,7 +96,5 @@ start = time()
     include("fpump.jl")
     include("pod.jl")
     include("MOI_wrapper.jl")
-    # include("power_models_acp.jl")
-    # include("power_models_socwr.jl")
 end
 println("Time for all tests: ", time() - start)
