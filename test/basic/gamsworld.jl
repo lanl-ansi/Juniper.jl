@@ -46,12 +46,27 @@ function batch_problem()
     @variable(m, b44, Bin)
     @variable(m, b45, Bin)
     @variable(m, b46, Bin)
-    
-    @NLobjective(m, Min, 250*exp(x1 + 0.6*x7) + 250*exp(x2 + 0.6*x8) + 250*exp(x3 + 0.6*x9)
-     + 250*exp(x4 + 0.6*x10) + 250*exp(x5 + 0.6*x11) + 250*exp(x6 + 0.6*x12))
 
-    @NLconstraint(m, 250*exp(x1 + 0.6*x7) + 250*exp(x2 + 0.6*x8) + 250*exp(x3 + 0.6*x9)
-    + 250*exp(x4 + 0.6*x10) + 250*exp(x5 + 0.6*x11) + 250*exp(x6 + 0.6*x12) <= 290000)
+    @NLobjective(
+        m,
+        Min,
+        250 * exp(x1 + 0.6 * x7) +
+        250 * exp(x2 + 0.6 * x8) +
+        250 * exp(x3 + 0.6 * x9) +
+        250 * exp(x4 + 0.6 * x10) +
+        250 * exp(x5 + 0.6 * x11) +
+        250 * exp(x6 + 0.6 * x12)
+    )
+
+    @NLconstraint(
+        m,
+        250 * exp(x1 + 0.6 * x7) +
+        250 * exp(x2 + 0.6 * x8) +
+        250 * exp(x3 + 0.6 * x9) +
+        250 * exp(x4 + 0.6 * x10) +
+        250 * exp(x5 + 0.6 * x11) +
+        250 * exp(x6 + 0.6 * x12) <= 290000
+    )
 
     @constraint(m, x7 - x13 >= 2.06686275947298)
     @constraint(m, x8 - x13 >= 0.693147180559945)
@@ -114,33 +129,57 @@ function batch_problem()
     @constraint(m, x5 + x22 >= 1.30833281965018)
     @constraint(m, x6 + x22 >= 0.78845736036427)
 
-    @NLconstraint(m, 250000*exp(x18 - x13) + 150000*exp(x19 - x14) + 180000*exp(x20 - x15) + 
-    160000*exp(x21 - x16) + 120000*exp(x22 - x17) <= 6000)
+    @NLconstraint(
+        m,
+        250000 * exp(x18 - x13) +
+        150000 * exp(x19 - x14) +
+        180000 * exp(x20 - x15) +
+        160000 * exp(x21 - x16) +
+        120000 * exp(x22 - x17) <= 6000
+    )
 
-    @NLconstraint(m,x1 - 0.693147180559945*b29 - 1.09861228866811*b35
-    - 1.38629436111989*b41 == 0)
+    @NLconstraint(
+        m,
+        x1 - 0.693147180559945 * b29 - 1.09861228866811 * b35 -
+        1.38629436111989 * b41 == 0
+    )
 
-    @NLconstraint(m,x2 - 0.693147180559945*b30 - 1.09861228866811*b36
-    - 1.38629436111989*b42 == 0)
+    @NLconstraint(
+        m,
+        x2 - 0.693147180559945 * b30 - 1.09861228866811 * b36 -
+        1.38629436111989 * b42 == 0
+    )
 
-    @NLconstraint(m, x3 - 0.693147180559945*b31 - 1.09861228866811*b37
-    - 1.38629436111989*b43 == 0)
+    @NLconstraint(
+        m,
+        x3 - 0.693147180559945 * b31 - 1.09861228866811 * b37 -
+        1.38629436111989 * b43 == 0
+    )
 
-    @NLconstraint(m, x4 - 0.693147180559945*b32 - 1.09861228866811*b38
-    - 1.38629436111989*b44 == 0)
+    @NLconstraint(
+        m,
+        x4 - 0.693147180559945 * b32 - 1.09861228866811 * b38 -
+        1.38629436111989 * b44 == 0
+    )
 
-    @NLconstraint(m, x5 - 0.693147180559945*b33 - 1.09861228866811*b39
-    - 1.38629436111989*b45 == 0)
+    @NLconstraint(
+        m,
+        x5 - 0.693147180559945 * b33 - 1.09861228866811 * b39 -
+        1.38629436111989 * b45 == 0
+    )
 
-    @NLconstraint(m,  x6 - 0.693147180559945*b34 - 1.09861228866811*b40
-    - 1.38629436111989*b46 == 0)
+    @NLconstraint(
+        m,
+        x6 - 0.693147180559945 * b34 - 1.09861228866811 * b40 -
+        1.38629436111989 * b46 == 0
+    )
 
-    @constraint(m,b23 + b29 + b35 + b41 == 1)
-    @constraint(m,b24 + b30 + b36 + b42 == 1)
-    @constraint(m,b25 + b31 + b37 + b43 == 1)
-    @constraint(m,b26 + b32 + b38 + b44 == 1)
-    @constraint(m,b27 + b33 + b39 + b45 == 1)
-    @constraint(m,b28 + b34 + b40 + b46 == 1)
+    @constraint(m, b23 + b29 + b35 + b41 == 1)
+    @constraint(m, b24 + b30 + b36 + b42 == 1)
+    @constraint(m, b25 + b31 + b37 + b43 == 1)
+    @constraint(m, b26 + b32 + b38 + b44 == 1)
+    @constraint(m, b27 + b33 + b39 + b45 == 1)
+    @constraint(m, b28 + b34 + b40 + b46 == 1)
     return m
 end
 
@@ -186,30 +225,73 @@ function cvxnonsep_nsig20r_problem()
     @variable(m, x38)
     @variable(m, x39)
     @variable(m, x40)
-    @constraint(m,  x21 + x22 + x23 + x24 + x25 + x26 + x27 + x28 + x29 + x30 + x31 + x32 + x33 + x34 + x35 + x36 + x37 + x38 + x39 + x40 <= -1.6094379124341)
-    @NLconstraint(m, -0.065*log(i1) - x21 <= 0)
-    @NLconstraint(m, -0.004*log(i2) - x22 <= 0)
-    @NLconstraint(m, -0.084*log(i3) - x23 <= 0)
-    @NLconstraint(m, -0.093*log(i4) - x24 <= 0)
-    @NLconstraint(m, -0.06*log(i5) - x25 <= 0)
-    @NLconstraint(m, -0.075*log(i6) - x26 <= 0)
-    @NLconstraint(m, -0.074*log(i7) - x27 <= 0)
-    @NLconstraint(m, -0.039*log(i8) - x28 <= 0)
-    @NLconstraint(m, -0.065*log(i9) - x29 <= 0)
-    @NLconstraint(m, -0.017*log(i10) - x30 <= 0)
-    @NLconstraint(m, -0.07*log(x11) - x31 <= 0)
-    @NLconstraint(m, -0.03*log(x12) - x32 <= 0)
-    @NLconstraint(m, -0.028*log(x13) - x33 <= 0)
-    @NLconstraint(m, -0.005*log(x14) - x34 <= 0)
-    @NLconstraint(m, -0.01*log(x15) - x35 <= 0)
-    @NLconstraint(m, -0.082*log(x16) - x36 <= 0)
-    @NLconstraint(m, -0.069*log(x17) - x37 <= 0)
-    @NLconstraint(m, -0.032*log(x18) - x38 <= 0)
-    @NLconstraint(m, -0.095*log(x19) - x39 <= 0)
-    @NLconstraint(m, -0.003*log(x20) - x40 <= 0)
-    @NLobjective(m, Min,  1.5*i1 + 0.51*i2 + 1.01*i3 + 1.4*i4 + 1.78*i5 + 1.92*i6
-    + 1.09*i7 + 0.48*i8 + 0.67*i9 + 0.52*i10 + 1.68*x11 + 0.51*x12 + 1.63*x13
-    + 0.49*x14 + 1.86*x15 + 0.7*x16 + 0.39*x17 + 0.5*x18 + 1.23*x19 + 0.95*x20)
+    @constraint(
+        m,
+        x21 +
+        x22 +
+        x23 +
+        x24 +
+        x25 +
+        x26 +
+        x27 +
+        x28 +
+        x29 +
+        x30 +
+        x31 +
+        x32 +
+        x33 +
+        x34 +
+        x35 +
+        x36 +
+        x37 +
+        x38 +
+        x39 +
+        x40 <= -1.6094379124341
+    )
+    @NLconstraint(m, -0.065 * log(i1) - x21 <= 0)
+    @NLconstraint(m, -0.004 * log(i2) - x22 <= 0)
+    @NLconstraint(m, -0.084 * log(i3) - x23 <= 0)
+    @NLconstraint(m, -0.093 * log(i4) - x24 <= 0)
+    @NLconstraint(m, -0.06 * log(i5) - x25 <= 0)
+    @NLconstraint(m, -0.075 * log(i6) - x26 <= 0)
+    @NLconstraint(m, -0.074 * log(i7) - x27 <= 0)
+    @NLconstraint(m, -0.039 * log(i8) - x28 <= 0)
+    @NLconstraint(m, -0.065 * log(i9) - x29 <= 0)
+    @NLconstraint(m, -0.017 * log(i10) - x30 <= 0)
+    @NLconstraint(m, -0.07 * log(x11) - x31 <= 0)
+    @NLconstraint(m, -0.03 * log(x12) - x32 <= 0)
+    @NLconstraint(m, -0.028 * log(x13) - x33 <= 0)
+    @NLconstraint(m, -0.005 * log(x14) - x34 <= 0)
+    @NLconstraint(m, -0.01 * log(x15) - x35 <= 0)
+    @NLconstraint(m, -0.082 * log(x16) - x36 <= 0)
+    @NLconstraint(m, -0.069 * log(x17) - x37 <= 0)
+    @NLconstraint(m, -0.032 * log(x18) - x38 <= 0)
+    @NLconstraint(m, -0.095 * log(x19) - x39 <= 0)
+    @NLconstraint(m, -0.003 * log(x20) - x40 <= 0)
+    @NLobjective(
+        m,
+        Min,
+        1.5 * i1 +
+        0.51 * i2 +
+        1.01 * i3 +
+        1.4 * i4 +
+        1.78 * i5 +
+        1.92 * i6 +
+        1.09 * i7 +
+        0.48 * i8 +
+        0.67 * i9 +
+        0.52 * i10 +
+        1.68 * x11 +
+        0.51 * x12 +
+        1.63 * x13 +
+        0.49 * x14 +
+        1.86 * x15 +
+        0.7 * x16 +
+        0.39 * x17 +
+        0.5 * x18 +
+        1.23 * x19 +
+        0.95 * x20
+    )
 
     return m
 end

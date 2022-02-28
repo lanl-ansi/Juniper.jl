@@ -2,28 +2,29 @@ using Base, Logging
 
 using Test, Distributed
 
-
-
-
 if nworkers() > 1
     rmprocs(workers())
 end
 processors = 4 # Sys.CPU_CORES
 
 if Base.JLOptions().code_coverage == 1
-    addprocs(processors, exeflags = ["--code-coverage=user", "--inline=no", "--check-bounds=yes"])
+    addprocs(
+        processors,
+        exeflags = [
+            "--code-coverage=user",
+            "--inline=no",
+            "--check-bounds=yes",
+        ],
+    )
 else
     addprocs(processors, exeflags = "--check-bounds=yes")
 end
 
 println("Workers:", nworkers())
 
-
-
 using LinearAlgebra
 using Statistics
 using Random
-
 
 using JuMP
 
@@ -46,8 +47,6 @@ opt_atol = 1e-6
 sol_rtol = 1e-3
 sol_atol = 1e-3
 
-
-
 function solve(m::Model)
     JuMP.optimize!(m)
     bm = JuMP.backend(m)
@@ -69,37 +68,33 @@ function getobjgap(m::Model)
 end
 
 juniper_strong_restart_2 = DefaultTestSolver(
-            branch_strategy=:StrongPseudoCost,
-            strong_branching_perc = 25,
-            strong_branching_nsteps = 2,
-            strong_restart = true
-            )
+    branch_strategy = :StrongPseudoCost,
+    strong_branching_perc = 25,
+    strong_branching_nsteps = 2,
+    strong_restart = true,
+)
 
 juniper_reliable_restart = DefaultTestSolver(
-            branch_strategy=:Reliability,
-            reliability_branching_perc = 25,
-            reliability_branching_threshold = 2,
-            strong_restart = true
-            )
+    branch_strategy = :Reliability,
+    reliability_branching_perc = 25,
+    reliability_branching_threshold = 2,
+    strong_restart = true,
+)
 
 juniper_strong_restart = DefaultTestSolver(
-                branch_strategy=:StrongPseudoCost,
-                strong_branching_perc = 25,
-                strong_restart = true
-            )
+    branch_strategy = :StrongPseudoCost,
+    strong_branching_perc = 25,
+    strong_restart = true,
+)
 juniper_strong_no_restart = DefaultTestSolver(
-                branch_strategy=:StrongPseudoCost,
-                strong_branching_perc = 25,
-                strong_restart = false
-            )
+    branch_strategy = :StrongPseudoCost,
+    strong_branching_perc = 25,
+    strong_restart = false,
+)
 
-juniper_mosti = DefaultTestSolver(
-                branch_strategy=:MostInfeasible,
-            )
+juniper_mosti = DefaultTestSolver(branch_strategy = :MostInfeasible)
 
-juniper_pseudo = DefaultTestSolver(
-                branch_strategy=:PseudoCost,
-            )
+juniper_pseudo = DefaultTestSolver(branch_strategy = :PseudoCost)
 
 start = time()
 
@@ -115,4 +110,4 @@ start = time()
     # include("power_models_acp.jl")
     # include("power_models_socwr.jl")
 end
-println("Time for all tests: ", time()-start)
+println("Time for all tests: ", time() - start)

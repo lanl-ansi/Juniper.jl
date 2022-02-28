@@ -1,8 +1,22 @@
 abstract type AbstractModelFilter <: MOI.ModelLike end
 
-MOI.get(lf::AbstractModelFilter, attr::MOI.AbstractModelAttribute) = MOI.get(lf.inner, attr)
-MOI.get(lf::AbstractModelFilter, attr::MOI.AbstractVariableAttribute, vi::MOI.VariableIndex) = MOI.get(lf.inner, attr, vi)
-MOI.get(lf::AbstractModelFilter, attr::MOI.AbstractConstraintAttribute, ci::MOI.ConstraintIndex) = MOI.get(lf.inner, attr, ci)
+function MOI.get(lf::AbstractModelFilter, attr::MOI.AbstractModelAttribute)
+    return MOI.get(lf.inner, attr)
+end
+function MOI.get(
+    lf::AbstractModelFilter,
+    attr::MOI.AbstractVariableAttribute,
+    vi::MOI.VariableIndex,
+)
+    return MOI.get(lf.inner, attr, vi)
+end
+function MOI.get(
+    lf::AbstractModelFilter,
+    attr::MOI.AbstractConstraintAttribute,
+    ci::MOI.ConstraintIndex,
+)
+    return MOI.get(lf.inner, attr, ci)
+end
 
 struct NoObjectiveFilter{M<:MOI.ModelLike} <: AbstractModelFilter
     inner::M
@@ -30,7 +44,10 @@ end
 function MOI.get(f::LinearFilter, attr::MOI.ListOfConstraintTypesPresent)
     return filter(MOI.get(f.inner, attr)) do FS
         F = FS[1]
-        return !(F <: MOI.ScalarQuadraticFunction || F <: MOI.VectorQuadraticFunction)
+        return !(
+            F <: MOI.ScalarQuadraticFunction ||
+            F <: MOI.VectorQuadraticFunction
+        )
     end
 end
 
@@ -45,34 +62,48 @@ function MOI.get(f::IntegerRelaxation, attr::MOI.ListOfConstraintTypesPresent)
     end
 end
 
-struct FixVariables{T, M<:MOI.ModelLike} <: AbstractModelFilter
+struct FixVariables{T,M<:MOI.ModelLike} <: AbstractModelFilter
     inner::M
-    fixed_values::Dict{MOI.VariableIndex, T}
+    fixed_values::Dict{MOI.VariableIndex,T}
 end
 
 function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintTypesPresent)
     ret = MOI.get(f.inner, attr)
     fix = (MOI.VariableIndex, MOI.EqualTo{Float64})
-    if !(fix  in ret)
+    if !(fix in ret)
         push!(ret, fix)
     end
     return ret
 end
 
-function MOI.get(f::FixVariables, attr::MOI.ListOfConstraintIndices{MOI.VariableIndex, S}) where S
+function MOI.get(
+    f::FixVariables,
+    attr::MOI.ListOfConstraintIndices{MOI.VariableIndex,S},
+) where {S}
     list = filter(MOI.get(f.inner, attr)) do ci
-        !haskey(f.fixed_values, MOI.VariableIndex(ci.value))
+        return !haskey(f.fixed_values, MOI.VariableIndex(ci.value))
     end
     if S <: MOI.EqualTo
-        fix = [MOI.ConstraintIndex{MOI.VariableIndex, S}(vi.value) for vi in keys(f.fixed_values)]
+        fix = [
+            MOI.ConstraintIndex{MOI.VariableIndex,S}(vi.value) for
+            vi in keys(f.fixed_values)
+        ]
         list = [list; fix]
     end
     return list
 end
-function MOI.get(f::FixVariables, attr::MOI.ConstraintFunction, ci::MOI.ConstraintIndex{MOI.VariableIndex, <:MOI.EqualTo})
+function MOI.get(
+    f::FixVariables,
+    attr::MOI.ConstraintFunction,
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,<:MOI.EqualTo},
+)
     return MOI.VariableIndex(ci.value)
 end
-function MOI.get(f::FixVariables, attr::MOI.ConstraintSet, ci::MOI.ConstraintIndex{MOI.VariableIndex, <:MOI.EqualTo})
+function MOI.get(
+    f::FixVariables,
+    attr::MOI.ConstraintSet,
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,<:MOI.EqualTo},
+)
     vi = MOI.VariableIndex(ci.value)
     if haskey(f.fixed_values, vi)
         return MOI.EqualTo(f.fixed_values[vi])

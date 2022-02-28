@@ -3,9 +3,9 @@ function isbreak_mip_gap(tree)
         incu = tree.incumbent
         b = tree.best_bound
         f = incu.objval
-        gap = abs(b-f)/abs(f)
+        gap = abs(b - f) / abs(f)
         # if f and g are 0 the gap would be NaN but it's gap=0
-        if isapprox(b,f,atol=tree.options.atol)
+        if isapprox(b, f, atol = tree.options.atol)
             gap = 0 # doesn't really equal 0 but should break 
         end
         if gap <= tree.options.mip_gap
@@ -29,7 +29,8 @@ function isbreak_new_incumbent_limits(tree)
         inc_val = tree.incumbent.objval
         bos = tree.options.best_obj_stop
         sense = tree.m.obj_sense
-        if (sense == :Min && inc_val <= bos) || (sense == :Max && inc_val >= bos) 
+        if (sense == :Min && inc_val <= bos) ||
+           (sense == :Max && inc_val >= bos)
             tree.limit = :BestObjStop
             return true
         end
@@ -44,7 +45,8 @@ end
 Check if time limit is reached and  set or update the Incumbent
 """
 function isbreak_time_limit!(tree)
-    if !isnan(tree.options.time_limit) && time()-tree.start_time >= tree.options.time_limit
+    if !isnan(tree.options.time_limit) &&
+       time() - tree.start_time >= tree.options.time_limit
         tree.limit = :Time
         return true
     end
@@ -61,7 +63,8 @@ Break if
 """
 function isbreak_after_step!(tree)
     # maybe break on solution_limit (can be higher if two solutions found in last step)
-    if tree.options.solution_limit > 0 && tree.nsolutions >= tree.options.solution_limit
+    if tree.options.solution_limit > 0 &&
+       tree.nsolutions >= tree.options.solution_limit
         tree.limit = :EnoughSolutions
         return true
     end

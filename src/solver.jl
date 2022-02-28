@@ -3,64 +3,95 @@ A solver for MINLP problems using a NLP solver and Branch and Bound
 =#
 
 function get_default_options()
-    nl_solver                           = nothing
-    log_levels                          = [:Options,:Table,:Info]
-    silent                              = false
-    atol                                = 1e-6
-    num_resolve_root_relaxation         = 3
-    branch_strategy                     = :StrongPseudoCost
-    gain_mu                             = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
+    nl_solver = nothing
+    log_levels = [:Options, :Table, :Info]
+    silent = false
+    atol = 1e-6
+    num_resolve_root_relaxation = 3
+    branch_strategy = :StrongPseudoCost
+    gain_mu = 0.167 # http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.92.7117&rep=rep1&type=pdf
     # Strong branching  
-    strong_branching_perc               = 100
-    strong_branching_nsteps             = 1
-    strong_branching_time_limit         = 100
-    strong_restart                      = true
+    strong_branching_perc = 100
+    strong_branching_nsteps = 1
+    strong_branching_time_limit = 100
+    strong_restart = true
     # Reliability branching     
-    reliability_branching_threshold     = 5 # reliability param
-    reliability_branching_perc          = 25
+    reliability_branching_threshold = 5 # reliability param
+    reliability_branching_perc = 25
     # Obj cuts  
-    incumbent_constr                    = false
-    obj_epsilon                         = 0
+    incumbent_constr = false
+    obj_epsilon = 0
     # :UserLimit    
-    time_limit                          = Inf  
-    mip_gap                             = 1e-4
-    best_obj_stop                       = NaN
-    solution_limit                      = 0
-    all_solutions                       = false
-    list_of_solutions                   = false
+    time_limit = Inf
+    mip_gap = 1e-4
+    best_obj_stop = NaN
+    solution_limit = 0
+    all_solutions = false
+    list_of_solutions = false
     # Parallel  
-    processors                          = 1
+    processors = 1
     # Traversing    
-    traverse_strategy                   = :BFS
+    traverse_strategy = :BFS
     # Feasibility Pump  
-    feasibility_pump                    = true # changes to false if mip_solver not provided
-    feasibility_pump_time_limit         = 60.0
-    feasibility_pump_tolerance_counter  = 5
-    tabu_list_length                    = 30
-    num_resolve_nlp_feasibility_pump    = 1
-    mip_solver                          = nothing
-    allow_almost_solved                 = true
-    allow_almost_solved_integral        = true
-    registered_functions                = nothing
-    seed                                = 1
+    feasibility_pump = true # changes to false if mip_solver not provided
+    feasibility_pump_time_limit = 60.0
+    feasibility_pump_tolerance_counter = 5
+    tabu_list_length = 30
+    num_resolve_nlp_feasibility_pump = 1
+    mip_solver = nothing
+    allow_almost_solved = true
+    allow_almost_solved_integral = true
+    registered_functions = nothing
+    seed = 1
 
     # Only for testing
-    force_parallel                      = false
-    debug                               = false
-    debug_write                         = false
-    debug_file_path                     = "debug.json"
+    force_parallel = false
+    debug = false
+    debug_write = false
+    debug_file_path = "debug.json"
 
-    fixed_gain_mu                       = false
+    fixed_gain_mu = false
 
-    return SolverOptions(nl_solver,log_levels,silent,atol,num_resolve_root_relaxation,branch_strategy,gain_mu,
-        strong_branching_perc,strong_branching_nsteps,strong_branching_time_limit,strong_restart,
-        reliability_branching_threshold,reliability_branching_perc,
-        incumbent_constr,obj_epsilon,time_limit,mip_gap,best_obj_stop,solution_limit,all_solutions,
-        list_of_solutions,processors,traverse_strategy,
-        feasibility_pump,feasibility_pump_time_limit,feasibility_pump_tolerance_counter,
-        tabu_list_length,num_resolve_nlp_feasibility_pump,
-        mip_solver, allow_almost_solved, allow_almost_solved_integral, registered_functions, seed,
-        force_parallel, debug, debug_write, debug_file_path, fixed_gain_mu)
+    return SolverOptions(
+        nl_solver,
+        log_levels,
+        silent,
+        atol,
+        num_resolve_root_relaxation,
+        branch_strategy,
+        gain_mu,
+        strong_branching_perc,
+        strong_branching_nsteps,
+        strong_branching_time_limit,
+        strong_restart,
+        reliability_branching_threshold,
+        reliability_branching_perc,
+        incumbent_constr,
+        obj_epsilon,
+        time_limit,
+        mip_gap,
+        best_obj_stop,
+        solution_limit,
+        all_solutions,
+        list_of_solutions,
+        processors,
+        traverse_strategy,
+        feasibility_pump,
+        feasibility_pump_time_limit,
+        feasibility_pump_tolerance_counter,
+        tabu_list_length,
+        num_resolve_nlp_feasibility_pump,
+        mip_solver,
+        allow_almost_solved,
+        allow_almost_solved_integral,
+        registered_functions,
+        seed,
+        force_parallel,
+        debug,
+        debug_write,
+        debug_file_path,
+        fixed_gain_mu,
+    )
 end
 
 function combine_options(options)
@@ -102,38 +133,56 @@ function combine_options(options)
     end
 
     # if time limit is set make sure to reduce the time limit for the feasibility pump
-    if haskey(options_dict, :time_limit) && !haskey(options_dict, :feasibility_pump_time_limit)
+    if haskey(options_dict, :time_limit) &&
+       !haskey(options_dict, :feasibility_pump_time_limit)
         if options_dict[:time_limit] < defaults.feasibility_pump_time_limit
-            setfield!(defaults, :feasibility_pump_time_limit, convert(Float64, options_dict[:time_limit]))
+            setfield!(
+                defaults,
+                :feasibility_pump_time_limit,
+                convert(Float64, options_dict[:time_limit]),
+            )
         end
     end
 
     for fname in fieldnames(SolverOptions)
         if haskey(options_dict, fname)
             # check that mip_solver is defined if feasibile pump should be used
-            if fname == :feasibility_pump && options_dict[:feasibility_pump] == true
-                if !haskey(options_dict, :mip_solver) || options_dict[:mip_solver] === nothing
+            if fname == :feasibility_pump &&
+               options_dict[:feasibility_pump] == true
+                if !haskey(options_dict, :mip_solver) ||
+                   options_dict[:mip_solver] === nothing
                     @warn "The feasibility pump can only be used if a mip solver is defined."
                     options_dict[:feasibility_pump] = false
                 end
             end
 
             # check branch strategy
-            if fname == :branch_strategy 
+            if fname == :branch_strategy
                 if !haskey(branch_strategies, options_dict[fname])
-                    error("Branching strategy "*string(options_dict[fname])* " is not supported")
+                    error(
+                        "Branching strategy " *
+                        string(options_dict[fname]) *
+                        " is not supported",
+                    )
                 end
             end
 
-             # check traverse strategy
-             if fname == :traverse_strategy 
+            # check traverse strategy
+            if fname == :traverse_strategy
                 if !haskey(traverse_strategies, options_dict[fname])
-                    error("Traverse strategy "*string(options_dict[fname])* " is not supported")
+                    error(
+                        "Traverse strategy " *
+                        string(options_dict[fname]) *
+                        " is not supported",
+                    )
                 end
             end
 
             if fieldtype(SolverOptions, fname) != typeof(options_dict[fname])
-                options_dict[fname] = convert(fieldtype(SolverOptions, fname), options_dict[fname])
+                options_dict[fname] = convert(
+                    fieldtype(SolverOptions, fname),
+                    options_dict[fname],
+                )
             end
             setfield!(defaults, fname, options_dict[fname])
         end
@@ -141,7 +190,7 @@ function combine_options(options)
 
     if defaults.allow_almost_solved_integral && !defaults.allow_almost_solved
         defaults.allow_almost_solved_integral = false
-    end 
+    end
 
     return defaults
 end

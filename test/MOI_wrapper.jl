@@ -37,9 +37,9 @@ function test_runtests()
         ],
     )
     optimizer = Juniper.Optimizer(
-        Pair{String, Any}[
-            "log_levels" => [:Table],
-            "nl_solver" => MOI.OptimizerWithAttributes(
+        Pair{String,Any}[
+            "log_levels"=>[:Table],
+            "nl_solver"=>MOI.OptimizerWithAttributes(
                 Ipopt.Optimizer,
                 "print_level" => 0,
                 "sb" => "yes",
@@ -82,7 +82,7 @@ function test_runtests()
             "test_solve_TerminationStatus_DUAL_INFEASIBLE",
             "test_linear_DUAL_INFEASIBLE",
             "test_linear_DUAL_INFEASIBLE_2",
-        ]
+        ],
     )
     return
 end

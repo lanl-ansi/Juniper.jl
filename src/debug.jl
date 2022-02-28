@@ -1,10 +1,31 @@
-step_obj_primitives = [:var_idx,:state,:nrestarts,:gain_gap,
-                       :strong_disc_vars,:idx_time,:node_idx_time,:upd_gains_time,:branch_strategy,:branch_time,
-                       :counter,:upd_gains,:strong_branching]
-node_primitives = [:level,:var_idx,:l_var,:u_var,:solution,:state,:relaxation_state,:best_bound]
-gain_obj_primitives = [:minus,:plus,:minus_counter,:plus_counter]
+step_obj_primitives = [
+    :var_idx,
+    :state,
+    :nrestarts,
+    :gain_gap,
+    :strong_disc_vars,
+    :idx_time,
+    :node_idx_time,
+    :upd_gains_time,
+    :branch_strategy,
+    :branch_time,
+    :counter,
+    :upd_gains,
+    :strong_branching,
+]
+node_primitives = [
+    :level,
+    :var_idx,
+    :l_var,
+    :u_var,
+    :solution,
+    :state,
+    :relaxation_state,
+    :best_bound,
+]
+gain_obj_primitives = [:minus, :plus, :minus_counter, :plus_counter]
 
-typedict(x,keys) = Dict(fn=>getfield(x, fn) for fn ∈ keys) 
+typedict(x, keys) = Dict(fn => getfield(x, fn) for fn in keys)
 
 function get_entry_dict(step_obj)
     node = step_obj.node
@@ -45,8 +66,8 @@ function get_entry_dict(step_obj)
     d_r[:step_obj] = Dict{Symbol,Any}()
     d_l[:step_obj][:node] = n_l
     d_r[:step_obj][:node] = n_r
-    push!(d[:children],d_l)
-    push!(d[:children],d_r)
+    push!(d[:children], d_l)
+    push!(d[:children], d_r)
     return d
 end
 
@@ -54,74 +75,72 @@ function upd_node_dict!(cd, step_obj)
     ed = get_entry_dict(step_obj)
     cd[:children] = ed[:children]
     cd[:step_obj] = ed[:step_obj]
-    cd[:hash] = ed[:hash]
+    return cd[:hash] = ed[:hash]
 end
-
 
 function push_step2treeDict!(d, step_obj)
     c = step_obj.counter
     node = step_obj.node
     if length(node.path) == 0
         d = get_entry_dict(step_obj)
-    else 
+    else
         path = copy(node.path)
         cd = d
         phash = popfirst!(path)
-        push!(path,step_obj.node.hash)
+        push!(path, step_obj.node.hash)
         while length(path) > 0
             phash = popfirst!(path)
             if cd[:children][1][:hash] == phash
                 cd = cd[:children][1]
-            else 
+            else
                 cd = cd[:children][2]
             end
         end
-        upd_node_dict!(cd,step_obj)
+        upd_node_dict!(cd, step_obj)
     end
     return d
 end
 
 function debug_init(d)
     d[:relaxation] = Dict{Symbol,Any}()
-    d[:info] = Dict{Symbol,Any}()
-end 
+    return d[:info] = Dict{Symbol,Any}()
+end
 
-function debug_fill_basic(d,m,restarts)
+function debug_fill_basic(d, m, restarts)
     d[:relaxation][:status] = m.status
     d[:relaxation][:time] = m.relaxation_time
     d[:relaxation][:nrestarts] = restarts
     d[:info][:sense] = m.obj_sense
     d[:info][:nintvars] = m.nintvars
     d[:info][:nbinvars] = m.nbinvars
-    d[:info][:var2disc_idx] = m.var2disc_idx
+    return d[:info][:var2disc_idx] = m.var2disc_idx
 end
 
-
-function debug_objective(d,m)
+function debug_objective(d, m)
     d[:relaxation][:objval] = m.relaxation_objval
-    d[:relaxation][:solution] = m.relaxation_solution
-end 
-    
-function debug_restart_values(d,restart_vals)
+    return d[:relaxation][:solution] = m.relaxation_solution
+end
+
+function debug_restart_values(d, restart_vals)
     if !haskey(d[:relaxation], :restarts)
         d[:relaxation][:restarts] = []
     end
-    push!(d[:relaxation][:restarts], restart_vals)
+    return push!(d[:relaxation][:restarts], restart_vals)
 end
 
-function debug_set_solution(d,m)
+function debug_set_solution(d, m)
     d[:solution] = Dict{Symbol,Any}()
     d[:solution][:objval] = m.objval
     d[:solution][:best_bound] = m.best_bound
     d[:solution][:status] = m.status
     d[:solution][:solution] = m.solution
-    d[:solution][:time] = m.soltime
+    return d[:solution][:time] = m.soltime
 end
 
 function debug_set_tree_obj_gain!(tree::BnBTreeObj)
-    tree.m.debugDict[:obj_gain] = zeros(4,tree.m.num_disc_var)
-    tree.m.debugDict[:obj_gain][1,:] = tree.obj_gain.minus
-    tree.m.debugDict[:obj_gain][2,:] = tree.obj_gain.plus
-    tree.m.debugDict[:obj_gain][3,:] = tree.obj_gain.minus_counter
-    tree.m.debugDict[:obj_gain][4,:] = tree.obj_gain.plus_counter
+    tree.m.debugDict[:obj_gain] = zeros(4, tree.m.num_disc_var)
+    tree.m.debugDict[:obj_gain][1, :] = tree.obj_gain.minus
+    tree.m.debugDict[:obj_gain][2, :] = tree.obj_gain.plus
+    tree.m.debugDict[:obj_gain][3, :] = tree.obj_gain.minus_counter
+    return tree.m.debugDict[:obj_gain][4, :] = tree.obj_gain.plus_counter
 end

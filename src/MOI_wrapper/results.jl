@@ -4,7 +4,7 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
     if model.inner === nothing
         return MOI.OPTIMIZE_NOT_CALLED
     end
-	return model.inner.status
+    return model.inner.status
 end
 
 function MOI.get(model::Optimizer, ::MOI.RawStatusString)
@@ -15,7 +15,10 @@ function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
     if model.inner === nothing
         return MOI.NO_SOLUTION
     end
-    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved)
+    if state_is_optimal(
+        model.inner.status;
+        allow_almost = model.inner.options.allow_almost_solved,
+    )
         return MOI.FEASIBLE_POINT
     else
         return MOI.INFEASIBLE_POINT
@@ -26,13 +29,15 @@ function MOI.get(model::Optimizer, ::MOI.DualStatus)
     if model.inner === nothing
         return MOI.NO_SOLUTION
     end
-    if state_is_optimal(model.inner.status; allow_almost=model.inner.options.allow_almost_solved)
+    if state_is_optimal(
+        model.inner.status;
+        allow_almost = model.inner.options.allow_almost_solved,
+    )
         return MOI.FEASIBLE_POINT
     else
         return MOI.INFEASIBLE_POINT
     end
 end
-
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED
@@ -55,7 +60,8 @@ function MOI.get(model::Optimizer, ::MOI.RelativeGap)
     if isnan(model.inner.objval) || isnan(model.inner.best_bound)
         return NaN
     end
-    return abs(model.inner.best_bound-model.inner.objval)/abs(model.inner.objval)
+    return abs(model.inner.best_bound - model.inner.objval) /
+           abs(model.inner.objval)
 end
 
 function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)

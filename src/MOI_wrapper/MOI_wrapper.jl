@@ -7,12 +7,14 @@ with all mandatory MOI functions overloaded
 Optimizer struct
 """
 mutable struct Optimizer <: MOI.AbstractOptimizer
-    inner::Union{JuniperProblem, Nothing}
+    inner::Union{JuniperProblem,Nothing}
     model_cache::MOIU.UniversalFallback{MOIU.Model{Float64}}
     options::SolverOptions
 end
 
-MOI.is_valid(model::Optimizer, index::MOI.Index) = MOI.is_valid(model.model_cache, index)
+function MOI.is_valid(model::Optimizer, index::MOI.Index)
+    return MOI.is_valid(model.model_cache, index)
+end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
 MOI.get(::Optimizer, ::MOI.SolverVersion) = "v0.8.0"
@@ -30,7 +32,11 @@ function MOI.set(model::Optimizer, ::MOI.Silent, value::Bool)
     return
 end
 
-function MOI.set(model::Optimizer, ::MOI.NumberOfThreads, value::Union{Nothing,Int})
+function MOI.set(
+    model::Optimizer,
+    ::MOI.NumberOfThreads,
+    value::Union{Nothing,Int},
+)
     if value === nothing
         model.options.processors = 1
     else
@@ -39,7 +45,11 @@ function MOI.set(model::Optimizer, ::MOI.NumberOfThreads, value::Union{Nothing,I
     return
 end
 
-function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Float64})
+function MOI.set(
+    model::Optimizer,
+    ::MOI.TimeLimitSec,
+    value::Union{Nothing,Float64},
+)
     if value === nothing
         model.options.time_limit = Inf
     else
@@ -61,12 +71,23 @@ function MOI.set(model::Optimizer, p::MOI.RawOptimizerAttribute, value)
                 end
             end
             if p_symbol == :branch_strategy
-                if !(value in [:StrongPseudoCost, :PseudoCost, :Reliability, :MostInfeasible])
+                if !(
+                    value in [
+                        :StrongPseudoCost,
+                        :PseudoCost,
+                        :Reliability,
+                        :MostInfeasible,
+                    ]
+                )
                     passed_checks = false
                     @error "Branch strategy $(value) is not supported. Use one of `[:StrongPseudoCost, :PseudoCost, :Reliability, :MostInfeasible]`."
                 end
             end
-            passed_checks && setfield!(model.options, p_symbol, convert(type_of_param, value))
+            passed_checks && setfield!(
+                model.options,
+                p_symbol,
+                convert(type_of_param, value),
+            )
         else
             @error "The option $(p.name) has a different type ($(type_of_param))"
         end
@@ -93,33 +114,51 @@ function MOI.get(model::Optimizer, p::MOI.RawOptimizerAttribute)
     @error "The option $(p.name) doesn't exist."
 end
 
-function register(s::Symbol, dimension::Integer, f::Function; autodiff::Bool=false)
+function register(
+    s::Symbol,
+    dimension::Integer,
+    f::Function;
+    autodiff::Bool = false,
+)
     return RegisteredFunction(s, dimension, f, nothing, nothing, autodiff)
 end
 
-function register(s::Symbol, dimension::Integer, f::Function, gradf::Function; autodiff::Bool=false)
+function register(
+    s::Symbol,
+    dimension::Integer,
+    f::Function,
+    gradf::Function;
+    autodiff::Bool = false,
+)
     return RegisteredFunction(s, dimension, f, gradf, nothing, autodiff)
 end
 
-function register(s::Symbol, dimension::Integer, f::Function, gradf::Function, grad2f::Function; autodiff::Bool=false)
+function register(
+    s::Symbol,
+    dimension::Integer,
+    f::Function,
+    gradf::Function,
+    grad2f::Function;
+    autodiff::Bool = false,
+)
     return RegisteredFunction(s, dimension, f, gradf, grad2f, autodiff)
 end
 
 """
 Optimizer struct constructor
 """
-function Optimizer(;options...)
-
+function Optimizer(; options...)
     solver_options = combine_options(options)
 
     return Optimizer(
-    nothing,
-    MOIU.UniversalFallback(MOIU.Model{Float64}()),
-    solver_options)
+        nothing,
+        MOIU.UniversalFallback(MOIU.Model{Float64}()),
+        solver_options,
+    )
 end
 
 function Optimizer(options::Vector{Pair{String,Any}})
-    symbol_options = Dict{Symbol, Any}()
+    symbol_options = Dict{Symbol,Any}()
     for option in options
         symbol_options[Symbol(option.first)] = option.second
     end
@@ -127,13 +166,13 @@ function Optimizer(options::Vector{Pair{String,Any}})
 end
 
 function Optimizer(options::Dict{Symbol,Any})
-
     solver_options = combine_options(options)
 
     return Optimizer(
-    nothing,
-    MOIU.UniversalFallback(MOIU.Model{Float64}()),
-    solver_options)
+        nothing,
+        MOIU.UniversalFallback(MOIU.Model{Float64}()),
+        solver_options,
+    )
 end
 
 """
@@ -163,7 +202,7 @@ MOI.is_empty(model::Optimizer) = MOI.is_empty(model.model_cache)
 """
 function MOI.empty!(model::Optimizer)
     model.inner = nothing
-    MOI.empty!(model.model_cache)
+    return MOI.empty!(model.model_cache)
 end
 
 """
@@ -171,16 +210,27 @@ ordering of constraints provided to Juniper.jl
 """
 linear_le_offset(model::Optimizer) = 0
 linear_ge_offset(model::Optimizer) = length(model.linear_le_constraints)
-linear_eq_offset(model::Optimizer) = linear_ge_offset(model) + length(model.linear_ge_constraints)
-quadratic_le_offset(model::Optimizer) = linear_eq_offset(model) + length(model.linear_eq_constraints)
-quadratic_ge_offset(model::Optimizer) = quadratic_le_offset(model) + length(model.quadratic_le_constraints)
-quadratic_eq_offset(model::Optimizer) = quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
-nlp_constraint_offset(model::Optimizer) = quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
+function linear_eq_offset(model::Optimizer)
+    return linear_ge_offset(model) + length(model.linear_ge_constraints)
+end
+function quadratic_le_offset(model::Optimizer)
+    return linear_eq_offset(model) + length(model.linear_eq_constraints)
+end
+function quadratic_ge_offset(model::Optimizer)
+    return quadratic_le_offset(model) + length(model.quadratic_le_constraints)
+end
+function quadratic_eq_offset(model::Optimizer)
+    return quadratic_ge_offset(model) + length(model.quadratic_ge_constraints)
+end
+function nlp_constraint_offset(model::Optimizer)
+    return quadratic_eq_offset(model) + length(model.quadratic_eq_constraints)
+end
 
 function replace_solution!(m::JuniperProblem, tree::BnBTreeObj)
     status_dict = Dict{Symbol,MOI.TerminationStatusCode}()
     status_dict[:Time] = MOI.TIME_LIMIT
-    status_dict[:Infeasible] = !tree.global_solver ? MOI.LOCALLY_INFEASIBLE : MOI.INFEASIBLE
+    status_dict[:Infeasible] =
+        !tree.global_solver ? MOI.LOCALLY_INFEASIBLE : MOI.INFEASIBLE
     status_dict[:MipGap] = MOI.OBJECTIVE_LIMIT
     status_dict[:BestObjStop] = MOI.OBJECTIVE_LIMIT
     status_dict[:EnoughSolutions] = MOI.SOLUTION_LIMIT
@@ -207,7 +257,7 @@ function replace_solution!(m::JuniperProblem, tree::BnBTreeObj)
     else
         m.status = status_dict[tree.limit]
     end
-    m.best_bound = tree.best_bound
+    return m.best_bound = tree.best_bound
 end
 
 """
@@ -228,17 +278,19 @@ function MOI.optimize!(model::Optimizer)
     ps = jp.options.log_levels
     jp.debugDict = Dict{Any,Any}()
 
-    (:All in ps || :AllOptions in ps) && print_options(jp;all=true)
-    (:Options in ps) && print_options(jp;all=false)
+    (:All in ps || :AllOptions in ps) && print_options(jp; all = true)
+    (:Options in ps) && print_options(jp; all = false)
 
     if !jp.options.fixed_gain_mu && jp.obj_sense == :Max
-        jp.options.gain_mu = 1-jp.options.gain_mu
+        jp.options.gain_mu = 1 - jp.options.gain_mu
     end
 
     nw = nworkers()
     if nw < jp.options.processors
         jp.options.processors = nw
-        @warn "Julia was started with less processors than you defined in your options. Start julia with: `julia -p "*string(jp.options.processors)*"`"
+        @warn "Julia was started with less processors than you defined in your options. Start julia with: `julia -p " *
+              string(jp.options.processors) *
+              "`"
     end
     # set incumbent to nothing might be updated using start values or the feasibility_pump
     incumbent = nothing
@@ -253,15 +305,19 @@ function MOI.optimize!(model::Optimizer)
     unfix_primal_start!(jp)
     relax_start_time = time()
     restarts = solve_root_model!(jp)
-    jp.relaxation_time = time()-relax_start_time
+    jp.relaxation_time = time() - relax_start_time
 
-    (:All in ps || :Info in ps) && println("Status of relaxation: ", jp.relaxation_status)
-    jp.soltime = time()-jp.start_time
+    (:All in ps || :Info in ps) &&
+        println("Status of relaxation: ", jp.relaxation_status)
+    jp.soltime = time() - jp.start_time
 
-    jp.options.debug && debug_fill_basic(jp.debugDict,jp,restarts)
+    jp.options.debug && debug_fill_basic(jp.debugDict, jp, restarts)
 
     # if infeasible or unbounded => return
-    if !state_is_optimal(jp.relaxation_status; allow_almost=jp.options.allow_almost_solved)
+    if !state_is_optimal(
+        jp.relaxation_status;
+        allow_almost = jp.options.allow_almost_solved,
+    )
         jp.status = jp.relaxation_status
         if jp.options.debug && jp.options.debug_write
             write(jp.options.debug_file_path, JSON.json(jp.debugDict))
@@ -269,28 +325,30 @@ function MOI.optimize!(model::Optimizer)
         return
     end
 
-    (:All in ps || :Info in ps || :Timing in ps) && println("Time for relaxation: ", jp.soltime)
+    (:All in ps || :Info in ps || :Timing in ps) &&
+        println("Time for relaxation: ", jp.soltime)
 
-    jp.relaxation_objval   = MOI.get(jp.model, MOI.ObjectiveValue())
+    jp.relaxation_objval = MOI.get(jp.model, MOI.ObjectiveValue())
     jp.relaxation_solution = MOI.get(jp.model, MOI.VariablePrimal(), jp.x)
 
-    jp.options.debug && debug_objective(jp.debugDict,jp)
+    jp.options.debug && debug_objective(jp.debugDict, jp)
     # TODO free model for Knitro
 
-    (:All in ps || :Info in ps || :Timing in ps) && println("Relaxation Obj: ", jp.relaxation_objval)
-
+    (:All in ps || :Info in ps || :Timing in ps) &&
+        println("Relaxation Obj: ", jp.relaxation_objval)
 
     only_almost_solved = false
     if jp.num_disc_var > 0
         if jp.options.feasibility_pump
-            fpump_incumbent = fpump(model,jp)
+            fpump_incumbent = fpump(model, jp)
             if fpump_incumbent !== nothing
                 if incumbent === nothing
                     incumbent = fpump_incumbent
                 else
                     factor = jp.obj_sense == :Min ? -1 : 1
                     # if found better incumbent
-                    if factor*fpump_incumbent.objval > factor*incumbent.objval
+                    if factor * fpump_incumbent.objval >
+                       factor * incumbent.objval
                         incumbent = fpump_incumbent
                     end
                 end
@@ -312,19 +370,18 @@ function MOI.optimize!(model::Optimizer)
         jp.objval = jp.relaxation_objval
         jp.solution = jp.relaxation_solution
     end
-    jp.soltime = time()-jp.start_time
+    jp.soltime = time() - jp.start_time
 
-    (:All in ps || :Info in ps) && println("Obj: ",jp.objval)
+    (:All in ps || :Info in ps) && println("Obj: ", jp.objval)
 
     if length(jp.solutions) == 0
         push!(jp.solutions, SolutionObj(jp.solution, jp.objval))
     end
 
-    jp.options.debug && debug_set_solution(jp.debugDict,jp)
+    jp.options.debug && debug_set_solution(jp.debugDict, jp)
     if jp.options.debug && jp.options.debug_write
         write(jp.options.debug_file_path, JSON.json(jp.debugDict))
     end
-
 end
 
 getnsolutions(m::JuniperProblem) = m.nsolutions
@@ -333,8 +390,12 @@ getnbranches(m::JuniperProblem) = m.nbranches
 
 # `UniversalFallback` supports everything so we can return `true`.
 MOI.supports(model::Optimizer, attr::MOI.AbstractModelAttribute) = true
-MOI.set(model::Optimizer, attr::MOI.AbstractModelAttribute, value) = MOI.set(model.model_cache, attr, value)
-MOI.get(model::Optimizer, attr::MOI.AbstractModelAttribute) = MOI.get(model.model_cache, attr)
+function MOI.set(model::Optimizer, attr::MOI.AbstractModelAttribute, value)
+    return MOI.set(model.model_cache, attr, value)
+end
+function MOI.get(model::Optimizer, attr::MOI.AbstractModelAttribute)
+    return MOI.get(model.model_cache, attr)
+end
 
 """
 MOI variables
@@ -344,12 +405,27 @@ MOI.add_variable(model::Optimizer) = MOI.add_variable(model.model_cache)
 MOI.add_variables(model::Optimizer, n) = MOI.add_variables(model.model_cache, n)
 
 # `UniversalFallback` supports everything so we can return `true`.
-MOI.supports(::Optimizer, ::MOI.AbstractVariableAttribute, ::Type{MOI.VariableIndex}) = true
-function MOI.set(model::Optimizer, attr::MOI.AbstractVariableAttribute, vi::MOI.VariableIndex, value)
+function MOI.supports(
+    ::Optimizer,
+    ::MOI.AbstractVariableAttribute,
+    ::Type{MOI.VariableIndex},
+)
+    return true
+end
+function MOI.set(
+    model::Optimizer,
+    attr::MOI.AbstractVariableAttribute,
+    vi::MOI.VariableIndex,
+    value,
+)
     MOI.set(model.model_cache, attr, vi, value)
     return
 end
-function MOI.get(model::Optimizer, attr::MOI.AbstractVariableAttribute, vi::MOI.VariableIndex)
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.AbstractVariableAttribute,
+    vi::MOI.VariableIndex,
+)
     return MOI.get(model.model_cache, attr, vi)
 end
 
@@ -358,18 +434,43 @@ MOI constraints
 """
 
 # `UniversalFallback` supports everything so we can return `true`.
-MOI.supports_constraint(::Optimizer, ::Type{<:MOI.AbstractFunction}, ::Type{<:MOI.AbstractSet}) = true
-function MOI.add_constraint(model::Optimizer, func::MOI.AbstractFunction, set::MOI.AbstractSet)
+function MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{<:MOI.AbstractFunction},
+    ::Type{<:MOI.AbstractSet},
+)
+    return true
+end
+function MOI.add_constraint(
+    model::Optimizer,
+    func::MOI.AbstractFunction,
+    set::MOI.AbstractSet,
+)
     return MOI.add_constraint(model.model_cache, func, set)
 end
 
 # `UniversalFallback` supports everything so we can return `true`.
-MOI.supports(::Optimizer, ::MOI.AbstractConstraintAttribute, ::Type{<:MOI.ConstraintIndex}) = true
-function MOI.set(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MOI.ConstraintIndex, value)
+function MOI.supports(
+    ::Optimizer,
+    ::MOI.AbstractConstraintAttribute,
+    ::Type{<:MOI.ConstraintIndex},
+)
+    return true
+end
+function MOI.set(
+    model::Optimizer,
+    attr::MOI.AbstractConstraintAttribute,
+    ci::MOI.ConstraintIndex,
+    value,
+)
     MOI.set(model.model_cache, attr, ci, value)
     return
 end
-function MOI.get(model::Optimizer, attr::MOI.AbstractConstraintAttribute, ci::MOI.ConstraintIndex)
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.AbstractConstraintAttribute,
+    ci::MOI.ConstraintIndex,
+)
     return MOI.get(model.model_cache, attr, ci)
 end
 
