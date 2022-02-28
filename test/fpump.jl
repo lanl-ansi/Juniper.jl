@@ -180,7 +180,6 @@ include("basic/gamsworld.jl")
         status = termination_status(m)
         println("Status: ", status)
         @test status == MOI.LOCALLY_INFEASIBLE
-        @test result_count(m) == 0
     end
 
     @testset "FP: tspn05" begin
