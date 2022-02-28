@@ -9,7 +9,7 @@ include("basic/gamsworld.jl")
     println("==================================")
     println("fp No objective and start value")
     println("==================================")
-    juniper = DefaultTestSolver(mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))
+    juniper = DefaultTestSolver(mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))
 
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
@@ -21,7 +21,7 @@ include("basic/gamsworld.jl")
     @constraint(m, x >= 0)
     @constraint(m, x <= 5)
     @NLconstraint(m, x^2 >= 17)
-   
+
     status = solve(m)
     inner = internalmodel(m)
     @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
@@ -54,7 +54,7 @@ end
         DefaultTestSolver(
             branch_strategy=:MostInfeasible,
             time_limit = 1,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0),
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false),
         )...
     )
     set_optimizer(m, optimizer)
@@ -67,9 +67,9 @@ end
 end
 
 @testset "GLPK Binary bounds #143" begin
-    juniper_solver = optimizer_with_attributes(Juniper.Optimizer, 
+    juniper_solver = optimizer_with_attributes(Juniper.Optimizer,
         "log_levels" => [],
-        "nl_solver"  => optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0), 
+        "nl_solver"  => optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0),
         "mip_solver" => optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => 0)
     )
 
@@ -94,7 +94,7 @@ end
 
     @objective(m, Min, x[1])
 
-    # make sure that every solution to lp is solution to nlp 
+    # make sure that every solution to lp is solution to nlp
     # FP should definitely find a solution
     for i=1:4
         @constraint(m, x[i] >= i-0.1)
@@ -113,7 +113,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -143,7 +143,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -169,7 +169,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -191,7 +191,7 @@ end
         DefaultTestSolver(
             branch_strategy=:StrongPseudoCost,
             feasibility_pump = true,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -215,7 +215,7 @@ end
             feasibility_pump = true,
             feasibility_pump_time_limit = 10,
             time_limit = 10,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -239,7 +239,7 @@ end
             feasibility_pump = true,
             feasibility_pump_time_limit = 1,
             time_limit = 2,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     status = solve(m)
@@ -253,10 +253,10 @@ end
     println("==================================")
 
     ipopt_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0, "sb" => "yes", "max_iter" => 50000)
-    cbc_solver = JuMP.optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+    highs_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
     juniper_solver = JuMP.optimizer_with_attributes(Juniper.Optimizer,
         "nl_solver" => ipopt_solver,
-        "mip_solver" => cbc_solver, "log_levels" => [])
+        "mip_solver" => highs_solver, "log_levels" => [])
     m = Model(juniper_solver)
     @variable(m, x[1:3], Int)
     @variable(m, y)

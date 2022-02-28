@@ -147,9 +147,10 @@ end
 """
 Copy constructor for the optimizer
 """
-MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = true
-function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
-    return MOI.copy_to(model.model_cache, src; kws...)
+MOI.supports_incremental_interface(::Optimizer) = true
+
+function MOI.copy_to(model::Optimizer, src::MOI.ModelLike)
+    return MOI.copy_to(model.model_cache, src)
 end
 
 """

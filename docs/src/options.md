@@ -27,7 +27,7 @@ In this example the strategy used for branching is defined.
 In the following the options are explained. The type for the option is given after `::` and the default value in `[]`.
 
 **Attention:**
-The default values might change in the future after several tests were executed to determine the best overall options. 
+The default values might change in the future after several tests were executed to determine the best overall options.
 
 ## Tolerance
 
@@ -75,7 +75,7 @@ Possible values:
 ## Objective Cuts
 ### incumbent_constr::Bool [false]
 
-Add a constraint `objval >=/<= incumbent`. 
+Add a constraint `objval >=/<= incumbent`.
 
 ### obj_epsilon::0 [Float64]
 
@@ -93,9 +93,9 @@ $\text{obj } \geq (1-\epsilon)\text{UB}$
 
 ### strong\_branching\_perc::Float64 [100]
 
-Defines the percentage of variables to consider for strong branching. 
+Defines the percentage of variables to consider for strong branching.
 If set to 25 it means that strong branching is performed on 25% of all discrete variables.
-Variables which are discrete in the relaxation aren't considered again but count to the number of 
+Variables which are discrete in the relaxation aren't considered again but count to the number of
 all discrete variables.
 If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. **Attention:** `strong_branching_time_limit` might terminate strong branching earlier.
 
@@ -117,15 +117,15 @@ This option is also used in reliablity branching.
 
 ## Options for reliablity branching
 
-The implemented version of reliablity branching uses the gain score as in pseudo cost branching 
-and if some branching variables aren't reliable in a sense that strong branching wasn't performed 
+The implemented version of reliablity branching uses the gain score as in pseudo cost branching
+and if some branching variables aren't reliable in a sense that strong branching wasn't performed
 at least `reliablility_branching_threshold` times then strong branching is performed on those.
 Afterwards it will be branched on the variable with the highest gain score.
 
 ### reliablility\_branching\_perc::Float64 [25]
 
 Defines the percentage of variables to consider for the strong branching part of reliablity branching.
-If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable. 
+If the number of variables is smaller than `2` it is fixed at `2` as strong branching doesn't make sense for one variable.
 
 ### reliablility\_branching\_threshold::Int64 [5]
 
@@ -173,16 +173,16 @@ The default is `true` if a mip solver is specified and `false` otherwise.
 This has to be set to a mip solver if the feasibility pump should be used.
 A list of some MIP solvers is mentioned [here](http://www.juliaopt.org/JuMP.jl/0.18/installation.html#getting-solvers).
 
-If you want to use [Cbc](https://projects.coin-or.org/Cbc)
+If you want to use [HiGHS](https://highs.dev)
 you would need to use
 
 ```
-using Cbc
+using HiGHS
 ```
-and set the option with 
+and set the option with
 ```
-mip_solver = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-m = Model(optimizer_with_attributes(optimizer, 
+mip_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
+m = Model(optimizer_with_attributes(optimizer,
                         "nl_solver" => nl_solver,
                         "mip_solver" => mip_solver
          ))
@@ -198,10 +198,10 @@ In the feasibility pump the objective is to reduce the difference between the mi
 If the default tolerance [`atol`](#atol::Float64-[1e-6]-1) can't be reached for `feasibility_pump_tolerance_counter` consecutive times
 but the `tolerance*10` can be reached, a warning will be thrown and the tolerance is increased.
 
-If there is no warning like `Real objective wasn't solved to optimality` afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the 
-objective value. In the case that the nlp was solved (maybe only locally like ipopt in non-convex cases) the warning before can be ignored as it is given that the solution has no rounding issues. 
+If there is no warning like `Real objective wasn't solved to optimality` afterwards there is no need to worry at all. Normally in the end of the feasibility pump the real objective is used to improve the
+objective value. In the case that the nlp was solved (maybe only locally like ipopt in non-convex cases) the warning before can be ignored as it is given that the solution has no rounding issues.
 In the other case a warning like `Real objective wasn't solved to optimality` is thrown.
-This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues. 
+This means that the objective might be not the best possible given the mip solution and if a warning for the tolerance change was thrown there might be rounding issues.
 You can set this value to a huge number (more than 100 should be enough) if you don't want to use this option.
 
 ### tabu\_list\_length::Int64 [30]
@@ -221,7 +221,7 @@ If the solver stops because of one of the following options an appropriate statu
 
 ### time_limit::Float64 [Inf]
 
-The maximum time in seconds the solver should run. 
+The maximum time in seconds the solver should run.
 
 If this limit is reached the status will be `MOI.TIME_LIMIT`.
 
@@ -257,10 +257,10 @@ solution in the root relaxation you can use this option to resolve a couple of t
 ## Extra options
 
 ### allow\_almost\_solved\_integral::Bool [true]
-The non linear solver might return the status `ALMOST_LOCALLY_SOLVED` which means: 
+The non linear solver might return the status `ALMOST_LOCALLY_SOLVED` which means:
 "The algorithm converged to a stationary point, local
   optimal solution, or could not find directions for improvement within relaxed tolerances."
-Inside Juniper this is mostly considered as `LOCALLY_SOLVED` (see next option) but you can use this option to restart the search once if solution is integral but only `ALMOST_LOCALLY_SOLVED` to maybe find a `LOCALLY_SOLVED` solution. 
+Inside Juniper this is mostly considered as `LOCALLY_SOLVED` (see next option) but you can use this option to restart the search once if solution is integral but only `ALMOST_LOCALLY_SOLVED` to maybe find a `LOCALLY_SOLVED` solution.
 
 ### allow\_almost\_solved::Bool [true]
 See above option for an explanation of `ALMOST` solved status codes. You can completely disable allowing such status codes with this option.
@@ -268,7 +268,7 @@ Setting it to true means that all `ALMOST` solved status codes are considered as
 
 ### registered_functions::Union{Nothing,Vector{RegisteredFunction}} [nothing]
 
-If you can't define your objective function in the standard way JuMP supports to register your own function. See: [JuMP User-defined functions](http://www.juliaopt.org/JuMP.jl/v0.19.0/nlp/#User-defined-Functions-1). 
+If you can't define your objective function in the standard way JuMP supports to register your own function. See: [JuMP User-defined functions](http://www.juliaopt.org/JuMP.jl/v0.19.0/nlp/#User-defined-Functions-1).
 For Juniper v0.6.5, these registered functions were not directly visible to Juniper therefore they needed to be defined another time using this option.
 This is no longer required for later versions of Juniper and the keyword argument will be removed.
 
@@ -292,7 +292,7 @@ The output for `[:Table,:Info]` looks something like this:
     - Best integral solution found
 - Best Bound
     - The best bound of the open nodes
-- Gap 
+- Gap
     - The gap between `Incumbent` and `Best Bound`
 - Time
     - The time spend since the beginning of branch and bound
@@ -315,4 +315,4 @@ Possible symbols which can be added to the vector are:
 - :Timing
     - Provides some more timing information
 - :AllOptions
-    - prints all options 
+    - prints all options

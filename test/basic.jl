@@ -80,7 +80,7 @@ end
     bm = JuMP.backend(m)
     status = MOI.get(bm, MOI.TerminationStatus())
 
-    innermodel = bm.optimizer.model.optimizer.inner
+    innermodel = JuMP.unsafe_backend(m).inner
     debugDict = innermodel.debugDict
     @test getnstate(debugDict,:Integral) == 24
     @test different_hashes(debugDict) == true
@@ -96,7 +96,7 @@ end
 @testset "bruteforce optimizer without attributes" begin
     m = Model(Juniper.Optimizer)
     set_optimizer_attribute(m, "nl_solver", Ipopt.Optimizer)
-    set_optimizer_attribute(m, "mip_solver", Cbc.Optimizer)
+    set_optimizer_attribute(m, "mip_solver", HiGHS.Optimizer)
 
     @variable(m, 1 <= x[1:4] <= 5, Int)
 
@@ -420,7 +420,7 @@ end
             branch_strategy=:MostInfeasible,
             feasibility_pump = true,
             time_limit = 1,
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer)
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
         )...)
     )
 
@@ -796,7 +796,7 @@ end
     m = Model(optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(;traverse_strategy=:DBFS,
-            incumbent_constr=true,mip_solver=optimizer_with_attributes(Cbc.Optimizer),
+            incumbent_constr=true,mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false),
             strong_branching_time_limit=1)...)
     )
 
@@ -1219,7 +1219,7 @@ end
     set_optimizer(m, optimizer_with_attributes(
         Juniper.Optimizer,
         DefaultTestSolver(
-            mip_solver=optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0))...
+            mip_solver=optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false))...
     ))
 
     @variable(m, 0 <= a_var <= 1)

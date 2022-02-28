@@ -2,7 +2,7 @@
 
 @testset ":Options" begin
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;traverse_strategy=:DBFS,obj_epsilon=0.5)...
         )
     )
@@ -13,13 +13,12 @@
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     MOIU.attach_optimizer(m)
-    bm = JuMP.backend(m)
-    options = bm.optimizer.model.optimizer.options
+    options = JuMP.unsafe_backend(m).options
 
-    nd_options = Juniper.get_non_default_options(options)    
+    nd_options = Juniper.get_non_default_options(options)
     @test nd_options[:obj_epsilon] == 0.5
     @test nd_options[:traverse_strategy] == :DBFS
     @test length(nd_options[:log_levels]) == 0
@@ -27,7 +26,7 @@ end
 
 function option_not_available_t()
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;traverse_strategy=:DBS,obj_epsilon=0.5)...
         )
     )
@@ -35,7 +34,7 @@ end
 
 function option_not_available_b()
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:Pseudo,obj_epsilon=0.5)...
         )
     )
@@ -43,7 +42,7 @@ end
 
 function option_not_available()
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5)...
         )
     )
@@ -51,7 +50,7 @@ end
 
 function option_no_mip_solver()
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch=:Pseudo,obj_epsilon=0.5,feasibility_pump=true)...
         )
     )
@@ -62,12 +61,11 @@ function option_no_mip_solver()
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
     # there it is detected that no mip solver is present
     optimize!(m)
 
-    bm = JuMP.backend(m)
-    return bm.optimizer.model.optimizer.options
+    return JuMP.unsafe_backend(m).options
 end
 
 @testset "Silent/TimeLimitSec" begin
@@ -76,13 +74,13 @@ end
     @test MOI.supports(optimizer, MOI.TimeLimitSec()) === true
     MOI.set(optimizer, MOI.RawOptimizerAttribute("mip_gap"), 1.0)
     # parameter doesn't exist
-    @test_logs (:error, r"doesn't exist") MOI.set(optimizer, MOI.RawOptimizerAttribute("mip_gap_1"), 1.0) 
-    # wrong parameter format 
+    @test_logs (:error, r"doesn't exist") MOI.set(optimizer, MOI.RawOptimizerAttribute("mip_gap_1"), 1.0)
+    # wrong parameter format
     @test_logs (:error, r"different type") MOI.set(optimizer, MOI.RawOptimizerAttribute("mip_gap"), "abc")
     MOI.set(optimizer, MOI.Silent(), true)
     MOI.set(optimizer, MOI.TimeLimitSec(), nothing)
-    @test MOI.get(optimizer, MOI.Silent()) === true 
-    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("mip_gap")) == 1.0 
+    @test MOI.get(optimizer, MOI.Silent()) === true
+    @test MOI.get(optimizer, MOI.RawOptimizerAttribute("mip_gap")) == 1.0
     @test_logs (:error, r"doesn't exist") MOI.get(optimizer, MOI.RawOptimizerAttribute("mip_gap_1"))
     @test isinf(MOI.get(optimizer, MOI.TimeLimitSec()))
     MOI.set(optimizer, MOI.TimeLimitSec(), 12.0)
@@ -94,12 +92,12 @@ end
     @test_logs (:error, r"not supported") option_not_available_b()
     opts = option_no_mip_solver()
     @test opts.feasibility_pump == false
-    @test !isa(try option_not_available() catch ex ex end, Exception) 
+    @test !isa(try option_not_available() catch ex ex end, Exception)
 end
 
 @testset "Info/Table" begin
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)...
         )
     )
@@ -110,27 +108,27 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
-    
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
+
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
     JuMP.optimize!(m)
     innermodel = internalmodel(m)
-    
+
     options = innermodel.options
     jp = innermodel
     println("typeof(m): ", typeof(m))
     println("typeof(jp): ", typeof(jp))
 
-    @test !isa(try Juniper.print_info(jp) catch ex ex end, Exception) 
-    @test !isa(try Juniper.print_options(jp;all=true) catch ex ex end, Exception) 
-    @test !isa(try Juniper.print_options(jp;all=false) catch ex ex end, Exception) 
-    
+    @test !isa(try Juniper.print_info(jp) catch ex ex end, Exception)
+    @test !isa(try Juniper.print_options(jp;all=true) catch ex ex end, Exception)
+    @test !isa(try Juniper.print_options(jp;all=false) catch ex ex end, Exception)
+
 
     fields, field_chars = Juniper.get_table_config(options)
     ln = Juniper.get_table_header_line(fields, field_chars)
     @test length(ln) == sum(field_chars)
-        
+
     start_time = time()
     tree = Juniper.init(start_time,jp)
     tree.best_bound = 100
@@ -162,7 +160,7 @@ end
     tab_arr_new[1] = 100
     @test Juniper.is_table_diff(fields, tab_arr, tab_arr_new) == true
     @test Juniper.is_table_diff(fields, tab_arr, tab_arr) == false
-    
+
     # test if :Time not exists
     i = 1
     for f in fields
@@ -183,7 +181,7 @@ end
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
     idx_restarts = findfirst(fields .== :Restarts)
     @test tab_arr[idx_restarts] == "-"
-    
+
     # normal gain gap
     step_obj.gain_gap = 0.05
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
@@ -209,7 +207,7 @@ end
     idx_gap = findfirst(fields .== :Gap)
     @test tab_arr[idx_gap] == ">>"
 
-    # way too long 
+    # way too long
     fields, field_chars = Juniper.get_table_config(options)
     start_time = time()-123456789
     tab_ln, tab_arr = Juniper.get_table_line(2,tree,node,step_obj,start_time,fields,field_chars;last_arr=[])
@@ -221,12 +219,12 @@ end
     mip_obj,nlp_obj,t, fields, field_chars = 5,2,2, [:MIPobj,:NLPobj,:Time], [20,20,10]
     ln, arr = Juniper.get_fp_table(mip_obj,nlp_obj,t, fields, field_chars, 1e-6)
     @test length(ln) == 50
-    @test arr == ["5.0","2.0","2.0"] 
+    @test arr == ["5.0","2.0","2.0"]
 end
 
 @testset "Random restarts" begin
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true)...
         )
     )
@@ -241,7 +239,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
@@ -256,7 +254,7 @@ end
     @test -19 <= cont_restart[3] <= 1
     @test -10 <= cont_restart[4] <= 10
     @test -10 <= cont_restart[5] <= 10
-    
+
 
     disc_restart = Juniper.generate_random_restart(model; cont=false)
     @test length(disc_restart) == 5
@@ -267,7 +265,7 @@ end
     # test a different seed
 
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true, seed=92301)...
         )
     )
@@ -282,7 +280,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
@@ -299,7 +297,7 @@ end
     # test a different seed
 
     m = Model(optimizer_with_attributes(
-        Juniper.Optimizer, 
+        Juniper.Optimizer,
         DefaultTestSolver(;branch_strategy=:StrongPseudoCost,processors=2, strong_restart=true, seed=92301)...
         )
     )
@@ -314,7 +312,7 @@ end
 
     @objective(m, Max, dot(v,x))
 
-    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)   
+    @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     MOIU.attach_optimizer(m)
     bm = JuMP.backend(m)
