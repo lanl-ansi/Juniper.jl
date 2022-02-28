@@ -16,7 +16,7 @@
     @NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
     MOIU.attach_optimizer(m)
-    options = JuMP.unsafe_backend(bm).options
+    options = JuMP.unsafe_backend(m).options
 
     nd_options = Juniper.get_non_default_options(options)
     @test nd_options[:obj_epsilon] == 0.5
