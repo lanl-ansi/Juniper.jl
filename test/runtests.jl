@@ -97,5 +97,6 @@ start = time()
     include("fpump.jl")
     include("pod.jl")
     include("MOI_wrapper.jl")
+    include("conic.jl")
 end
 println("Time for all tests: ", time() - start)
