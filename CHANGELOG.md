@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.9.0
+- Updated to MathOptInterface v1.0
+
 ### v0.8.0
 - Updated to MathOptInterface v0.10
 
@@ -29,7 +32,7 @@
 ### 0.6.0
 - Support for JuMP v0.21.0
 
-### 0.5.3 
+### 0.5.3
 - Documentation and useful error message for user defined functions
 - Ability to set incumbent as `start_value`
 - Support for NumberOfTreads & ResultCount
@@ -38,7 +41,7 @@
 ### 0.5.2
 - bugfix: dereferencing when dereferencing twice (i.e. `@NLexpression`)
 
-### 0.5.1 
+### 0.5.1
 - Changed option `strong_branching_approx_time_limit` to `strong_branching_time_limit`
   - Default is still 100s
 
@@ -70,7 +73,7 @@
 ### v0.2.6
 - bugfix in init_strong_restart
 - bugfix in mip_gap if objval=0
-- bugfix if gap was 0 in table printing 
+- bugfix if gap was 0 in table printing
 - support for primal start values
 
 ### v0.2.5
@@ -93,13 +96,13 @@
 - Bugfix: Reset of `mu_init` in Ipopt options to have the default `mu_init` if `solve` is called again
 - Bugfix: Break on time limit in relaxation, fpump and strong branching
 - Bugfix: Infeasible in Reliability branching
-- Strong branching: 
+- Strong branching:
     - Change bounds even if no restart
     - branch on best variable with two children
 
 ### v0.1.1
 - Freemodel for commerical nlp solvers with license restrictions
-- More convenient parallel options 
+- More convenient parallel options
     - `processors = 2` now uses 2 processors for solving nodes and one thread for supervision
 
 ### v0.1.0

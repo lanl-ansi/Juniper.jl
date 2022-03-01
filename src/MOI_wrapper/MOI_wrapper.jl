@@ -17,7 +17,7 @@ function MOI.is_valid(model::Optimizer, index::MOI.Index)
 end
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Juniper"
-MOI.get(::Optimizer, ::MOI.SolverVersion) = "v0.8.0"
+MOI.get(::Optimizer, ::MOI.SolverVersion) = "v0.9.0"
 
 MOI.supports(::Optimizer, ::MOI.Silent) = true
 MOI.supports(::Optimizer, ::MOI.NumberOfThreads) = true
