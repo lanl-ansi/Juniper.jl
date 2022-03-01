@@ -44,16 +44,16 @@ end
 
 function test_simple_conic_model_ipopt()
     function nl_solver()
-        model = MOI.Bridges.full_bridge_optimizer(Ipopt.Optimizer(), Float64)
+        m = MOI.Bridges.full_bridge_optimizer(Ipopt.Optimizer(), Float64)
         MOI.Bridges.add_bridge(
-            model,
+            m,
             MOI.Bridges.Constraint.SOCtoNonConvexQuadBridge{Float64},
         )
         MOI.Bridges.add_bridge(
-            model,
+            m,
             MOI.Bridges.Constraint.RSOCtoNonConvexQuadBridge{Float64},
         )
-        return model
+        return m
     end
     model = Model(Juniper.Optimizer)
     set_optimizer_attribute(model, "nl_solver", nl_solver)
