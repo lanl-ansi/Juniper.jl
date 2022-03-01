@@ -21,8 +21,10 @@ function test_simple_conic_model()
     model = Model(
         optimizer_with_attributes(
             Juniper.Optimizer,
-            "nl_solver" =>
-                optimizer_with_attributes(SCS.Optimizer, MOI.Silent() => true),
+            "nl_solver" => optimizer_with_attributes(
+                SCS.Optimizer,
+                MOI.Silent() => true,
+            ),
             "atol" => 1e-4,
         ),
     )
