@@ -6,46 +6,45 @@ Status:
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/stable)
 </p>
 
-# Idea
+# The Idea
 
-You have a non linear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
+You have a nonlinear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
 The relaxation should be solveable by any solver you prefer. Some solvers might not be able to solve the mixed integer part by themselves.
 
-Juniper (Jump Nonlinear Integer Program solver) is a heuristic for non convex problems.
-You need the global optimum? Check out [Alpine.jl](http://github.com/lanl-ansi/Alpine.jl)
+Juniper (Jump Nonlinear Integer Program solver) is a heuristic for optimization problems with non-convex functions.
+If you need the global optimum, check out [Alpine](http://github.com/lanl-ansi/Alpine.jl).
 
 # Basic usage
 
-Juniper can be installed via:
+Juniper can be installed via the Julia package manager,
 
-`] add Juniper` for Julia v1.
+`] add JuMP, Juniper`
 
-Then adding it to your project by
+Add it to your project with,
 
 ```julia
-using Juniper
+using JuMP, Juniper
 ```
 
-You also have to import your NLP solver i.e.
+You will also have to have an NLP solver for setting up Juniper (e.g., [Ipopt](https://github.com/jump-dev/Ipopt.jl)), 
 
 ```julia
 using Ipopt
 ```
 
-as well as [JuMP](http://www.juliaopt.org/JuMP.jl)
-
-Define `Juniper` as the optimizer:
+Define a Juniper optimizer,
 
 ```julia
-optimizer = Juniper.Optimizer
 nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
+minlp_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver)
 ```
+The provided `nl_solver` is used by Juniper to solve continuous nonlinear sub-problems while Juniper searches for acceptable assignments to the discrete variables.
 
-And give it a go:
+Give Juniper a try:
 
 ```julia
-using LinearAlgebra # for the dot product
-m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver))
+import LinearAlgebra: dot
+m = Model(minlp_solver)
 
 v = [10,20,12,23,42]
 w = [12,45,12,22,21]
@@ -53,29 +52,28 @@ w = [12,45,12,22,21]
 
 @objective(m, Max, dot(v,x))
 
-@NLconstraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
+@constraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
 
 optimize!(m)
 
-# retrieve the objective value, corresponding x values and the status
-println(JuMP.value.(x))
-println(JuMP.objective_value(m))
-println(JuMP.termination_status(m))
+# retrieve the objective value, corresponding x values and the solver status
+println(termination_status(m))
+println(objective_value(m))
+println(value.(x))
 ```
 
-This solver is a NLP solver therefore you should have at least one `NLconstraint` or `NLobjective`.
+To solve problems with more complex nonlinear functions use the `@NLconstraint` and `@NLobjective` features of JuMP models.
 
-It is recommended to specify a mip solver as well i.e.
+If Juniper has difficulty finding feasible solutions on your model, try adding a mip solver (e.g., [HiGHS](https://github.com/jump-dev/HiGHS.jl)) to run a _feasiblity pump_,
 
 ```julia
 using HiGHS
-optimizer = Juniper.Optimizer
-nl_solver= optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
-mip_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
-m = Model(optimizer_with_attributes(optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver))
+nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
+mip_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
+minlp_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver))
 ```
 
-Then the feasibility pump is used to find a feasible solution before the branch and bound part starts. This turned out to be highly effective.
+The feasibility pump is used at the start of Juniper to find a feasible solution before the branch and bound part starts.  For some classes of problems this can be a highly effective pre-processor.
 
 # Citing Juniper
 
