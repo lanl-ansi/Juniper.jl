@@ -26,7 +26,7 @@ function test_simple_conic_model()
                 SCS.Optimizer,
                 MOI.Silent() => true,
             ),
-            "atol" => 1e-4,
+            "atol" => 0.1,
         ),
     )
     @variable(model, 0 <= x[1:2] <= 10, Int)
@@ -38,7 +38,7 @@ function test_simple_conic_model()
     @test dual_status(model) == FEASIBLE_POINT
     @test isapprox(value.(x), [6, 8]; atol = 1e-4)
     @test sqrt(value(x[1])^2 + value(x[2])^2) <= 10 + 1e-4
-    @test isapprox(objective_value(model), 58; atol = 1e-5)
+    @test isapprox(objective_value(model), 58; atol = 1e-2)
     return
 end
 
