@@ -1,5 +1,8 @@
 # Juniper.jl Changelog
 
+### v0.9.1
+- Updated to JuMP v1.0
+
 ### v0.9.0
 - Updated to MathOptInterface v1.0
 
