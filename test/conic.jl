@@ -35,7 +35,7 @@ function test_simple_conic_model()
     optimize!(model)
     @test termination_status(model) == LOCALLY_SOLVED
     @test primal_status(model) == FEASIBLE_POINT
-    @test dual_status(model) == FEASIBLE_POINT
+    @test dual_status(model) == NO_SOLUTION
     @test isapprox(value.(x), [6, 8]; atol = 1e-4)
     @test sqrt(value(x[1])^2 + value(x[2])^2) <= 10 + 1e-4
     @test isapprox(objective_value(model), 58; atol = 1e-2)
@@ -64,7 +64,7 @@ function test_simple_conic_model_ipopt()
     optimize!(model)
     @test termination_status(model) == LOCALLY_SOLVED
     @test primal_status(model) == FEASIBLE_POINT
-    @test dual_status(model) == FEASIBLE_POINT
+    @test dual_status(model) == NO_SOLUTION
     @test isapprox(value.(x), [6, 8]; atol = 1e-6)
     @test sqrt(value(x[1])^2 + value(x[2])^2) <= 10 + 1e-6
     @test isapprox(objective_value(model), 58; atol = 1e-6)
