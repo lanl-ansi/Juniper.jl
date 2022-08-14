@@ -17,7 +17,7 @@ include("basic/gamsworld.jl")
         @test rand() != rand_num
         @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
         @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
-        @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
+        @test JuMP.dual_status(m) == MOI.NO_SOLUTION
         @test isapprox(JuMP.value(x), 5, atol = sol_atol)
         @test result_count(m) == 1
         @test unsafe_backend(m).inner.primal_start[1] == 3
@@ -328,7 +328,7 @@ include("basic/gamsworld.jl")
         @test status == MOI.LOCALLY_INFEASIBLE
         @test JuMP.termination_status(m) == MOI.LOCALLY_INFEASIBLE
         @test JuMP.primal_status(m) == MOI.INFEASIBLE_POINT
-        @test JuMP.dual_status(m) == MOI.INFEASIBLE_POINT
+        @test JuMP.dual_status(m) == MOI.NO_SOLUTION
         @test isnan(relative_gap(m))
     end
 

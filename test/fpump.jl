@@ -22,7 +22,7 @@ include("basic/gamsworld.jl")
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.LOCALLY_SOLVED
         @test JuMP.primal_status(m) == MOI.FEASIBLE_POINT
-        @test JuMP.dual_status(m) == MOI.FEASIBLE_POINT
+        @test JuMP.dual_status(m) == MOI.NO_SOLUTION
         @test isapprox(JuMP.value(x), 5, atol = sol_atol)
         @test result_count(m) == 1
         @test unsafe_backend(m).inner.primal_start[1] == 3
