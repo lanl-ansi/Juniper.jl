@@ -14,30 +14,17 @@ end
 function MOI.get(model::Optimizer, ::MOI.PrimalStatus)
     if model.inner === nothing
         return MOI.NO_SOLUTION
-    end
-    if state_is_optimal(
+    elseif state_is_optimal(
         model.inner.status;
         allow_almost = model.inner.options.allow_almost_solved,
     )
         return MOI.FEASIBLE_POINT
     else
-        return MOI.INFEASIBLE_POINT
+        return MOI.UNKNOWN_RESULT_STATUS
     end
 end
 
-function MOI.get(model::Optimizer, ::MOI.DualStatus)
-    if model.inner === nothing
-        return MOI.NO_SOLUTION
-    end
-    if state_is_optimal(
-        model.inner.status;
-        allow_almost = model.inner.options.allow_almost_solved,
-    )
-        return MOI.FEASIBLE_POINT
-    else
-        return MOI.INFEASIBLE_POINT
-    end
-end
+MOI.get(::Optimizer, ::MOI.DualStatus) = MOI.NO_SOLUTION
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
     if model.inner.status == MOI.OPTIMIZE_NOT_CALLED

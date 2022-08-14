@@ -39,14 +39,17 @@ include("POD_experiment/FLay02H.jl")
                 Juniper.Optimizer,
                 DefaultTestSolver(
                     branch_strategy = :StrongPseudoCost,
-                    time_limit = 5,
+                    time_limit = 1,
                     incumbent_constr = true,
                 )...,
             ),
         )
         optimize!(m)
-        status = termination_status(m)
-        @test status == MOI.LOCALLY_SOLVED || status == MOI.TIME_LIMIT
+        t_status = termination_status(m)
+        p_status = primal_status(m)
+        @test dual_status(m) == NO_SOLUTION
+        @test (t_status, p_status) == (LOCALLY_SOLVED, FEASIBLE_POINT) ||
+              (t_status, p_status) == (TIME_LIMIT, UNKNOWN_RESULT_STATUS)
         @test solve_time(m) <= 15 # it might be a bit higher than 5s
     end
 end
