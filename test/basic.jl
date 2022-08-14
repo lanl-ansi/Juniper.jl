@@ -327,7 +327,7 @@ include("basic/gamsworld.jl")
         println("Status: ", status)
         @test status == MOI.LOCALLY_INFEASIBLE
         @test JuMP.termination_status(m) == MOI.LOCALLY_INFEASIBLE
-        @test JuMP.primal_status(m) == MOI.INFEASIBLE_POINT
+        @test JuMP.primal_status(m) == MOI.UNKNOWN_RESULT_STATUS
         @test JuMP.dual_status(m) == MOI.NO_SOLUTION
         @test isnan(relative_gap(m))
     end
