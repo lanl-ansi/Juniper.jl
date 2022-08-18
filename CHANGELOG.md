@@ -2,6 +2,8 @@
 
 ### v0.9.1
 - Updated to JuMP v1.0
+- Fixed the return values when querying `MOI.PrimalStatus` and `MOI.DualStatus`.
+  [PR #250](https://github.com/lanl-ansi/Juniper.jl/pull/250)
 
 ### v0.9.0
 - Updated to MathOptInterface v1.0
