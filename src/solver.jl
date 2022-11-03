@@ -39,6 +39,7 @@ function get_default_options()
     tabu_list_length = 30
     num_resolve_nlp_feasibility_pump = 1
     mip_solver = nothing
+    mip_model = nothing
     allow_almost_solved = true
     allow_almost_solved_integral = true
     registered_functions = nothing
@@ -82,6 +83,7 @@ function get_default_options()
         tabu_list_length,
         num_resolve_nlp_feasibility_pump,
         mip_solver,
+        mip_model,
         allow_almost_solved,
         allow_almost_solved_integral,
         registered_functions,
