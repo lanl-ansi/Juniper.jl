@@ -220,9 +220,13 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.start_time = time()
 
     jp.nl_solver = model.options.nl_solver
+    jp.mip_model = nothing
 
     if model.options.mip_solver !== nothing
         jp.mip_solver = model.options.mip_solver
+    end
+    if model.options.mip_model !== nothing
+        jp.mip_model = model.options.mip_model.moi_backend.optimizer.model
     end
     jp.options = model.options
     if MOI.get(model, MOI.ObjectiveSense()) == MOI.MIN_SENSE
