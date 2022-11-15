@@ -276,6 +276,23 @@ include("basic/gamsworld.jl")
             "output_flag" => false,
         )
         juniper_solver = JuMP.optimizer_with_attributes(
+            Juniper.Optimizer,
+            "nl_solver" => ipopt_solver,
+            "mip_solver" => highs_solver,
+            "log_levels" => [],
+        )
+        m = Model(juniper_solver)
+        @variable(m, x[1:3], Int)
+        @variable(m, y)
+        @NLconstraint(m, x[1] * x[2] * x[3] * y >= 5)
+        optimize!(m)
+        for i in 1:3
+            xval = JuMP.value(x[i])
+            @test isapprox(round(xval) - xval, 0; atol = sol_atol)
+        end
+        @test JuMP.objective_value(m) ≈ 0.0
+    end            
+
     @testset "Custom linear relaxation" begin
         optimizer = optimizer_with_attributes(
             Juniper.Optimizer,
