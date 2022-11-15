@@ -227,7 +227,7 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     end
     if model.options.mip_model !== nothing
         if MOI.get(model.options.mip_model, MOI.TerminationStatus())  == MOI.OPTIMIZE_NOT_CALLED
-            error("The MIP model has not been solved, optimize it before setting `mip_model`.")
+            throw(ErrorException("The MIP model has not been solved, optimize it before setting `mip_model`."))
         end
         jp.mip_model = model.options.mip_model.moi_backend.optimizer.model
     end
