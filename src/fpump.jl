@@ -346,7 +346,7 @@ function fpump(optimizer, m)
         if any(
             FS -> FS[1] != MOI.VariableIndex,
             MOI.get(
-                LinearFilter(mip_model),
+                LinearFilter(optimizer),
                 MOI.ListOfConstraintTypesPresent(),
             ),
         )
