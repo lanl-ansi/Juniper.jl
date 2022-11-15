@@ -291,7 +291,7 @@ include("basic/gamsworld.jl")
             @test isapprox(round(xval) - xval, 0; atol = sol_atol)
         end
         @test JuMP.objective_value(m) ≈ 0.0
-    end            
+    end
 
     @testset "Custom linear relaxation" begin
         optimizer = optimizer_with_attributes(
@@ -305,14 +305,14 @@ include("basic/gamsworld.jl")
             )...,
         )
         model = Model(optimizer)
-        @variable(model, a, integer=true)
-        @constraint(model, 0<=model[:a] <= 10)
-        @NLconstraint(model, model[:a] * abs(model[:a]) >=3)
+        @variable(model, a, integer = true)
+        @constraint(model, 0 <= model[:a] <= 10)
+        @NLconstraint(model, model[:a] * abs(model[:a]) >= 3)
         @objective(model, Min, model[:a])
-    
+
         mip = Model(optimizer)
-        @variable(mip, a, integer=true)
-        @constraint(mip, mip[:a] * mip[:a] ==0)
+        @variable(mip, a, integer = true)
+        @constraint(mip, mip[:a] * mip[:a] == 0)
         @constraint(mip, mip[:a] <= 10)
         @objective(mip, Min, mip[:a])
         set_silent(mip)
