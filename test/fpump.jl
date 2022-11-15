@@ -276,41 +276,32 @@ include("basic/gamsworld.jl")
             "output_flag" => false,
         )
         juniper_solver = JuMP.optimizer_with_attributes(
-            Juniper.Optimizer,
-            "nl_solver" => ipopt_solver,
-            "mip_solver" => highs_solver,
-            "log_levels" => [],
-        )
-        m = Model(juniper_solver)
-        @variable(m, x[1:3], Int)
-        @variable(m, y)
-        @NLconstraint(m, x[1] * x[2] * x[3] * y >= 5)
-        optimize!(m)
-        for i in 1:3
-            xval = JuMP.value(x[i])
-            @test isapprox(round(xval) - xval, 0; atol = sol_atol)
-        end
-        @test JuMP.objective_value(m) ≈ 0.0
-    end
     @testset "Custom linear relaxation" begin
-        _nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
-
-        juniper_opt = optimizer_with_attributes(Juniper.Optimizer, "nl_solver" => _nl_solver, "mip_solver" => HiGHS.Optimizer)
-        model = Model(juniper_opt)
+        optimizer = optimizer_with_attributes(
+            Juniper.Optimizer,
+            DefaultTestSolver(
+                branch_strategy = :MostInfeasible,
+                mip_solver = optimizer_with_attributes(
+                    HiGHS.Optimizer,
+                    "output_flag" => false,
+                ),
+            )...,
+        )
+        model = Model(optimizer)
         @variable(model, a, integer=true)
         @constraint(model, 0<=model[:a] <= 10)
         @NLconstraint(model, model[:a] * abs(model[:a]) >=3)
         @objective(model, Min, model[:a])
-        juniper_opt = optimizer_with_attributes(Juniper.Optimizer, "nl_solver" => _nl_solver, "mip_solver" => Gurobi.Optimizer, "time_limit"=>64)
     
-        mip = Model(juniper_opt)
+        mip = Model(optimizer)
         @variable(mip, a, integer=true)
         @constraint(mip, mip[:a] * mip[:a] ==0)
         @constraint(mip, mip[:a] <= 10)
         @objective(mip, Min, mip[:a])
         set_silent(mip)
-        set_optimizer_attribute(model, "mip_model", mip)
 
+        set_optimizer_attribute(model, "mip_model", mip)
+        # optimize!(mip) hasn't been run so we expect an error
         @test_throws ErrorException JuMP.optimize!(model)
         JuMP.optimize!(mip)
         set_optimizer_attribute(model, "mip_model", mip)
