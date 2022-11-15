@@ -98,7 +98,7 @@ mutable struct JuniperProblem
     nsolutions::Int64
 
     mip_solver::Any
-    mip_model::Any
+    mip_model::Union{MOI.AbstractOptimizer, Nothing}
 
     relaxation_time::Float64
     start_time::Float64
