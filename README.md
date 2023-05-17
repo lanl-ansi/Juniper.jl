@@ -42,6 +42,10 @@ A common choice is [Ipopt](https://github.com/jump-dev/Ipopt.jl), but any optimi
 
 To solve problems with more complex nonlinear functions, use the `@NLconstraint` and `@NLobjective` JuMP macros.
 
+## Documentation
+
+The online documentation is available at [https://lanl-ansi.github.io/Juniper.jl/stable/](https://lanl-ansi.github.io/Juniper.jl/stable/).
+
 ## Feasibility pump
 
 If Juniper has difficulty finding feasible solutions on your model, try adding a solver that supports integer variables (for example, [HiGHS](https://github.com/jump-dev/HiGHS.jl)) to run a _feasiblity pump_:
