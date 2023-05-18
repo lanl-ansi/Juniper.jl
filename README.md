@@ -1,81 +1,72 @@
 # Juniper
 
-Status:
 [![CI](https://github.com/lanl-ansi/Juniper.jl/workflows/CI/badge.svg)](https://github.com/lanl-ansi/Juniper.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/lanl-ansi/Juniper.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/Juniper.jl)
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://lanl-ansi.github.io/Juniper.jl/stable)
-</p>
 
-# The Idea
+[Juniper](http://github.com/lanl-ansi/Juniper.jl) (Jump Nonlinear Integer Program solver) is a solver for mixed-integer nonlinear programs. 
 
-You have a nonlinear problem with discrete variables (MINLP) and want some more control over the branch and bound part.
-The relaxation should be solveable by any solver you prefer. Some solvers might not be able to solve the mixed integer part by themselves.
-
-Juniper (Jump Nonlinear Integer Program solver) is a heuristic for optimization problems with non-convex functions.
+It is a heuristic which is not guaranteed to find the global optimum.
 If you need the global optimum, check out [Alpine](http://github.com/lanl-ansi/Alpine.jl).
 
-# Basic usage
+## Installation
 
-Juniper can be installed via the Julia package manager,
-
-`] add JuMP, Juniper`
-
-Add it to your project with,
+Install Juniper using the Julia package manager:
 
 ```julia
-using JuMP, Juniper
+import Pkg
+Pkg.add("JuMP")
 ```
 
-You will also have to have an NLP solver for setting up Juniper (e.g., [Ipopt](https://github.com/jump-dev/Ipopt.jl)), 
+## Use with JuMP
 
+Use Juniper with JuMP as follows:
 ```julia
-using Ipopt
-```
-
-Define a Juniper optimizer,
-
-```julia
-nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
-minlp_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver)
-```
-The provided `nl_solver` is used by Juniper to solve continuous nonlinear sub-problems while Juniper searches for acceptable assignments to the discrete variables.
-
-Give Juniper a try:
-
-```julia
-import LinearAlgebra: dot
-m = Model(minlp_solver)
-
-v = [10,20,12,23,42]
-w = [12,45,12,22,21]
-@variable(m, x[1:5], Bin)
-
-@objective(m, Max, dot(v,x))
-
-@constraint(m, sum(w[i]*x[i]^2 for i=1:5) <= 45)
-
-optimize!(m)
-
-# retrieve the objective value, corresponding x values and the solver status
-println(termination_status(m))
-println(objective_value(m))
+using JuMP, Juniper, Ipopt
+ipopt = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
+optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>ipopt)
+model = Model(optimizer)
+v = [10, 20, 12, 23, 42]
+w = [12, 45, 12, 22, 21]
+@variable(model, x[1:5], Bin)
+@objective(model, Max, v' * x)
+@constraint(model, sum(w[i]*x[i]^2 for i in 1:5) <= 45)
+optimize!(model)
+println(termination_status(model))
+println(objective_value(model))
 println(value.(x))
 ```
 
-To solve problems with more complex nonlinear functions use the `@NLconstraint` and `@NLobjective` features of JuMP models.
+The `nl_solver` is used by Juniper to solve continuous nonlinear sub-problems while Juniper searches for acceptable assignments to the discrete variables.
+A common choice is [Ipopt](https://github.com/jump-dev/Ipopt.jl), but any optimizer that supports the continuous relaxation of the model may be used.
 
-If Juniper has difficulty finding feasible solutions on your model, try adding a mip solver (e.g., [HiGHS](https://github.com/jump-dev/HiGHS.jl)) to run a _feasiblity pump_,
+To solve problems with more complex nonlinear functions, use the `@NLconstraint` and `@NLobjective` JuMP macros.
+
+## Documentation
+
+The online documentation is available at [https://lanl-ansi.github.io/Juniper.jl/stable/](https://lanl-ansi.github.io/Juniper.jl/stable/).
+
+## Feasibility pump
+
+If Juniper has difficulty finding feasible solutions on your model, try adding a solver that supports integer variables (for example, [HiGHS](https://github.com/jump-dev/HiGHS.jl)) to run a _feasiblity pump_:
 
 ```julia
-using HiGHS
-nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
-mip_solver = optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
-minlp_solver = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver))
+using JuMP, Juniper, Ipopt, HiGHS
+ipopt = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
+highs = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
+model = Model(
+    optimizer_with_attributes(
+        Juniper.Optimizer,
+        "nl_solver" => ipopt,
+        "mip_solver" => highs,
+    ),
+)
 ```
 
-The feasibility pump is used at the start of Juniper to find a feasible solution before the branch and bound part starts.  For some classes of problems this can be a highly effective pre-processor.
+The feasibility pump is used at the start of Juniper to find a feasible solution before the branch and bound part starts. 
+For some classes of problems this can be a highly effective pre-processor.
 
-# Citing Juniper
+## Citing Juniper
 
 If you find Juniper useful in your work, we kindly request that you cite the following [paper](https://link.springer.com/chapter/10.1007/978-3-319-93031-2_27) or [technical report](https://arxiv.org/abs/1804.07332):
 
