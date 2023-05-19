@@ -48,7 +48,7 @@ The online documentation is available at [https://lanl-ansi.github.io/Juniper.jl
 
 ## Feasibility pump
 
-If Juniper has difficulty finding feasible solutions on your model, try adding a solver that supports integer variables (for example, [HiGHS](https://github.com/jump-dev/HiGHS.jl)) to run a _feasiblity pump_:
+If Juniper has difficulty finding feasible solutions on your model, try adding a solver that supports integer variables (for example, [HiGHS](https://github.com/jump-dev/HiGHS.jl)) to run a _feasibility pump_:
 
 ```julia
 using JuMP, Juniper, Ipopt, HiGHS
