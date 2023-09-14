@@ -48,13 +48,9 @@ end
 function MOI.set(
     model::Optimizer,
     ::MOI.TimeLimitSec,
-    value::Union{Nothing,Float64},
+    limit::Union{Nothing,Real},
 )
-    if value === nothing
-        model.options.time_limit = Inf
-    else
-        model.options.time_limit = value
-    end
+    model.options.time_limit = convert(Float64, something(limit, Inf))
     return
 end
 
@@ -102,7 +98,9 @@ MOI.get(model::Optimizer, ::MOI.ResultCount) = length(model.inner.solutions)
 
 MOI.get(model::Optimizer, ::MOI.NumberOfThreads) = model.options.processors
 
-MOI.get(model::Optimizer, ::MOI.TimeLimitSec) = model.options.time_limit
+function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
+    return isinf(model.options.time_limit) ? nothing : model.options.time_limit
+end
 
 MOI.get(model::Optimizer, ::MOI.Silent) = model.options.silent
 
