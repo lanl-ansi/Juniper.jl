@@ -103,7 +103,7 @@
             optimizer,
             MOI.RawOptimizerAttribute("mip_gap_1"),
         )
-        @test isinf(MOI.get(optimizer, MOI.TimeLimitSec()))
+        @test MOI.get(optimizer, MOI.TimeLimitSec()) === nothing
         MOI.set(optimizer, MOI.TimeLimitSec(), 12.0)
         @test MOI.get(optimizer, MOI.TimeLimitSec()) == 12.0
     end
