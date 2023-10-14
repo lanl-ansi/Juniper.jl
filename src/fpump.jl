@@ -337,6 +337,7 @@ function fpump(optimizer, m)
     # the tolerance can be changed => current atol
     catol = m.options.atol
     atol_counter = 0
+    mip_model = isnothing(m.mip_model) ? optimizer : m.mip_model
     while !are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol) &&
               time() - start_fpump < tl &&
               time() - m.start_time < m.options.time_limit
@@ -350,7 +351,7 @@ function fpump(optimizer, m)
             ),
         )
             mip_status, mip_sol, mip_obj =
-                generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
+                generate_mip(mip_model, m, nlp_sol, tabu_list, start_fpump)
         else
             # if no linear constraints just round the discrete variables
             mip_obj = NaN

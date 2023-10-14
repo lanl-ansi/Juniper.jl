@@ -292,4 +292,37 @@ include("basic/gamsworld.jl")
         end
         @test JuMP.objective_value(m) ≈ 0.0
     end
+
+    @testset "Custom linear relaxation" begin
+        optimizer = optimizer_with_attributes(
+            Juniper.Optimizer,
+            DefaultTestSolver(
+                branch_strategy = :MostInfeasible,
+                mip_solver = optimizer_with_attributes(
+                    HiGHS.Optimizer,
+                    "output_flag" => false,
+                ),
+            )...,
+        )
+        model = Model(optimizer)
+        @variable(model, a, integer = true)
+        @constraint(model, 0 <= model[:a] <= 10)
+        @NLconstraint(model, model[:a] * abs(model[:a]) >= 3)
+        @objective(model, Min, model[:a])
+
+        mip = Model(optimizer)
+        @variable(mip, a, integer = true)
+        @constraint(mip, mip[:a] * mip[:a] == 0)
+        @constraint(mip, mip[:a] <= 10)
+        @objective(mip, Min, mip[:a])
+        set_silent(mip)
+
+        set_optimizer_attribute(model, "mip_model", mip)
+        # optimize!(mip) hasn't been run so we expect an error
+        @test_throws ErrorException JuMP.optimize!(model)
+        JuMP.optimize!(mip)
+        set_optimizer_attribute(model, "mip_model", mip)
+        JuMP.optimize!(model)
+        @test JuMP.termination_status(model) == MOI.LOCALLY_SOLVED
+    end
 end

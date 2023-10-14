@@ -38,6 +38,7 @@ mutable struct SolverOptions
     tabu_list_length::Int64
     num_resolve_nlp_feasibility_pump::Int64
     mip_solver::Any
+    mip_model::Any
     allow_almost_solved::Bool
     allow_almost_solved_integral::Bool
     registered_functions::Union{Nothing,Vector{RegisteredFunction}}
@@ -97,6 +98,7 @@ mutable struct JuniperProblem
     nsolutions::Int64
 
     mip_solver::Any
+    mip_model::Union{MOI.AbstractOptimizer,Nothing}
 
     relaxation_time::Float64
     start_time::Float64
