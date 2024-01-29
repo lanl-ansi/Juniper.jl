@@ -42,11 +42,12 @@ function MOI.get(f::LinearFilter, attr::MOI.ListOfModelAttributesSet)
     end
 end
 function MOI.get(f::LinearFilter, attr::MOI.ListOfConstraintTypesPresent)
-    return filter(MOI.get(f.inner, attr)) do FS
-        F = FS[1]
-        return !(
-            F <: MOI.ScalarQuadraticFunction ||
-            F <: MOI.VectorQuadraticFunction
+    return filter(MOI.get(f.inner, attr)) do (F, _)
+        return (
+            F <: MOI.VariableIndex ||
+            F <: MOI.ScalarAffineFunction ||
+            F <: MOI.VectorOfVariables ||
+            F <: MOI.VectorAffineFunction
         )
     end
 end
