@@ -1,5 +1,10 @@
 # Juniper.jl Changelog
 
+### v0.9.2
+- Bugfix: `DualStatus` now correctly returns `MOI.NO_SOLUTION` [PR #250](https://github.com/lanl-ansi/Juniper.jl/pull/250)
+- Bugfix: fix setting default values for `MOI.TimeLimitSec` [PR #261](https://github.com/lanl-ansi/Juniper.jl/pull/261)
+- Bugfix: FPump failed if `MOI.ScalarNonlinearFunction`s were present [PR #264](https://github.com/lanl-ansi/Juniper.jl/pull/264)
+
 ### v0.9.1
 - Updated to JuMP v1.0
 
