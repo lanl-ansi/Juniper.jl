@@ -15,7 +15,7 @@ Install Juniper using the Julia package manager:
 
 ```julia
 import Pkg
-Pkg.add("JuMP")
+Pkg.add("Juniper")
 ```
 
 ## Use with JuMP
