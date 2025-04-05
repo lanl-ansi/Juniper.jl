@@ -315,7 +315,7 @@ function evaluate_objective(
     if jp.nlp_data !== nothing && jp.nlp_data.has_objective
         return MOI.eval_objective(jp.nlp_data.evaluator, xs)
     elseif jp.objective !== nothing
-        return MOIU.eval_variables(vi -> xs[vi.value], jp.objective)
+        return MOIU.eval_variables(vi -> xs[vi.value], jp.model, jp.objective)
     else
         return 0.0
     end

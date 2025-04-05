@@ -1055,6 +1055,28 @@ include("basic/gamsworld.jl")
         @test isapprox(2, sum(1 / v for v in JuMP.value.(x)), atol = opt_atol)
     end
 
+    @testset "Integer fractional objective w/ HiGHS" begin
+        println("==================================")
+        println("Integer fractional objective w/ HiGHS")
+        println("==================================")
+        m = Model(
+            optimizer_with_attributes(
+                Juniper.Optimizer,
+                DefaultTestSolver(
+                    mip_solver = optimizer_with_attributes(
+                        HiGHS.Optimizer,
+                        "output_flag" => false,
+                    ),
+                )...,
+            ),
+        )
+        @variable(m, 1 <= x <= 5, Int)
+        @variable(m, 1 <= y <= 5, Int)
+        @objective(m, Max, x / y)
+        optimize!(m)
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
+    end
+
     #this test has an expression where a variable will be dereferenced twice
     @testset "Nested variable reference" begin
         println("==================================")
