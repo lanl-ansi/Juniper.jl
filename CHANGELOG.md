@@ -1,5 +1,10 @@
 # Juniper.jl Changelog
 
+### v0.9.3
+ - Fix typo in README [PR #268](https://github.com/lanl-ansi/Juniper.jl/pull/268)
+ - Bugfix: fixed bug with `MOI.ScalarNonnlinearFunction` [PR #270](https://github.com/lanl-ansi/Juniper.jl/pull/270)
+ - Maintenance: update GitHub actions [PR #271](https://github.com/lanl-ansi/Juniper.jl/pull/271)
+
 ### v0.9.2
 - Bugfix: `DualStatus` now correctly returns `MOI.NO_SOLUTION` [PR #250](https://github.com/lanl-ansi/Juniper.jl/pull/250)
 - Bugfix: fix setting default values for `MOI.TimeLimitSec` [PR #261](https://github.com/lanl-ansi/Juniper.jl/pull/261)
