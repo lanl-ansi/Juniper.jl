@@ -186,7 +186,7 @@ end
 Returns true if either ALMOST_OPTIMAL or ALMOST_LOCALLY_SOLVED
 """
 function only_almost_solved(state::MOI.TerminationStatusCode)
-    return state == MOI.ALMOST_OPTIMAL || state == MOI.ALMOST_LOCALLY_SOLVED
+    return state == MOI.ALMOST_OPTIMAL || state == MOI.ALMOST_LOCALLY_SOLVED || state == MOI.SLOW_PROGRESS
 end
 
 """
@@ -201,7 +201,8 @@ function state_is_optimal(
     return state == MOI.OPTIMAL ||
            state == MOI.LOCALLY_SOLVED ||
            (allow_almost && state == MOI.ALMOST_LOCALLY_SOLVED) ||
-           (allow_almost && state == MOI.ALMOST_OPTIMAL)
+           (allow_almost && state == MOI.ALMOST_OPTIMAL) ||
+           (allow_almost && state == MOI.SLOW_PROGRESS)
 end
 
 """
