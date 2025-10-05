@@ -16,7 +16,10 @@ TODO: This can include quadratic constraints when the mip_solver supports them
 Minimize the distance to nlp_sol and avoid using solutions inside the tabu list
 """
 function generate_mip(optimizer, m, nlp_sol, tabu_list, start_fpump)
-    mip_optimizer = MOI.instantiate(m.mip_solver, with_bridge_type = Float64)
+    mip_optimizer = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        MOI.instantiate(m.mip_solver; with_bridge_type = Float64),
+    )
     index_map =
         MOI.copy_to(mip_optimizer, NoObjectiveFilter(LinearFilter(optimizer)))
     x = [
@@ -131,7 +134,10 @@ end
 Generates the original nlp but changes the objective to minimize the distance to the mip solution
 """
 function generate_nlp(optimizer, m, mip_sol, start_fpump; random_start = false)
-    nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type = Float64)
+    nlp_optimizer = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        MOI.instantiate(m.nl_solver; with_bridge_type = Float64),
+    )
     index_map = MOI.copy_to(
         nlp_optimizer,
         NoObjectiveFilter(IntegerRelaxation(optimizer)),
@@ -185,7 +191,10 @@ function generate_real_nlp(optimizer, m, sol; random_start = false)
         return MOI.OPTIMAL, sol, evaluate_objective(optimizer, m, sol)
     end
 
-    nlp_optimizer = MOI.instantiate(m.nl_solver, with_bridge_type = Float64)
+    nlp_optimizer = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        MOI.instantiate(m.nl_solver; with_bridge_type = Float64),
+    )
     vis = collect(MOI.get(optimizer, MOI.ListOfVariableIndices()))
     disc_vals = Dict(vis[i] => sol[i] for i in m.disc2var_idx)
     index_map = MOI.copy_to(

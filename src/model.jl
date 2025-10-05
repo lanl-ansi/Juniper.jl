@@ -8,7 +8,10 @@ function create_root_model!(
 )
     ps = jp.options.log_levels
 
-    jp.model = MOI.instantiate(jp.nl_solver, with_bridge_type = Float64)
+    jp.model = MOI.Utilities.CachingOptimizer(
+        MOI.Utilities.UniversalFallback(MOI.Utilities.Model{Float64}()),
+        MOI.instantiate(jp.nl_solver; with_bridge_type = Float64),
+    )
     index_map = MOI.copy_to(jp.model, IntegerRelaxation(optimizer))
     # all continuous we solve relaxation first
     return jp.x = [
