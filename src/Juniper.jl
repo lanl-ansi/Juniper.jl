@@ -1,6 +1,6 @@
 module Juniper
 
-using JSON
+import JSON
 using LinearAlgebra
 using Random
 const JUNIPER_RNG = MersenneTwister(1)
