@@ -1,5 +1,9 @@
 # Juniper.jl Changelog
 
+### v0.9.4
+ - Maintenance: updated to JSON@1 [PR #273](https://github.com/lanl-ansi/Juniper.jl/pull/273)
+ - Bugfix: fixed #269 by adding a cache around each of the subsolvers [PR #274](https://github.com/lanl-ansi/Juniper.jl/pull/274)
+
 ### v0.9.3
  - Fix typo in README [PR #268](https://github.com/lanl-ansi/Juniper.jl/pull/268)
  - Bugfix: fixed bug with `MOI.ScalarNonnlinearFunction` [PR #270](https://github.com/lanl-ansi/Juniper.jl/pull/270)
