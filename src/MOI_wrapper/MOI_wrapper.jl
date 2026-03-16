@@ -395,6 +395,13 @@ function MOI.get(model::Optimizer, attr::MOI.AbstractModelAttribute)
     return MOI.get(model.model_cache, attr)
 end
 
+function MOI.supports(
+    ::Optimizer,
+    ::MOI.ObjectiveFunction{F},
+) where {F<:MOI.AbstractVectorFunction}
+    return false
+end
+
 """
 MOI variables
 """
