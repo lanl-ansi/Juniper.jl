@@ -254,8 +254,8 @@ function init_juniper_problem!(jp::JuniperProblem, model::MOI.AbstractOptimizer)
     jp.nbinvars = sum(binary_bool_arr)
     jp.num_disc_var = sum(integer_bool_arr) + sum(binary_bool_arr)
     jp.var_type = [:Cont for i in 1:jp.num_var]
-    jp.var_type[integer_bool_arr.==true] .= :Int
-    jp.var_type[binary_bool_arr.==true] .= :Bin
+    jp.var_type[integer_bool_arr .== true] .= :Int
+    jp.var_type[binary_bool_arr .== true] .= :Bin
     jp.disc2var_idx = zeros(jp.num_disc_var)
     jp.var2disc_idx = zeros(jp.num_var)
     int_i = 1

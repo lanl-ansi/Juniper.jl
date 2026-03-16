@@ -1088,8 +1088,8 @@ include("basic/gamsworld.jl")
                 DefaultTestSolver()...,
             ),
         )
-        x = @variable(m, x[i = 1:5, j = 1:5], Bin)
-        xrowsum = @NLexpression(m, xrowsum[i = 1:5], sum(x[i, j] for j in 1:5))
+        x = @variable(m, x[i=1:5, j=1:5], Bin)
+        xrowsum = @NLexpression(m, xrowsum[i=1:5], sum(x[i, j] for j in 1:5))
         @NLobjective(
             m,
             Max,

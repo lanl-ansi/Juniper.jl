@@ -87,7 +87,7 @@ function upd_gains_step!(tree, step_obj)
         step_obj.counter <= opts.strong_branching_nsteps
     )
         tree.obj_gain += step_obj.obj_gain
-        tree.obj_gain.inf_counter[tree.obj_gain.inf_counter.<0] .= 0
+        tree.obj_gain.inf_counter[tree.obj_gain.inf_counter .< 0] .= 0
         if step_obj.counter == 1
             cum_counter =
                 tree.obj_gain.minus_counter .+ tree.obj_gain.plus_counter

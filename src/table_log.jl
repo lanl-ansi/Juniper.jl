@@ -48,8 +48,8 @@ function is_table_diff(fields, last_arr, new_arr)
 
     time_idx = findfirst(fields .== :Time)
     if time_idx !== nothing
-        last_arr = vcat(last_arr[1:time_idx-1], last_arr[time_idx+1:end])
-        new_arr = vcat(new_arr[1:time_idx-1], new_arr[time_idx+1:end])
+        last_arr = vcat(last_arr[1:(time_idx-1)], last_arr[(time_idx+1):end])
+        new_arr = vcat(new_arr[1:(time_idx-1)], new_arr[(time_idx+1):end])
     end
     for i in 1:length(last_arr)
         last_arr[i] != new_arr[i] && return true
