@@ -41,8 +41,8 @@ function test_runtests()
             "log_levels"=>[:Table],
             "nl_solver"=>MOI.OptimizerWithAttributes(
                 Ipopt.Optimizer,
-                "print_level" => 0,
-                "sb" => "yes",
+                "print_level"=>0,
+                "sb"=>"yes",
             ),
         ],
     )
