@@ -22,7 +22,7 @@ JuMP = "1"
 MathOptInterface = "1.19"
 MutableArithmetics = "1"
 SCS = "1"
-julia = "1.6"
+julia = "1.10"
 
 [extras]
 GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
