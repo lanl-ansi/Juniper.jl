@@ -347,8 +347,8 @@ function fpump(optimizer, m)
     catol = m.options.atol
     atol_counter = 0
     while !are_type_correct(nlp_sol, m.var_type, m.disc2var_idx, catol) &&
-              time() - start_fpump < tl &&
-              time() - m.start_time < m.options.time_limit
+          time() - start_fpump < tl &&
+          time() - m.start_time < m.options.time_limit
 
         # generate a mip or just round if no linear constraints
         if any(
@@ -392,12 +392,12 @@ function fpump(optimizer, m)
         )
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump &&
-                      !state_is_optimal(
-                          nlp_status;
-                          allow_almost = m.options.allow_almost_solved,
-                      ) &&
-                      time() - start_fpump < tl &&
-                      time() - m.start_time < m.options.time_limit
+                  !state_is_optimal(
+                      nlp_status;
+                      allow_almost = m.options.allow_almost_solved,
+                  ) &&
+                  time() - start_fpump < tl &&
+                  time() - m.start_time < m.options.time_limit
                 nlp_status, nlp_sol, nlp_obj = generate_nlp(
                     optimizer,
                     m,
@@ -457,12 +457,12 @@ function fpump(optimizer, m)
                 generate_real_nlp(optimizer, m, mip_sol)
             cnlpinf = 0
             while cnlpinf < m.options.num_resolve_nlp_feasibility_pump &&
-                      !state_is_optimal(
-                          real_status;
-                          allow_almost = m.options.allow_almost_solved,
-                      ) &&
-                      time() - start_fpump < tl &&
-                      time() - m.start_time < m.options.time_limit
+                  !state_is_optimal(
+                      real_status;
+                      allow_almost = m.options.allow_almost_solved,
+                  ) &&
+                  time() - start_fpump < tl &&
+                  time() - m.start_time < m.options.time_limit
                 real_status, real_sol, real_obj = generate_real_nlp(
                     optimizer,
                     m,
