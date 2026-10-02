@@ -1,5 +1,10 @@
 # Juniper.jl Changelog
 
+### v0.9.5
+ - Bugfix: fixed `MOI.supports` for vector objectives [PR #276](https://github.com/lanl-ansi/Juniper.jl/pull/276)
+ - Maintenance: updated to JuliaFormatter@2 [PR #277](https://github.com/lanl-ansi/Juniper.jl/pull/277), [PR #280](https://github.com/lanl-ansi/Juniper.jl/pull/280)
+ - The minimum version of Julia is now v1.10 [PR #278](https://github.com/lanl-ansi/Juniper.jl/pull/278)
+
 ### v0.9.4
  - Maintenance: updated to JSON@1 [PR #273](https://github.com/lanl-ansi/Juniper.jl/pull/273)
  - Bugfix: fixed #269 by adding a cache around each of the subsolvers [PR #274](https://github.com/lanl-ansi/Juniper.jl/pull/274)
